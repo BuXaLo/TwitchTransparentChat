@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Twitch Overlay</title>
+  <!-- Шрифты Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@600;800&family=Montserrat:wght@600;800&family=Roboto:wght@500;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --font-size: 14px;
+      --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --bg-opacity: 0.5;
+      --text-align: left;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      background: transparent;
+      color: #fff;
+      font-family: var(--font-family);
+      overflow: hidden;
+      height: 100vh;
+      user-select: none;
+      position: relative;
+    }
+
+    .titlebar {
+      height: 28px;
+      background: rgba(18, 18, 22, 0.85);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      -webkit-app-region: drag;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 10px;
+      font-size: 11px;
+      color: #aaa;
+      position: relative;
+      z-index: 50;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    .status-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #777;
+      flex-shrink: 0;
+      transition: background 0.3s;
+    }
+    .status-dot.online { background: #00d26a; box-shadow: 0 0 6px #00d26a; }
+    .status-dot.connecting { background: #ffaa00; box-shadow: 0 0 6px #ffaa00; }
+    .status-dot.offline { background: #ff4757; }
+
+    .btn-settings {
+      -webkit-app-region: no-drag;
+      cursor: pointer;
+      background: #9146FF;
+      border: none;
+      color: #fff;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+    .btn-settings:hover { background: #7c2cf5; }
+
+    #settings-modal {
+      position: absolute;
+      top: 34px;
+      left: 8px;
+      right: 8px;
+      max-height: calc(100vh - 42px);
+      overflow-y: auto;
+      background: rgba(16, 16, 20, 0.98);
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 1000;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.8);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    .hidden { display: none !important; }
+
+    label {
+      font-size: 11px;
+      color: #aaa;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .checkbox-label {
+      flex-direction: row;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      color: #ddd;
+    }
+
+    input[type="text"],
+    input[type="password"],
+    input[type="number"],
+    select {
+      background: #25252b;
+      border: 1px solid #444;
+      color: #fff;
+      padding: 5px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      outline: none;
+    }
+    input:focus, select:focus { border-color: #9146FF; }
+
+    .row { display: flex; gap: 6px; }
+    .row input, .row select { flex: 1; }
+
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .slider-row input[type="range"] { flex: 1; cursor: pointer; }
+    .slider-row span { font-size: 11px; min-width: 32px; color: #fff; }
+
+    .proxy-box {
+      border: 1px solid #333;
+      padding: 8px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.02);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .proxy-box.disabled {
+      opacity: 0.35;
+      pointer-events: none;
+    }
+
+    button.primary {
+      background: #9146FF;
+      color: white;
+      border: none;
+      padding: 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+      margin-top: 4px;
+    }
+    button.primary:hover { background: #7c2cf5; }
+
+    /* Контейнер сообщений */
+    #chat {
+      height: calc(100vh - 28px);
+      overflow-y: hidden;
+      display: flex;
+      padding: 8px;
+      gap: 4px;
+    }
+
+    #chat.dir-top {
+      flex-direction: column;
+      justify-content: flex-start;
+    }
+    #chat.dir-bottom {
+      flex-direction: column-reverse;
+      justify-content: flex-start;
+    }
+
+    /* Стиль сообщения */
+    .message {
+      background: rgba(0, 0, 0, var(--bg-opacity));
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: var(--font-size);
+      font-family: var(--font-family);
+      font-weight: 700;
+      line-height: 1.3;
+      text-align: var(--text-align);
+      word-break: break-word;
+      opacity: 1;
+      transform: none;
+      transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+      border-left: 2px solid transparent;
+
+      /* Ровная чистая внешняя обводка без съедания глифов */
+      text-shadow: 
+        -1px -1px 0 #000,  
+         1px -1px 0 #000,
+        -1px  1px 0 #000,
+         1px  1px 0 #000,
+        -2px  0   0 #000,
+         2px  0   0 #000,
+         0   -2px 0 #000,
+         0    2px 0 #000,
+         0    2px 4px rgba(0, 0, 0, 0.9);
+    }
+
+    .message.is-reward {
+      border-left: 2px solid rgba(229, 169, 60, 0.85);
+      background: rgba(30, 24, 12, var(--bg-opacity));
+    }
+
+    .reward-icon {
+      height: calc(var(--font-size) * 1.15);
+      width: auto;
+      vertical-align: middle;
+      margin-right: 4px;
+      display: inline-block;
+      object-fit: contain;
+    }
+
+    /* Раскладки ника */
+    .layout-inline .author-wrap {
+      display: inline;
+      margin-right: 6px;
+    }
+    .layout-inline .colon { display: inline; }
+
+    .layout-block .author-wrap {
+      display: block;
+      margin-bottom: 2px;
+      font-size: 0.9em;
+    }
+    .layout-block .colon { display: none; }
+
+    /* Бейджи и смайлы */
+    .chat-badge {
+      height: calc(var(--font-size) * 1.15);
+      vertical-align: middle;
+      margin-right: 4px;
+      display: inline-block;
+    }
+
+    .chat-emote {
+      height: calc(var(--font-size) * 1.55);
+      vertical-align: middle;
+      margin: -2px 3px 0 3px;
+      display: inline-block;
+    }
+
+    .username {
+      font-weight: 800;
+    }
+
+    .message.fade-out {
+      opacity: 0 !important;
+      transform: translateY(-4px) !important;
+    }
+
+    /* Анимации появления */
+    .anim-fade { animation: animFade 0.25s ease-out forwards; }
+    @keyframes animFade {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .anim-slide-left { animation: animSlideLeft 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    @keyframes animSlideLeft {
+      from { opacity: 0; transform: translateX(-16px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    .anim-slide-down { animation: animSlideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    @keyframes animSlideDown {
+      from { opacity: 0; transform: translateY(-12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .anim-zoom { animation: animZoom 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    @keyframes animZoom {
+      from { opacity: 0; transform: scale(0.92); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .resizer-br {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      width: 14px;
+      height: 14px;
+      cursor: se-resize;
+      background: linear-gradient(135deg, transparent 50%, rgba(255, 255, 255, 0.2) 50%);
+      z-index: 100;
+    }
+  </style>
+</head>
+<body>
+  <div class="titlebar" id="titlebar">
+    <div class="status-wrap">
+      <div class="status-dot" id="status-dot" title="Статус сети"></div>
+      <span id="status-text">Сквозной режим: F9</span>
+    </div>
+    <button class="btn-settings" id="toggle-settings">⚙ Настройки</button>
+  </div>
+
+  <div id="settings-modal" class="hidden">
+    <label>
+      Канал Twitch:
+      <input type="text" id="channel" placeholder="например, shroud">
+    </label>
+
+    <label class="checkbox-label">
+      <input type="checkbox" id="useProxy">
+      Использовать SOCKS5 прокси
+    </label>
+
+    <div class="proxy-box disabled" id="proxyBox">
+      <div class="row">
+        <input type="text" id="proxyHost" placeholder="IP / Host">
+        <input type="number" id="proxyPort" placeholder="Port" style="max-width: 80px;">
+      </div>
+      <div class="row">
+        <input type="text" id="proxyUser" placeholder="User (опц.)">
+        <input type="password" id="proxyPass" placeholder="Pass (опц.)">
+      </div>
+    </div>
+
+    <!-- Типографика -->
+    <div class="row">
+      <label style="flex: 1;">
+        Шрифт:
+        <select id="fontFamily">
+          <option value="system">Стандартный (System UI)</option>
+          <option value="'Inter', sans-serif">Inter (Четкий)</option>
+          <option value="'Montserrat', sans-serif">Montserrat (Игровой)</option>
+          <option value="'Roboto', sans-serif">Roboto</option>
+          <option value="Impact, fantasy">Impact (Плотный)</option>
+        </select>
+      </label>
+      <label style="flex: 1;">
+        Выравнивание:
+        <select id="textAlign">
+          <option value="left">По левому краю</option>
+          <option value="center">По центру</option>
+          <option value="right">По правому краю</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="row">
+      <label style="flex: 1;">
+        Размер шрифта:
+        <div class="slider-row">
+          <input type="range" id="fontSize" min="10" max="36" value="14">
+          <span id="fontSizeVal">14px</span>
+        </div>
+      </label>
+      <label style="flex: 1;">
+        Фон плашки:
+        <div class="slider-row">
+          <input type="range" id="bgOpacity" min="0" max="90" step="5" value="50">
+          <span id="bgOpacityVal">50%</span>
+        </div>
+      </label>
+    </div>
+
+    <div class="row">
+      <label style="flex: 1;">
+        Скрытие (сек, 0=нет):
+        <input type="number" id="messageLifetime" min="0" max="300" value="15">
+      </label>
+      <label style="flex: 1;">
+        Анимация появления:
+        <select id="animation">
+          <option value="slide-left">Slide Left (выезд слева)</option>
+          <option value="slide-down">Slide Down (сверху)</option>
+          <option value="fade">Fade (проявление)</option>
+          <option value="zoom">Zoom (из центра)</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="row">
+      <label style="flex: 1;">
+        Поток сообщений:
+        <select id="chatDirection">
+          <option value="top">Новые сверху</option>
+          <option value="bottom">Новые снизу</option>
+        </select>
+      </label>
+      <label style="flex: 1;">
+        Разделитель ника:
+        <select id="layoutMode">
+          <option value="inline">В одну строку (Ник: текст)</option>
+          <option value="block">Ник отдельной строкой</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="row">
+      <label style="flex: 1;">
+        Горячая клавиша сквозного клика:
+        <select id="hotkey">
+          <option value="F1">F1</option>
+          <option value="F2">F2</option>
+          <option value="F3">F3</option>
+          <option value="F4">F4</option>
+          <option value="F5">F5</option>
+          <option value="F6">F6</option>
+          <option value="F7">F7</option>
+          <option value="F8">F8</option>
+          <option value="F9" selected>F9</option>
+          <option value="F10">F10</option>
+          <option value="F11">F11</option>
+          <option value="F12">F12</option>
+        </select>
+      </label>
+    </div>
+
+    <label class="checkbox-label">
+      <input type="checkbox" id="hideCommands" checked>
+      Скрывать команды чата (начинающиеся с !)
+    </label>
+
+    <label>
+      Игнорировать ботов (через запятую):
+      <input type="text" id="ignoredBots" value="Nightbot, StreamElements, Moobot, Fossabot">
+    </label>
+
+    <button class="primary" id="btn-save">Сохранить и подключиться</button>
+  </div>
+
+  <div id="chat" class="dir-top layout-inline"></div>
+  <div class="resizer-br" id="resizer"></div>
+
+  <script>
+    const MAX_DOM_MESSAGES = 150; // Лимит сообщений в DOM для защиты от утечек памяти
+    const CHANNEL_POINTS_ICON_URL = 'https://static-cdn.jtvnw.net/channel-points-icons/26748371/4de82078-64b4-4354-88a1-3167f8aa940d/icon-1.png';
+
+    const settingsModal = document.getElementById('settings-modal');
+    const toggleBtn = document.getElementById('toggle-settings');
+    const chat = document.getElementById('chat');
+    const titlebar = document.getElementById('titlebar');
+    const resizer = document.getElementById('resizer');
+    const statusDot = document.getElementById('status-dot');
+    const statusText = document.getElementById('status-text');
+
+    const useProxyCheck = document.getElementById('useProxy');
+    const proxyBox = document.getElementById('proxyBox');
+
+    const fontSizeInput = document.getElementById('fontSize');
+    const fontSizeVal = document.getElementById('fontSizeVal');
+    const bgOpacityInput = document.getElementById('bgOpacity');
+    const bgOpacityVal = document.getElementById('bgOpacityVal');
+
+    const fontFamilySelect = document.getElementById('fontFamily');
+    const textAlignSelect = document.getElementById('textAlign');
+    const hotkeySelect = document.getElementById('hotkey');
+
+    let currentConfig = {};
+    let ignoredBotsSet = new Set();
+
+    function escapeHtml(str) {
+      if (typeof str !== 'string') return '';
+      return str.replace(/[&<>"']/g, m => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      })[m]);
+    }
+
+    function sanitizeColor(col) {
+      if (/^#[0-9a-fA-F]{3,8}$/.test(col)) {
+        return col;
+      }
+      return '#9146FF';
+    }
+
+    useProxyCheck.onchange = () => {
+      proxyBox.classList.toggle('disabled', !useProxyCheck.checked);
+    };
+
+    fontSizeInput.oninput = (e) => {
+      document.documentElement.style.setProperty('--font-size', `${e.target.value}px`);
+      fontSizeVal.textContent = `${e.target.value}px`;
+    };
+
+    bgOpacityInput.oninput = (e) => {
+      const val = (e.target.value / 100).toFixed(2);
+      document.documentElement.style.setProperty('--bg-opacity', val);
+      bgOpacityVal.textContent = `${e.target.value}%`;
+    };
+
+    fontFamilySelect.onchange = (e) => {
+      const font = e.target.value === 'system' ? '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' : e.target.value;
+      document.documentElement.style.setProperty('--font-family', font);
+    };
+
+    textAlignSelect.onchange = (e) => {
+      document.documentElement.style.setProperty('--text-align', e.target.value);
+    };
+
+    toggleBtn.onclick = () => settingsModal.classList.toggle('hidden');
+
+    window.api.loadConfig().then((cfg) => {
+      currentConfig = cfg;
+
+      document.getElementById('channel').value = cfg.channel || '';
+      useProxyCheck.checked = !!cfg.useProxy;
+      proxyBox.classList.toggle('disabled', !cfg.useProxy);
+
+      document.getElementById('proxyHost').value = cfg.proxyHost || '';
+      document.getElementById('proxyPort').value = cfg.proxyPort || '';
+      document.getElementById('proxyUser').value = cfg.proxyUser || '';
+      document.getElementById('proxyPass').value = cfg.proxyPass || '';
+
+      document.getElementById('messageLifetime').value = cfg.messageLifetime ?? 15;
+      
+      const fSize = cfg.fontSize || 14;
+      fontSizeInput.value = fSize;
+      fontSizeVal.textContent = `${fSize}px`;
+      document.documentElement.style.setProperty('--font-size', `${fSize}px`);
+
+      const bgOp = cfg.bgOpacity !== undefined ? cfg.bgOpacity : 50;
+      bgOpacityInput.value = bgOp;
+      bgOpacityVal.textContent = `${bgOp}%`;
+      document.documentElement.style.setProperty('--bg-opacity', (bgOp / 100).toFixed(2));
+
+      fontFamilySelect.value = cfg.fontFamily || 'system';
+      const fontVal = fontFamilySelect.value === 'system' ? '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' : fontFamilySelect.value;
+      document.documentElement.style.setProperty('--font-family', fontVal);
+
+      textAlignSelect.value = cfg.textAlign || 'left';
+      document.documentElement.style.setProperty('--text-align', cfg.textAlign || 'left');
+
+      document.getElementById('animation').value = cfg.animation || 'slide-left';
+      document.getElementById('chatDirection').value = cfg.chatDirection || 'top';
+      document.getElementById('layoutMode').value = cfg.layoutMode || 'inline';
+      hotkeySelect.value = cfg.hotkey || 'F9';
+
+      document.getElementById('hideCommands').checked = cfg.hideCommands !== false;
+      document.getElementById('ignoredBots').value = cfg.ignoredBots || '';
+
+      statusText.textContent = `Сквозной режим: ${cfg.hotkey || 'F9'}`;
+
+      applyViewClasses(cfg);
+      updateIgnoredBots(cfg.ignoredBots);
+
+      if (cfg.channel) {
+        window.api.startChat(cfg);
+      } else {
+        settingsModal.classList.remove('hidden');
+      }
+    });
+
+    function applyViewClasses(cfg) {
+      chat.className = `dir-${cfg.chatDirection || 'top'} layout-${cfg.layoutMode || 'inline'}`;
+    }
+
+    function updateIgnoredBots(str) {
+      ignoredBotsSet = new Set((str || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean));
+    }
+
+    document.getElementById('btn-save').onclick = async () => {
+      const config = {
+        channel: document.getElementById('channel').value.trim(),
+        useProxy: useProxyCheck.checked,
+        proxyHost: document.getElementById('proxyHost').value.trim(),
+        proxyPort: document.getElementById('proxyPort').value.trim(),
+        proxyUser: document.getElementById('proxyUser').value.trim(),
+        proxyPass: document.getElementById('proxyPass').value.trim(),
+        messageLifetime: parseInt(document.getElementById('messageLifetime').value, 10) || 0,
+        fontSize: parseInt(fontSizeInput.value, 10) || 14,
+        fontFamily: fontFamilySelect.value,
+        textAlign: textAlignSelect.value,
+        bgOpacity: parseInt(bgOpacityInput.value, 10) || 0,
+        animation: document.getElementById('animation').value,
+        chatDirection: document.getElementById('chatDirection').value,
+        layoutMode: document.getElementById('layoutMode').value,
+        hotkey: hotkeySelect.value,
+        hideCommands: document.getElementById('hideCommands').checked,
+        ignoredBots: document.getElementById('ignoredBots').value.trim()
+      };
+
+      currentConfig = config;
+      applyViewClasses(config);
+      updateIgnoredBots(config.ignoredBots);
+      statusText.textContent = `Сквозной режим: ${config.hotkey}`;
+
+      await window.api.saveConfig(config);
+      window.api.startChat(config);
+      settingsModal.classList.add('hidden');
+    };
+
+    function enforceMessageLimit() {
+      while (chat.children.length > MAX_DOM_MESSAGES) {
+        if (currentConfig.chatDirection === 'bottom') {
+          // Старые сообщения вверху контейнера
+          chat.removeChild(chat.firstChild);
+        } else {
+          // Старые сообщения внизу контейнера
+          chat.removeChild(chat.lastChild);
+        }
+      }
+    }
+
+    function scheduleRemoval(element) {
+      const lifetime = currentConfig.messageLifetime;
+      if (!lifetime || lifetime <= 0) return;
+
+      setTimeout(() => {
+        element.classList.add('fade-out');
+        setTimeout(() => {
+          if (element.parentNode) element.parentNode.removeChild(element);
+        }, 800);
+      }, lifetime * 1000);
+    }
+
+    window.api.onNewMessage((msg) => {
+      if (ignoredBotsSet.has((msg.user || '').toLowerCase())) return;
+      if (currentConfig.hideCommands && msg.rawText && msg.rawText.trim().startsWith('!')) return;
+
+      const el = document.createElement('div');
+      const animClass = `anim-${currentConfig.animation || 'slide-left'}`;
+      const rewardClass = msg.isReward ? 'is-reward' : '';
+      el.className = `message ${animClass} ${rewardClass}`;
+
+      const rewardBadgeHtml = msg.isReward 
+        ? `<img class="reward-icon" src="${CHANNEL_POINTS_ICON_URL}" alt="Баллы" onerror="this.style.display='none'" />` 
+        : '';
+
+      const safeUser = escapeHtml(msg.user);
+      const safeColor = sanitizeColor(msg.color);
+      const safeBadges = msg.badgesHtml || ''; // Уже валидируется по белому списку в twitch.js
+      const actionStyle = msg.isAction ? `style="color: ${safeColor}; font-style: italic;"` : '';
+
+      el.innerHTML = `
+        <span class="author-wrap">
+          ${rewardBadgeHtml}
+          ${safeBadges}
+          <span class="username" style="color: ${safeColor}">${safeUser}</span><span class="colon">:</span>
+        </span>
+        <span class="text-content" ${actionStyle}>${msg.html}</span>
+      `;
+
+      if (currentConfig.chatDirection === 'bottom') {
+        chat.appendChild(el);
+      } else {
+        chat.prepend(el);
+      }
+
+      enforceMessageLimit();
+      scheduleRemoval(el);
+    });
+
+    window.api.onStatusUpdate((status) => {
+      if (status.code) statusDot.className = `status-dot ${status.code}`;
+      if (status.text) statusText.textContent = status.text;
+    });
+
+    window.api.onModeChanged((isClickThrough) => {
+      titlebar.style.display = isClickThrough ? 'none' : 'flex';
+      resizer.style.display = isClickThrough ? 'none' : 'block';
+      if (isClickThrough) settingsModal.classList.add('hidden');
+    });
+  </script>
+</body>
+</html>
