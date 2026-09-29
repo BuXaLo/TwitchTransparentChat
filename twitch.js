@@ -14,8 +14,8 @@ let isConnecting = false;
 let reconnectAttempts = 0;
 const MIN_RECONNECT_DELAY = 2000;
 const MAX_RECONNECT_DELAY = 30000;
-const WATCHDOG_TIMEOUT = 60000; // 60 секунд без подтверждённых IRC-пакетов = зависание
-const TLS_HANDSHAKE_TIMEOUT = 15000; // 15 секунд на TLS handshake
+const WATCHDOG_TIMEOUT = 60000;
+const TLS_HANDSHAKE_TIMEOUT = 15000;
 
 const STATIC_BADGES = {
   broadcaster: 'https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/2',
@@ -28,6 +28,22 @@ const STATIC_BADGES = {
   premium: 'https://static-cdn.jtvnw.net/badges/v1/bbbe0db0-a988-4348-a9c3-60ab9b1899da/2'
 };
 
+// 15 стандартных цветов Twitch для пользователей без настроенного цвета
+const TWITCH_DEFAULT_COLORS = [
+  '#FF0000', '#0000FF', '#00FF7F', '#B22222', '#FF7F50',
+  '#9ACD32', '#FF4500', '#2E8B57', '#DAA520', '#D2691E',
+  '#5F9EA0', '#1E90FF', '#FF69B4', '#8A2BE2', '#00FF00'
+];
+
+function getDefaultUserColor(username) {
+  let hash = 0;
+  for (let i = 0; i < username.length; i++) {
+    hash = username.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % TWITCH_DEFAULT_COLORS.length;
+  return TWITCH_DEFAULT_COLORS[index];
+}
+
 function escapeHtml(str) {
   if (typeof str !== 'string') return '';
   return str.replace(/[&<>"']/g, m => ({
@@ -35,10 +51,6 @@ function escapeHtml(str) {
   })[m]);
 }
 
-/**
- * Рендерит эмоуты с учётом смещения от /me (\x01ACTION ...\x01)
- * indexShift: если сообщение было ACTION, смещение равно 8 (длина '\x01ACTION ')
- */
 function renderTwitchEmotes(rawText, emotesTag, indexShift = 0) {
   if (!emotesTag) return escapeHtml(rawText);
 
@@ -104,7 +116,6 @@ function getBadgesHtml(badgesTag) {
   return html;
 }
 
-// Парсер IRC-сообщений по RFC1459/Twitch v3
 function parseIrcMessage(line) {
   let tags = {};
   let str = line;
@@ -145,7 +156,6 @@ function parseIrcMessage(line) {
   return { tags, prefix, command, params, trailing };
 }
 
-// Сброс Watchdog при получении подтвержденных IRC-пакетов
 function resetWatchdog(socket, onStatus) {
   clearTimeout(watchdogTimer);
   watchdogTimer = setTimeout(() => {
@@ -158,7 +168,6 @@ function resetWatchdog(socket, onStatus) {
 }
 
 function connectTwitch({ channel, useProxy, proxy, onMessage, onError, onStatus }) {
-  // Если подключение уже шло или было активно — принудительно очищаем и переподключаемся к новому каналу
   cleanup();
 
   isManuallyStopped = false;
@@ -235,7 +244,6 @@ function connectTwitch({ channel, useProxy, proxy, onMessage, onError, onStatus 
         const line = rawLine.trim();
         if (!line) continue;
 
-        // Строгая проверка RECONNECT от Twitch
         if (line === ':tmi.twitch.tv RECONNECT') {
           console.log('[Twitch] Получен сигнал планового реконнекта от Twitch');
           onStatus('Переподключение по запросу Twitch...', 'connecting');
@@ -245,7 +253,6 @@ function connectTwitch({ channel, useProxy, proxy, onMessage, onError, onStatus 
 
         const parsed = parseIrcMessage(line);
 
-        // PING от сервера
         if (parsed.command === 'PING') {
           resetWatchdog(socket, onStatus);
           const payload = parsed.trailing || parsed.params[0] || 'tmi.twitch.tv';
@@ -253,13 +260,11 @@ function connectTwitch({ channel, useProxy, proxy, onMessage, onError, onStatus 
           continue;
         }
 
-        // PONG в ответ на наш keepalive
         if (parsed.command === 'PONG') {
           resetWatchdog(socket, onStatus);
           continue;
         }
 
-        // Успешная регистрация сессии
         if (parsed.command === '001') {
           resetWatchdog(socket, onStatus);
           reconnectAttempts = 0;
@@ -268,7 +273,6 @@ function connectTwitch({ channel, useProxy, proxy, onMessage, onError, onStatus 
           continue;
         }
 
-        // Сообщения пользователей: строгая проверка parsed.command === 'PRIVMSG'
         if (parsed.command === 'PRIVMSG') {
           resetWatchdog(socket, onStatus);
           try {
@@ -276,10 +280,9 @@ function connectTwitch({ channel, useProxy, proxy, onMessage, onError, onStatus 
             let isAction = false;
             let indexShift = 0;
 
-            // Обработка /me сообщений (\x01ACTION text\x01)
             if (messageText.startsWith('\x01ACTION ') && messageText.endsWith('\x01')) {
               isAction = true;
-              indexShift = 8; // Длина "\x01ACTION "
+              indexShift = 8;
               messageText = messageText.slice(8, -1);
             }
 
@@ -287,10 +290,14 @@ function connectTwitch({ channel, useProxy, proxy, onMessage, onError, onStatus 
             const renderedHtml = renderTwitchEmotes(messageText, tags['emotes'], indexShift);
             const badgesHtml = getBadgesHtml(tags['badges']);
             const isReward = Boolean(tags['custom-reward-id']);
+            const userName = tags['display-name'] || parsed.prefix.split('!')[0] || 'Аноним';
+
+            // Если цвета нет в тегах, используем хэш ника для выбора из 15 дефолтных цветов
+            const userColor = tags['color'] || getDefaultUserColor(userName);
 
             onMessage({
-              user: tags['display-name'] || parsed.prefix.split('!')[0] || 'Аноним',
-              color: tags['color'] || '#9146FF',
+              user: userName,
+              color: userColor,
               badgesHtml: badgesHtml,
               html: renderedHtml,
               rawText: messageText,
@@ -324,7 +331,6 @@ function connectTwitch({ channel, useProxy, proxy, onMessage, onError, onStatus 
     });
   };
 
-  // SOCKS5 подключение
   if (useProxy && proxy && proxy.host) {
     onStatus('SOCKS5 подключение...', 'connecting');
     const socksOptions = {
@@ -361,7 +367,6 @@ function connectTwitch({ channel, useProxy, proxy, onMessage, onError, onStatus 
       setupTlsSocket(info.socket);
     });
   } else {
-    // Прямое подключение
     onStatus('Прямое подключение...', 'connecting');
     const directSocket = net.connect({
       host: 'irc.chat.twitch.tv',
