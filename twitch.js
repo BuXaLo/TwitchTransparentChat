@@ -28,7 +28,6 @@ const STATIC_BADGES = {
   premium: 'https://static-cdn.jtvnw.net/badges/v1/bbbe0db0-a988-4348-a9c3-60ab9b1899da/2'
 };
 
-// 15 стандартных цветов Twitch для пользователей без настроенного цвета
 const TWITCH_DEFAULT_COLORS = [
   '#FF0000', '#0000FF', '#00FF7F', '#B22222', '#FF7F50',
   '#9ACD32', '#FF4500', '#2E8B57', '#DAA520', '#D2691E',
@@ -51,7 +50,10 @@ function escapeHtml(str) {
   })[m]);
 }
 
-function renderTwitchEmotes(rawText, emotesTag, indexShift = 0) {
+/**
+ * Рендерит смайлы Twitch по точным индексам Unicode-символов
+ */
+function renderTwitchEmotes(rawText, emotesTag) {
   if (!emotesTag) return escapeHtml(rawText);
 
   try {
@@ -67,11 +69,8 @@ function renderTwitchEmotes(rawText, emotesTag, indexShift = 0) {
       const positions = ranges.split(',');
 
       for (const pos of positions) {
-        let [start, end] = pos.split('-').map(Number);
-        start -= indexShift;
-        end -= indexShift;
-
-        if (start >= 0 && end >= start) {
+        const [start, end] = pos.split('-').map(Number);
+        if (!isNaN(start) && !isNaN(end) && start >= 0) {
           replacements.push({ start, end: end + 1, url });
         }
       }
@@ -278,21 +277,20 @@ function connectTwitch({ channel, useProxy, proxy, onMessage, onError, onStatus 
           try {
             let messageText = parsed.trailing || '';
             let isAction = false;
-            let indexShift = 0;
 
+            // Обработка /me сообщений (\x01ACTION text\x01)
+            // Twitch строит индексы emotes уже относительно чистого текста внутри ACTION!
             if (messageText.startsWith('\x01ACTION ') && messageText.endsWith('\x01')) {
               isAction = true;
-              indexShift = 8;
               messageText = messageText.slice(8, -1);
             }
 
             const tags = parsed.tags;
-            const renderedHtml = renderTwitchEmotes(messageText, tags['emotes'], indexShift);
+            // Рендерим эмоуты по чистым координатам Twitch
+            const renderedHtml = renderTwitchEmotes(messageText, tags['emotes']);
             const badgesHtml = getBadgesHtml(tags['badges']);
             const isReward = Boolean(tags['custom-reward-id']);
             const userName = tags['display-name'] || parsed.prefix.split('!')[0] || 'Аноним';
-
-            // Если цвета нет в тегах, используем хэш ника для выбора из 15 дефолтных цветов
             const userColor = tags['color'] || getDefaultUserColor(userName);
 
             onMessage({
