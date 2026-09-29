@@ -9,30 +9,6 @@ const store = new Store({
 
 let win = null;
 let isClickThrough = false;
-let currentShortcut = 'F9';
-
-function registerHotkey(shortcutKey) {
-  globalShortcut.unregisterAll();
-  currentShortcut = shortcutKey || 'F9';
-
-  const registered = globalShortcut.register(currentShortcut, () => {
-    isClickThrough = !isClickThrough;
-    if (win && !win.isDestroyed()) {
-      win.setIgnoreMouseEvents(isClickThrough, { forward: true });
-      win.webContents.send('mode-changed', isClickThrough);
-    }
-  });
-
-  if (!registered) {
-    console.warn(`[Shortcut] Не удалось зарегистрировать клавишу ${currentShortcut}`);
-    if (win && !win.isDestroyed()) {
-      win.webContents.send('status-update', { 
-        error: true, 
-        text: `Хоткей ${currentShortcut} занят другой программой!` 
-      });
-    }
-  }
-}
 
 function createWindow() {
   const bounds = store.get('window_bounds', { 
@@ -60,9 +36,7 @@ function createWindow() {
     }
   });
 
-  // Уровень screen-saver поднимает оверлей над полноэкранными borderless-окнами
   win.setAlwaysOnTop(true, 'screen-saver');
-
   win.loadFile('index.html');
 
   // Debounce сохранения положения окна (400мс)
@@ -85,8 +59,14 @@ function createWindow() {
     }
   });
 
-  const cfg = store.get('twitch_config', {});
-  registerHotkey(cfg.hotkey || 'F9');
+  // Статичный хоткей Ctrl+Alt+F9
+  globalShortcut.register('CommandOrControl+Alt+F9', () => {
+    isClickThrough = !isClickThrough;
+    if (win && !win.isDestroyed()) {
+      win.setIgnoreMouseEvents(isClickThrough, { forward: true });
+      win.webContents.send('mode-changed', isClickThrough);
+    }
+  });
 }
 
 // Загрузка конфигурации
@@ -107,17 +87,13 @@ ipcMain.handle('load-config', () => {
     chatDirection: 'top',
     hideCommands: true,
     ignoredBots: 'Nightbot, StreamElements, Moobot, Fossabot',
-    layoutMode: 'inline',
-    hotkey: 'F9'
+    layoutMode: 'inline'
   });
 });
 
 // Сохранение конфигурации
 ipcMain.handle('save-config', (event, config) => {
   store.set('twitch_config', config);
-  if (config.hotkey && config.hotkey !== currentShortcut) {
-    registerHotkey(config.hotkey);
-  }
   return true;
 });
 
