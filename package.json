@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Twitch Transparent Chat Overlay for Games & Streaming",
   "main": "main.js",
-  "author": "Streamer",
+  "author": "BuXaLo",
   "license": "MIT",
   "scripts": {
     "start": "electron .",
