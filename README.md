@@ -63,8 +63,8 @@
 
 1. Склонируйте репозиторий и перейдите в папку проекта:
    ```bash
-   git clone <URL_РЕПОЗИТОРИЯ>
-   cd twitch-overlay
+   git clone https://github.com/BuXaLo/TwitchTransparentChat.git
+   cd TwitchTransparentChat
    ```
 
 2. Установите зависимости:
