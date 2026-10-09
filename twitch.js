@@ -1,6 +1,8 @@
 const tls = require('tls');
 const net = require('net');
 const { SocksClient } = require('socks');
+const emotes = require('./emotes');
+const { t } = require('./locales');
 
 let activeSocket = null;
 let keepAliveTimer = null;
@@ -16,6 +18,8 @@ const MIN_RECONNECT_DELAY = 2000;
 const MAX_RECONNECT_DELAY = 30000;
 const WATCHDOG_TIMEOUT = 60000;
 const TLS_HANDSHAKE_TIMEOUT = 15000;
+
+const CHANNEL_POINTS_ICON_URL = 'https://static-cdn.jtvnw.net/custom-reward-images/default-1.png';
 
 const STATIC_BADGES = {
   broadcaster: 'https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/2',
@@ -43,62 +47,6 @@ function getDefaultUserColor(username) {
   return TWITCH_DEFAULT_COLORS[index];
 }
 
-function escapeHtml(str) {
-  if (typeof str !== 'string') return '';
-  return str.replace(/[&<>"']/g, m => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-  })[m]);
-}
-
-/**
- * Рендерит смайлы Twitch по точным индексам Unicode-символов
- */
-function renderTwitchEmotes(rawText, emotesTag) {
-  if (!emotesTag) return escapeHtml(rawText);
-
-  try {
-    const replacements = [];
-    const emoteList = emotesTag.split('/');
-
-    for (const emote of emoteList) {
-      if (!emote) continue;
-      const [id, ranges] = emote.split(':');
-      if (!ranges) continue;
-
-      const url = `https://static-cdn.jtvnw.net/emoticons/v2/${id}/default/dark/2.0`;
-      const positions = ranges.split(',');
-
-      for (const pos of positions) {
-        const [start, end] = pos.split('-').map(Number);
-        if (!isNaN(start) && !isNaN(end) && start >= 0) {
-          replacements.push({ start, end: end + 1, url });
-        }
-      }
-    }
-
-    replacements.sort((a, b) => a.start - b.start);
-    const chars = Array.from(rawText);
-    const parts = [];
-    let lastIdx = 0;
-
-    for (const r of replacements) {
-      if (r.start > lastIdx) {
-        parts.push(escapeHtml(chars.slice(lastIdx, r.start).join('')));
-      }
-      parts.push(`<img class="chat-emote" src="${r.url}" alt="emote" onerror="this.style.display='none'" />`);
-      lastIdx = r.end;
-    }
-
-    if (lastIdx < chars.length) {
-      parts.push(escapeHtml(chars.slice(lastIdx).join('')));
-    }
-
-    return parts.join('');
-  } catch (e) {
-    return escapeHtml(rawText);
-  }
-}
-
 function getBadgesHtml(badgesTag) {
   if (!badgesTag) return '';
   const badgesList = badgesTag.split(',');
@@ -108,8 +56,8 @@ function getBadgesHtml(badgesTag) {
     const role = b.split('/')[0].trim();
     const url = STATIC_BADGES[role];
     if (url) {
-      const escapedRole = escapeHtml(role);
-      html += `<img class="chat-badge" src="${url}" alt="${escapedRole}" onerror="this.style.display='none'" />`;
+      const escapedRole = emotes.escapeHtml(role);
+      html += `<img class="chat-badge" src="${emotes.escapeHtml(emotes.imgUrl(url))}" alt="${escapedRole}" onerror="this.style.display='none'" />`;
     }
   }
   return html;
@@ -160,7 +108,7 @@ function resetWatchdog(socket, onStatus) {
   watchdogTimer = setTimeout(() => {
     if (socket && !socket.destroyed) {
       console.warn('[Watchdog] Нет ответов от IRC > 60 сек. Принудительный сброс сокета...');
-      if (onStatus) onStatus('Связь зависла, сброс...', 'connecting');
+      if (onStatus) onStatus(t('status.watchdog'), 'connecting');
       socket.destroy();
     }
   }, WATCHDOG_TIMEOUT);
@@ -173,10 +121,14 @@ function connectTwitch({ channel, useProxy, proxy, onMessage, onError, onStatus 
   isConnecting = true;
   currentConfig = { channel, useProxy, proxy, onMessage, onError, onStatus };
 
+  // Смайлы и картинки ходят тем же путём, что и чат: через SOCKS5, если он включён
+  emotes.setNetwork(useProxy && proxy && proxy.host ? { host: proxy.host, port: proxy.port, username: proxy.username, password: proxy.password } : null);
+  emotes.ensureGlobalEmotes();
+
   const targetChannel = (channel || '').toLowerCase().trim().replace(/^#/, '');
   if (!targetChannel) {
     isConnecting = false;
-    onStatus('Канал не указан', 'offline');
+    onStatus(t('status.noChannel'), 'offline');
     return;
   }
 
@@ -190,14 +142,14 @@ function connectTwitch({ channel, useProxy, proxy, onMessage, onError, onStatus 
     rawSocket.setKeepAlive(true, 10000);
     rawSocket.setNoDelay(true);
 
-    onStatus('Шифрование TLS...', 'connecting');
+    onStatus(t('status.tls'), 'connecting');
 
     let socket;
     const tlsHandshakeTimer = setTimeout(() => {
       if (isConnecting && socket && !socket.destroyed) {
         isConnecting = false;
-        onError('Таймаут TLS-соединения');
-        onStatus('Таймаут TLS', 'offline');
+        onError(t('err.tlsTimeout'));
+        onStatus(t('status.tlsTimeout'), 'offline');
         socket.destroy();
       }
     }, TLS_HANDSHAKE_TIMEOUT);
@@ -210,7 +162,7 @@ function connectTwitch({ channel, useProxy, proxy, onMessage, onError, onStatus 
     }, () => {
       clearTimeout(tlsHandshakeTimer);
       isConnecting = false;
-      onStatus('Вход в чат...', 'connecting');
+      onStatus(t('status.joining'), 'connecting');
 
       socket.setKeepAlive(true, 10000);
       socket.setNoDelay(true);
@@ -245,7 +197,7 @@ function connectTwitch({ channel, useProxy, proxy, onMessage, onError, onStatus 
 
         if (line === ':tmi.twitch.tv RECONNECT') {
           console.log('[Twitch] Получен сигнал планового реконнекта от Twitch');
-          onStatus('Переподключение по запросу Twitch...', 'connecting');
+          onStatus(t('status.twitchReconnect'), 'connecting');
           socket.destroy();
           return;
         }
@@ -268,7 +220,13 @@ function connectTwitch({ channel, useProxy, proxy, onMessage, onError, onStatus 
           resetWatchdog(socket, onStatus);
           reconnectAttempts = 0;
           const proxyLabel = (useProxy && proxy?.host) ? ' [SOCKS5]' : '';
-          onStatus(`В сети: #${targetChannel}${proxyLabel}`, 'online');
+          onStatus(t('status.online', { channel: targetChannel, proxy: proxyLabel }), 'online');
+          continue;
+        }
+
+        if (parsed.command === 'ROOMSTATE') {
+          // Приходит при входе в канал: в теге room-id лежит ID канала для 7TV/BTTV/FFZ
+          if (parsed.tags['room-id']) emotes.ensureChannelEmotes(parsed.tags['room-id']);
           continue;
         }
 
@@ -287,10 +245,10 @@ function connectTwitch({ channel, useProxy, proxy, onMessage, onError, onStatus 
 
             const tags = parsed.tags;
             // Рендерим эмоуты по чистым координатам Twitch
-            const renderedHtml = renderTwitchEmotes(messageText, tags['emotes']);
+            const renderedHtml = emotes.renderTwitchEmotes(messageText, tags['emotes']);
             const badgesHtml = getBadgesHtml(tags['badges']);
             const isReward = Boolean(tags['custom-reward-id']);
-            const userName = tags['display-name'] || parsed.prefix.split('!')[0] || 'Аноним';
+            const userName = tags['display-name'] || parsed.prefix.split('!')[0] || t('common.anon');
             const userColor = tags['color'] || getDefaultUserColor(userName);
 
             onMessage({
@@ -300,7 +258,8 @@ function connectTwitch({ channel, useProxy, proxy, onMessage, onError, onStatus 
               html: renderedHtml,
               rawText: messageText,
               isAction: isAction,
-              isReward: isReward
+              isReward: isReward,
+              rewardIconUrl: emotes.imgUrl(CHANNEL_POINTS_ICON_URL)
             });
           } catch (e) {
             console.error('[Parse error]', e);
@@ -312,8 +271,8 @@ function connectTwitch({ channel, useProxy, proxy, onMessage, onError, onStatus 
     socket.on('error', (e) => {
       clearTimeout(tlsHandshakeTimer);
       isConnecting = false;
-      onError(`Ошибка сети: ${e.message}`);
-      onStatus('Ошибка сети', 'offline');
+      onError(t('err.network', { msg: e.message }));
+      onStatus(t('status.networkError'), 'offline');
     });
 
     socket.on('close', () => {
@@ -324,13 +283,13 @@ function connectTwitch({ channel, useProxy, proxy, onMessage, onError, onStatus 
       if (!isManuallyStopped) {
         scheduleReconnect();
       } else {
-        onStatus('Отключено', 'offline');
+        onStatus(t('status.disconnected'), 'offline');
       }
     });
   };
 
   if (useProxy && proxy && proxy.host) {
-    onStatus('SOCKS5 подключение...', 'connecting');
+    onStatus(t('status.socks'), 'connecting');
     const socksOptions = {
       proxy: {
         host: proxy.host,
@@ -351,8 +310,8 @@ function connectTwitch({ channel, useProxy, proxy, onMessage, onError, onStatus 
       if (err) {
         if (isManuallyStopped) return;
         isConnecting = false;
-        onError(`Ошибка прокси: ${err.message}`);
-        onStatus('Ошибка прокси', 'offline');
+        onError(t('err.proxy', { msg: err.message }));
+        onStatus(t('status.proxyError'), 'offline');
         scheduleReconnect();
         return;
       }
@@ -365,7 +324,7 @@ function connectTwitch({ channel, useProxy, proxy, onMessage, onError, onStatus 
       setupTlsSocket(info.socket);
     });
   } else {
-    onStatus('Прямое подключение...', 'connecting');
+    onStatus(t('status.direct'), 'connecting');
     const directSocket = net.connect({
       host: 'irc.chat.twitch.tv',
       port: 6697
@@ -382,8 +341,8 @@ function connectTwitch({ channel, useProxy, proxy, onMessage, onError, onStatus 
     directSocket.setTimeout(10000, () => {
       if (isConnecting && !directSocket.destroyed) {
         isConnecting = false;
-        onError('Таймаут соединения');
-        onStatus('Таймаут сети', 'offline');
+        onError(t('err.timeout'));
+        onStatus(t('status.timeout'), 'offline');
         directSocket.destroy();
         scheduleReconnect();
       }
@@ -391,8 +350,8 @@ function connectTwitch({ channel, useProxy, proxy, onMessage, onError, onStatus 
 
     directSocket.on('error', (e) => {
       isConnecting = false;
-      onError(`Ошибка соединения: ${e.message}`);
-      onStatus('Ошибка сети', 'offline');
+      onError(t('err.connection', { msg: e.message }));
+      onStatus(t('status.networkError'), 'offline');
       directSocket.destroy();
       scheduleReconnect();
     });
@@ -406,7 +365,7 @@ function scheduleReconnect() {
   const delay = Math.min(MIN_RECONNECT_DELAY * Math.pow(2, reconnectAttempts - 1), MAX_RECONNECT_DELAY);
 
   if (currentConfig.onStatus) {
-    currentConfig.onStatus(`Реконнект через ${Math.round(delay / 1000)}с (попытка ${reconnectAttempts})...`, 'connecting');
+    currentConfig.onStatus(t('status.reconnect', { sec: Math.round(delay / 1000), n: reconnectAttempts }), 'connecting');
   }
 
   reconnectTimer = setTimeout(() => {
@@ -437,4 +396,52 @@ function disconnectTwitch() {
   cleanup();
 }
 
-module.exports = { connectTwitch, disconnectTwitch };
+/**
+ * Тестовые сообщения для настройки внешнего вида (не требуют подключения к чату).
+ * Проходят через тот же рендер, что и настоящие: родные смайлы, 7TV/BTTV/FFZ, бейджи, награды, /me.
+ */
+function makeTestMessage(index) {
+  const i = ((index % 5) + 5) % 5;
+  const sample = emotes.getSampleEmoteNames(2);
+  const thirdParty = sample.length ? ' ' + sample.join(' ') : '';
+  const iconUrl = emotes.imgUrl(CHANNEL_POINTS_ICON_URL);
+
+  const withKappa = (text) => {
+    const full = `${text} Kappa`;
+    const start = Array.from(full).length - 5;
+    return { text: full, emotes: `25:${start}-${start + 4}` };
+  };
+
+  let msg;
+  switch (i) {
+    case 0: {
+      const m = withKappa(t('test.msg1') + thirdParty);
+      msg = { user: t('test.user1'), color: '#FF69B4', badges: 'subscriber/12', text: m.text, emotes: m.emotes };
+      break;
+    }
+    case 1:
+      msg = { user: t('test.user2'), color: '#00FF7F', badges: 'moderator/1,subscriber/3', text: t('test.msg2') + thirdParty, emotes: '' };
+      break;
+    case 2:
+      msg = { user: t('test.user3'), color: '#9ACD32', badges: 'vip/1', text: t('test.reward'), emotes: '', reward: true };
+      break;
+    case 3:
+      msg = { user: t('test.user4'), color: '#1E90FF', badges: '', text: t('test.action') + thirdParty, emotes: '', action: true };
+      break;
+    default:
+      msg = { user: t('test.user5'), color: '#8A2BE2', badges: 'broadcaster/1', text: t('test.long'), emotes: '' };
+  }
+
+  return {
+    user: msg.user,
+    color: msg.color,
+    badgesHtml: getBadgesHtml(msg.badges),
+    html: emotes.renderTwitchEmotes(msg.text, msg.emotes),
+    rawText: msg.text,
+    isAction: !!msg.action,
+    isReward: !!msg.reward,
+    rewardIconUrl: iconUrl
+  };
+}
+
+module.exports = { connectTwitch, disconnectTwitch, makeTestMessage };
