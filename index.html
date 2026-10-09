@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>Twitch Overlay</title>
@@ -294,6 +294,46 @@
       to { opacity: 1; transform: scale(1); }
     }
 
+    button.secondary {
+      background: #2f2f37;
+      color: #fff;
+      border: 1px solid #444;
+      padding: 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    button.secondary:hover { background: #3a3a44; }
+
+    .button-row { display: flex; gap: 6px; margin-top: 4px; }
+    .button-row button { flex: 1; margin-top: 0; }
+
+    #hotkey-warn {
+      cursor: help;
+      color: #ffaa00;
+      font-size: 12px;
+      flex-shrink: 0;
+    }
+
+    /* Смайл + zero-width наложение (7TV/BTTV) */
+    .emote-stack {
+      position: relative;
+      display: inline-block;
+      height: 1.6em;
+      vertical-align: -0.35em;
+      margin: 0 4px;
+    }
+    .emote-stack .chat-emote {
+      margin: 0;
+      vertical-align: top;
+    }
+    .emote-stack .chat-emote.zero-width {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
     .resizer-br {
       position: absolute;
       bottom: 0;
@@ -309,66 +349,75 @@
 <body>
   <div class="titlebar" id="titlebar">
     <div class="status-wrap">
-      <div class="status-dot" id="status-dot" title="Статус сети"></div>
-      <span id="status-text">Ctrl+Alt+F9: сквозной режим</span>
+      <div class="status-dot" id="status-dot" data-i18n-title="ui.networkStatus"></div>
+      <span id="hotkey-warn" class="hidden">⚠</span>
+      <span id="status-text"></span>
     </div>
-    <button class="btn-settings" id="toggle-settings">⚙ Настройки</button>
+    <button class="btn-settings" id="toggle-settings" data-i18n="ui.settings"></button>
   </div>
 
   <div id="settings-modal" class="hidden">
     <label>
-      Канал Twitch:
-      <input type="text" id="channel" placeholder="например, shroud">
+      <span data-i18n="ui.language"></span>
+      <select id="language">
+        <option value="en">English</option>
+        <option value="ru">Русский</option>
+      </select>
+    </label>
+
+    <label>
+      <span data-i18n="ui.channel"></span>
+      <input type="text" id="channel" data-i18n-placeholder="ui.channelPlaceholder">
     </label>
 
     <label class="checkbox-label">
       <input type="checkbox" id="useProxy">
-      Использовать SOCKS5 прокси
+      <span data-i18n="ui.useProxy"></span>
     </label>
 
     <div class="proxy-box disabled" id="proxyBox">
       <div class="row">
-        <input type="text" id="proxyHost" placeholder="IP / Host">
-        <input type="number" id="proxyPort" placeholder="Port" style="max-width: 80px;">
+        <input type="text" id="proxyHost" data-i18n-placeholder="ui.proxyHost">
+        <input type="number" id="proxyPort" data-i18n-placeholder="ui.proxyPort" style="max-width: 80px;">
       </div>
       <div class="row">
-        <input type="text" id="proxyUser" placeholder="User (опц.)">
-        <input type="password" id="proxyPass" placeholder="Pass (опц.)">
+        <input type="text" id="proxyUser" data-i18n-placeholder="ui.proxyUser">
+        <input type="password" id="proxyPass" data-i18n-placeholder="ui.proxyPass">
       </div>
     </div>
 
     <!-- Типографика -->
     <div class="row">
       <label style="flex: 1;">
-        Шрифт:
+        <span data-i18n="ui.font"></span>
         <select id="fontFamily">
-          <option value="system">Стандартный (System UI)</option>
-          <option value="'Inter', sans-serif">Inter (Четкий)</option>
-          <option value="'Montserrat', sans-serif">Montserrat (Игровой)</option>
-          <option value="'Roboto', sans-serif">Roboto</option>
-          <option value="Impact, fantasy">Impact (Плотный)</option>
+          <option value="system" data-i18n="ui.fontSystem"></option>
+          <option value="'Inter', sans-serif" data-i18n="ui.fontInter"></option>
+          <option value="'Montserrat', sans-serif" data-i18n="ui.fontMontserrat"></option>
+          <option value="'Roboto', sans-serif" data-i18n="ui.fontRoboto"></option>
+          <option value="Impact, fantasy" data-i18n="ui.fontImpact"></option>
         </select>
       </label>
       <label style="flex: 1;">
-        Выравнивание:
+        <span data-i18n="ui.align"></span>
         <select id="textAlign">
-          <option value="left">По левому краю</option>
-          <option value="center">По центру</option>
-          <option value="right">По правому краю</option>
+          <option value="left" data-i18n="ui.alignLeft"></option>
+          <option value="center" data-i18n="ui.alignCenter"></option>
+          <option value="right" data-i18n="ui.alignRight"></option>
         </select>
       </label>
     </div>
 
     <div class="row">
       <label style="flex: 1;">
-        Размер шрифта:
+        <span data-i18n="ui.fontSize"></span>
         <div class="slider-row">
           <input type="range" id="fontSize" min="10" max="36" value="14">
           <span id="fontSizeVal">14px</span>
         </div>
       </label>
       <label style="flex: 1;">
-        Фон плашки:
+        <span data-i18n="ui.bg"></span>
         <div class="slider-row">
           <input type="range" id="bgOpacity" min="0" max="90" step="5" value="50">
           <span id="bgOpacityVal">50%</span>
@@ -378,48 +427,51 @@
 
     <div class="row">
       <label style="flex: 1;">
-        Скрытие (сек, 0=нет):
+        <span data-i18n="ui.lifetime"></span>
         <input type="number" id="messageLifetime" min="0" max="300" value="15">
       </label>
       <label style="flex: 1;">
-        Анимация появления:
+        <span data-i18n="ui.animation"></span>
         <select id="animation">
-          <option value="slide-left">Slide Left (выезд слева)</option>
-          <option value="slide-down">Slide Down (сверху)</option>
-          <option value="fade">Fade (проявление)</option>
-          <option value="zoom">Zoom (из центра)</option>
+          <option value="slide-left" data-i18n="ui.animSlideLeft"></option>
+          <option value="slide-down" data-i18n="ui.animSlideDown"></option>
+          <option value="fade" data-i18n="ui.animFade"></option>
+          <option value="zoom" data-i18n="ui.animZoom"></option>
         </select>
       </label>
     </div>
 
     <div class="row">
       <label style="flex: 1;">
-        Поток сообщений:
+        <span data-i18n="ui.direction"></span>
         <select id="chatDirection">
-          <option value="top">Новые сверху</option>
-          <option value="bottom">Новые снизу</option>
+          <option value="top" data-i18n="ui.dirTop"></option>
+          <option value="bottom" data-i18n="ui.dirBottom"></option>
         </select>
       </label>
       <label style="flex: 1;">
-        Разделитель ника:
+        <span data-i18n="ui.layout"></span>
         <select id="layoutMode">
-          <option value="inline">В одну строку (Ник: текст)</option>
-          <option value="block">Ник отдельной строкой</option>
+          <option value="inline" data-i18n="ui.layoutInline"></option>
+          <option value="block" data-i18n="ui.layoutBlock"></option>
         </select>
       </label>
     </div>
 
     <label class="checkbox-label">
       <input type="checkbox" id="hideCommands" checked>
-      Скрывать команды чата (начинающиеся с !)
+      <span data-i18n="ui.hideCommands"></span>
     </label>
 
     <label>
-      Игнорировать ботов (через запятую):
+      <span data-i18n="ui.bots"></span>
       <input type="text" id="ignoredBots" value="Nightbot, StreamElements, Moobot, Fossabot">
     </label>
 
-    <button class="primary" id="btn-save">Сохранить и подключиться</button>
+    <div class="button-row">
+      <button class="secondary" id="btn-test" data-i18n="ui.test"></button>
+      <button class="primary" id="btn-save" data-i18n="ui.save"></button>
+    </div>
   </div>
 
   <div id="chat" class="dir-top layout-inline"></div>
@@ -436,6 +488,7 @@
     const resizer = document.getElementById('resizer');
     const statusDot = document.getElementById('status-dot');
     const statusText = document.getElementById('status-text');
+    const hotkeyWarn = document.getElementById('hotkey-warn');
 
     const useProxyCheck = document.getElementById('useProxy');
     const proxyBox = document.getElementById('proxyBox');
@@ -447,9 +500,40 @@
 
     const fontFamilySelect = document.getElementById('fontFamily');
     const textAlignSelect = document.getElementById('textAlign');
+    const languageSelect = document.getElementById('language');
 
     let currentConfig = {};
     let ignoredBotsSet = new Set();
+
+    /* ---------------- Локализация ---------------- */
+
+    let strings = {};
+    let statusIsHint = true;
+    let hotkeyBusy = false;
+
+    function tr(key) {
+      return strings[key] !== undefined ? strings[key] : key;
+    }
+
+    function applyStrings(newStrings, lang) {
+      strings = newStrings || {};
+      document.documentElement.lang = lang || 'en';
+
+      document.querySelectorAll('[data-i18n]').forEach((el) => {
+        el.textContent = tr(el.dataset.i18n);
+      });
+      document.querySelectorAll('[data-i18n-placeholder]').forEach((el) => {
+        el.placeholder = tr(el.dataset.i18nPlaceholder);
+      });
+      document.querySelectorAll('[data-i18n-title]').forEach((el) => {
+        el.title = tr(el.dataset.i18nTitle);
+      });
+
+      if (statusIsHint) statusText.textContent = tr('status.hint');
+      hotkeyWarn.title = tr('ui.hotkeyBusy');
+    }
+
+    /* ---------------- Утилиты ---------------- */
 
     function escapeHtml(str) {
       if (typeof str !== 'string') return '';
@@ -487,6 +571,8 @@
       return `#${hex}`;
     }
 
+    /* ---------------- Настройки: живое применение ---------------- */
+
     useProxyCheck.onchange = () => {
       proxyBox.classList.toggle('disabled', !useProxyCheck.checked);
     };
@@ -511,10 +597,43 @@
       document.documentElement.style.setProperty('--text-align', e.target.value);
     };
 
+    // Эти параметры тоже применяются сразу (до нажатия «Сохранить»),
+    // чтобы тестовое сообщение показывало то, что выбрано в форме
+    function applyDisplaySettings() {
+      currentConfig.messageLifetime = parseInt(document.getElementById('messageLifetime').value, 10) || 0;
+      currentConfig.animation = document.getElementById('animation').value;
+      currentConfig.chatDirection = document.getElementById('chatDirection').value;
+      currentConfig.layoutMode = document.getElementById('layoutMode').value;
+      currentConfig.hideCommands = document.getElementById('hideCommands').checked;
+      currentConfig.ignoredBots = document.getElementById('ignoredBots').value.trim();
+      applyViewClasses(currentConfig);
+      updateIgnoredBots(currentConfig.ignoredBots);
+    }
+
+    ['messageLifetime', 'animation', 'chatDirection', 'layoutMode', 'hideCommands', 'ignoredBots'].forEach((id) => {
+      document.getElementById(id).addEventListener('change', applyDisplaySettings);
+    });
+
+    languageSelect.onchange = async () => {
+      const lang = languageSelect.value;
+      const newStrings = await window.api.setLanguage(lang);
+      applyStrings(newStrings, lang);
+    };
+
     toggleBtn.onclick = () => settingsModal.classList.toggle('hidden');
 
-    window.api.loadConfig().then((cfg) => {
+    document.getElementById('btn-test').onclick = () => {
+      window.api.sendTestMessage();
+    };
+
+    /* ---------------- Загрузка конфига ---------------- */
+
+    window.api.loadConfig().then(async (cfg) => {
       currentConfig = cfg;
+
+      const lang = cfg.language || 'en';
+      languageSelect.value = lang;
+      applyStrings(await window.api.getStrings(lang), lang);
 
       document.getElementById('channel').value = cfg.channel || '';
       useProxyCheck.checked = !!cfg.useProxy;
@@ -526,7 +645,7 @@
       document.getElementById('proxyPass').value = cfg.proxyPass || '';
 
       document.getElementById('messageLifetime').value = cfg.messageLifetime ?? 15;
-      
+
       const fSize = cfg.fontSize || 14;
       fontSizeInput.value = fSize;
       fontSizeVal.textContent = `${fSize}px`;
@@ -589,7 +708,7 @@
         ignoredBots: document.getElementById('ignoredBots').value.trim()
       };
 
-      currentConfig = config;
+      currentConfig = Object.assign({}, config, { language: languageSelect.value });
       applyViewClasses(config);
       updateIgnoredBots(config.ignoredBots);
 
@@ -597,6 +716,8 @@
       window.api.startChat(config);
       settingsModal.classList.add('hidden');
     };
+
+    /* ---------------- Сообщения ---------------- */
 
     function enforceMessageLimit() {
       // 1. Ограничение по максимальному числу элементов в памяти
@@ -631,8 +752,9 @@
       const rewardClass = msg.isReward ? 'is-reward' : '';
       el.className = `message ${animClass} ${rewardClass}`;
 
-      const rewardBadgeHtml = msg.isReward 
-        ? `<img class="reward-icon" src="${CHANNEL_POINTS_ICON_URL}" alt="Баллы" onerror="this.style.display='none'" />` 
+      const rewardIcon = escapeHtml(msg.rewardIconUrl || CHANNEL_POINTS_ICON_URL);
+      const rewardBadgeHtml = msg.isReward
+        ? `<img class="reward-icon" src="${rewardIcon}" alt="${escapeHtml(tr('ui.pointsAlt'))}" onerror="this.style.display='none'" />`
         : '';
 
       const safeUser = escapeHtml(msg.user);
@@ -661,13 +783,27 @@
 
     window.api.onStatusUpdate((status) => {
       if (status.code) statusDot.className = `status-dot ${status.code}`;
-      if (status.text) statusText.textContent = status.text;
+      if (status.text) {
+        statusIsHint = false;
+        statusText.textContent = status.text;
+      }
     });
 
     window.api.onModeChanged((isClickThrough) => {
       titlebar.style.display = isClickThrough ? 'none' : 'flex';
       resizer.style.display = isClickThrough ? 'none' : 'block';
       if (isClickThrough) settingsModal.classList.add('hidden');
+    });
+
+    // Команда из трея: «Настройки…»
+    window.api.onOpenSettings(() => {
+      settingsModal.classList.remove('hidden');
+    });
+
+    // Результат регистрации глобального хоткея
+    window.api.onHotkeyStatus((info) => {
+      hotkeyBusy = !info.ok;
+      hotkeyWarn.classList.toggle('hidden', info.ok);
     });
   </script>
 </body>
