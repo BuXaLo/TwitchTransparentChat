@@ -7,7 +7,8 @@
 Минималистичный, легковесный и полностью прозрачный оверлей чата Twitch поверх любых окон и игр. Не требует OAuth-авторизации, подключается напрямую по IRC/TLS через анонимный аккаунт Justinfan и не нагружает систему во время стрима.
 
 <p align="center">
-  <img src="preview.jpg" alt="Оверлей чата поверх игры" width="700">
+  <img src="screenshots/preview_ru.jpg" alt="Chat overlay on top of a game" width="48%">
+  <img src="screenshots/preview_chat_ru.jpg" alt="Chat overlay with chat messages" width="48%">
 </p>
 
 ## ⚠️ Важно: настройка игр для работы оверлея
@@ -116,7 +117,7 @@
 
 2. Готовый файл появится в папке `dist/`:
    ```text
-   dist/TwitchOverlay 1.2.0.exe
+   dist/TwitchOverlay 1.1.1.exe
    ```
 
 > **Примечание**: При первом запуске исполняемого файла без платного цифрового сертификата Windows SmartScreen может показать синее окно с предупреждением. Нажмите **«Подробнее»** → **«Выполнить в любом случае»**.
