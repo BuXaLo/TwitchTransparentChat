@@ -24,16 +24,19 @@ In classic **Exclusive Fullscreen** the GPU takes over the game output and bypas
 * **Readable in any scene**: a multi-direction text outline (`text-shadow`) keeps text crisp and contrasty even on bright game scenes.
 * **Native emotes and badges**: official Twitch badges (Broadcaster, Mod, VIP, Sub, etc.) and emotes, positioned by Unicode code points so emojis never shift them.
 * **7TV, BetterTTV and FrankerFaceZ emotes**: global and channel emotes (the channel ID comes from the `room-id` tag), animated and zero-width (overlay) emotes included. With SOCKS5 enabled, emotes and their images are loaded through the proxy; otherwise they load directly.
-* **Test message button**: shows sample messages (badges, emotes, reward, `/me`) without connecting to a chat, and appearance settings apply instantly.
+* **Mention and reply highlight**: messages that mention `@your_channel` and replies to your messages get a blue background, a blue side line, a short flash and a highlighted `@name`. Your nickname is taken from the channel you entered, so there is nothing extra to configure. Optionally, mentions can stay on screen twice as long.
+* **Channel point reward highlight**: rewards with text input (`custom-reward-id`) get a thin golden side line and a points icon. A reward that also mentions you keeps the golden line and gets the blue background.
+* **Moderation sync**: when a moderator deletes a message, or bans / times out a user, their messages disappear from the overlay at once. A cleared chat (`/clear`) clears the overlay too. This works out of the box, no setting required.
+* **Optional chat event lines**: compact one-line notices for new subscriptions, resubscriptions, gifted subscriptions and raids. Each event type has its own checkbox and all of them are **off by default**. A mass gift is shown as a single line instead of one line per recipient.
+* **Test messages button**: one click closes the settings and plays every scenario in a row (regular, moderator, reward, `/me`, mention, reply, reward + mention, long message, all event types, and a message that gets deleted by a "moderator") without connecting to a chat. Appearance settings apply instantly.
 * **Tray icon**: show/hide the overlay, toggle click-through, open settings, hide from the taskbar, quit.
 * **Two interface languages**: English (default) and Русский, switchable in settings without a restart.
 * **Proper `/me` handling**: action messages (`\x01ACTION ...\x01`) are cleaned up, tinted with the author's color and never break emote positions.
 * **Custom typography**: fonts (Inter, Montserrat, Roboto, Impact or system UI), font size, message background opacity and text alignment.
-* **Channel point reward highlight**: rewards with text input (`custom-reward-id`) get a thin golden side line and a points icon.
 * **Memory-leak protection**: configurable message lifetime plus a hard cap of 150 messages in the DOM when the timer is off (`0 sec`), so long streams never drop FPS.
 * **SOCKS5 support**: built-in client with username/password authentication for bypassing network blocks.
-* **Chat filters**: hide commands (starting with `!`) and ignore bots from a configurable list (Nightbot, StreamElements, etc.).
-* **Reliable networking**: exponential backoff, a 60-second watchdog, handling of Twitch's scheduled `RECONNECT` and TLS/TCP timeouts.
+* **Chat filters**: hide commands (starting with `!`) and ignore bots and individual users with a configurable list (Nightbot, StreamElements, etc.). Entries are matched against the user's login as well as the display name, so non-Latin nicknames work too.
+* **Reliable networking**: exponential backoff, a 60-second watchdog, handling of Twitch's scheduled `RECONNECT` and TLS/TCP timeouts. Connection status is shown by an indicator, never as messages in the chat.
 
 ---
 
@@ -43,10 +46,19 @@ In classic **Exclusive Fullscreen** the GPU takes over the game output and bypas
 | :--- | :--- |
 | **`Ctrl+Alt+F9`** | Toggle click-through game mode (mouse clicks pass through the chat into the game) |
 | **Bottom-right corner** | Resize handle (visible in settings mode) |
-| **"⚙ Settings" button** | Channel, language, proxy, font and animation settings |
+| **"⚙ Settings" button** | Channel, language, proxy, font, animation, filters and chat events settings |
+| **"Test messages" button** | Closes the settings and plays all message scenarios in the overlay |
 | **Tray icon** | Left click: show/hide the overlay. Right click: click-through mode, settings, hide from taskbar, quit |
 
 > If `Ctrl+Alt+F9` is already taken by another program, a yellow ⚠ appears next to the connection indicator.
+
+---
+
+## Good to know
+
+* **Mentions follow the channel name.** The overlay assumes you watch your own chat, so the channel you enter is also the name it looks for in `@mentions` and replies. If you connect to someone else's channel, highlights are for that channel's owner.
+* **Chat events come from the regular chat connection.** Subscriptions, gifts and raids are shown when Twitch sends them to the chat. Rewards without text and follows are not available without logging in, so they are not shown.
+* **Messages held by AutoMod** are never delivered to an anonymous connection, so they never appear in the overlay in the first place.
 
 ---
 
@@ -104,7 +116,7 @@ To build a standalone executable that doesn't require Node.js:
 
 2. The result appears in the `dist/` folder:
    ```text
-   dist/TwitchOverlay 1.1.0.exe
+   dist/TwitchOverlay 1.2.0.exe
    ```
 
 > **Note**: Without a paid code-signing certificate, Windows SmartScreen may show a blue warning on first launch. Click **"More info"** → **"Run anyway"**.
