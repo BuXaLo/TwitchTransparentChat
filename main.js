@@ -1,7 +1,7 @@
 const { app, BrowserWindow, ipcMain, globalShortcut, Tray, Menu, nativeImage, protocol } = require('electron');
 const path = require('path');
 const Store = require('electron-store');
-const { connectTwitch, disconnectTwitch, makeTestMessage } = require('./twitch');
+const { connectTwitch, disconnectTwitch, makeTestSequence } = require('./twitch');
 const emotes = require('./emotes');
 const { t, setLang, getStrings } = require('./locales');
 
@@ -21,7 +21,10 @@ let win = null;
 let tray = null;
 let isClickThrough = false;
 let chatStarted = false;
-let testMessageIndex = 0;
+let testRunning = false;
+
+const TEST_STEP_DELAY = 450; // пауза между тестовыми сообщениями, мс
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 setLang(store.get('language', 'en'));
 
@@ -207,8 +210,13 @@ const DEFAULT_CONFIG = {
   animation: 'slide-left',
   chatDirection: 'top',
   hideCommands: true,
+  mentionLonger: false,
   ignoredBots: 'Nightbot, StreamElements, Moobot, Fossabot',
-  layoutMode: 'inline'
+  layoutMode: 'inline',
+  showSub: false,
+  showResub: false,
+  showGift: false,
+  showRaid: false
 };
 
 // Загрузка конфигурации (+ язык интерфейса, он хранится отдельно)
@@ -249,6 +257,7 @@ ipcMain.on('start-chat', (event, config) => {
       password: config.proxyPass
     },
     onMessage: (msg) => sendToWindow('new-message', msg),
+    onRemove: (info) => sendToWindow('message-removed', info),
     onError: (err) => sendToWindow('status-update', { error: true, text: err }),
     onStatus: (status, code) => sendToWindow('status-update', { error: false, text: status, code })
   });
@@ -259,14 +268,31 @@ ipcMain.on('stop-chat', () => {
   disconnectTwitch();
 });
 
-// Тестовое сообщение: работает и без подключения к чату
-ipcMain.on('send-test-message', async () => {
-  if (!chatStarted) {
-    // Чата ещё нет — берём сетевые настройки из сохранённого конфига, чтобы подтянуть глобальные смайлы
-    emotes.setNetwork(proxyFromConfig(store.get('twitch_config', {})));
+// Тест: по одному клику выдаёт в чат все сценарии (обычные сообщения, награды, /me,
+// упоминания и ответы, события подписок и рейдов, удаление сообщения модератором).
+// Работает и без подключения к чату. Повторный клик во время показа игнорируется.
+ipcMain.on('send-test-message', async (event, channel) => {
+  if (testRunning) return;
+  testRunning = true;
+  try {
+    if (!chatStarted) {
+      // Чата ещё нет — берём сетевые настройки из сохранённого конфига, чтобы подтянуть глобальные смайлы
+      emotes.setNetwork(proxyFromConfig(store.get('twitch_config', {})));
+    }
+    await Promise.race([emotes.ensureGlobalEmotes(), new Promise((resolve) => setTimeout(resolve, 2500))]);
+
+    const ch = channel || store.get('twitch_config', {}).channel || '';
+    for (const step of makeTestSequence(ch)) {
+      await sleep(step.delay !== undefined ? step.delay : TEST_STEP_DELAY);
+      if (step.remove) {
+        sendToWindow('message-removed', step.remove);
+      } else {
+        sendToWindow('new-message', step.msg);
+      }
+    }
+  } finally {
+    testRunning = false;
   }
-  await Promise.race([emotes.ensureGlobalEmotes(), new Promise((resolve) => setTimeout(resolve, 2500))]);
-  sendToWindow('new-message', makeTestMessage(testMessageIndex++));
 });
 
 /* ------------------------------------------------------------------ */
