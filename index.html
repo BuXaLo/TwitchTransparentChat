@@ -233,6 +233,49 @@
       object-fit: contain;
     }
 
+    /* Упоминание или ответ тебе: голубая заливка (видна даже при прозрачном фоне),
+       голубая линия слева и короткая вспышка при появлении.
+       Награда + упоминание: линия остаётся золотой, заливка голубая. */
+    .message.is-mention {
+      position: relative;
+      background: rgba(35, 105, 190, max(var(--bg-opacity), 0.28));
+      border-left-color: rgba(86, 170, 255, 0.95);
+    }
+    .message.is-reward.is-mention {
+      border-left-color: rgba(229, 169, 60, 0.85);
+    }
+    .message.is-mention::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 6px;
+      pointer-events: none;
+      background: rgba(120, 195, 255, 0.45);
+      opacity: 0;
+      animation: mentionFlash 1.1s ease-out 1;
+    }
+    @keyframes mentionFlash {
+      0%   { opacity: 0.9; }
+      100% { opacity: 0; }
+    }
+    .mention-tag {
+      color: #8fd0ff;
+      font-weight: 800;
+    }
+
+    /* События чата (подписки, подарки, рейды): компактная строка */
+    .message.is-notice {
+      font-size: 0.92em;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-left: 2px solid rgba(145, 70, 255, 0.9);
+      background: rgba(40, 24, 70, var(--bg-opacity));
+    }
+    .notice-icon { margin-right: 5px; }
+    .notice-user { font-weight: 800; }
+    .notice-msg { opacity: 0.9; }
+    .notice-msg::before { content: '\2014\00a0'; }
+
     .layout-inline .author-wrap {
       display: inline;
       margin-right: 6px;
@@ -463,9 +506,31 @@
       <span data-i18n="ui.hideCommands"></span>
     </label>
 
+    <label class="checkbox-label">
+      <input type="checkbox" id="mentionLonger">
+      <span data-i18n="ui.mentionLonger"></span>
+    </label>
+
     <label>
       <span data-i18n="ui.bots"></span>
       <input type="text" id="ignoredBots" value="Nightbot, StreamElements, Moobot, Fossabot">
+    </label>
+
+    <label class="checkbox-label">
+      <input type="checkbox" id="showSub">
+      <span data-i18n="ui.noticeSub"></span>
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="showResub">
+      <span data-i18n="ui.noticeResub"></span>
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="showGift">
+      <span data-i18n="ui.noticeGift"></span>
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="showRaid">
+      <span data-i18n="ui.noticeRaid"></span>
     </label>
 
     <div class="button-row">
@@ -505,6 +570,9 @@
     let currentConfig = {};
     let ignoredBotsSet = new Set();
 
+    // Галочки событий чата: ключи настроек совпадают с id элементов
+    const NOTICE_SETTING_IDS = ['showSub', 'showResub', 'showGift', 'showRaid'];
+
     /* ---------------- Локализация ---------------- */
 
     let strings = {};
@@ -513,6 +581,11 @@
 
     function tr(key) {
       return strings[key] !== undefined ? strings[key] : key;
+    }
+
+    // Перевод с подстановкой {name}. Значения вставляются как есть: HTML-экранирование — на вызывающем
+    function trf(key, params) {
+      return tr(key).replace(/\{(\w+)\}/g, (m, k) => (params && params[k] !== undefined ? params[k] : m));
     }
 
     function applyStrings(newStrings, lang) {
@@ -534,6 +607,10 @@
     }
 
     /* ---------------- Утилиты ---------------- */
+
+    function escapeRegExp(str) {
+      return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
 
     function escapeHtml(str) {
       if (typeof str !== 'string') return '';
@@ -605,12 +682,16 @@
       currentConfig.chatDirection = document.getElementById('chatDirection').value;
       currentConfig.layoutMode = document.getElementById('layoutMode').value;
       currentConfig.hideCommands = document.getElementById('hideCommands').checked;
+      currentConfig.mentionLonger = document.getElementById('mentionLonger').checked;
       currentConfig.ignoredBots = document.getElementById('ignoredBots').value.trim();
+      NOTICE_SETTING_IDS.forEach((id) => {
+        currentConfig[id] = document.getElementById(id).checked;
+      });
       applyViewClasses(currentConfig);
       updateIgnoredBots(currentConfig.ignoredBots);
     }
 
-    ['messageLifetime', 'animation', 'chatDirection', 'layoutMode', 'hideCommands', 'ignoredBots'].forEach((id) => {
+    ['messageLifetime', 'animation', 'chatDirection', 'layoutMode', 'hideCommands', 'mentionLonger', 'ignoredBots', ...NOTICE_SETTING_IDS].forEach((id) => {
       document.getElementById(id).addEventListener('change', applyDisplaySettings);
     });
 
@@ -623,7 +704,10 @@
     toggleBtn.onclick = () => settingsModal.classList.toggle('hidden');
 
     document.getElementById('btn-test').onclick = () => {
-      window.api.sendTestMessage();
+      // Прячем настройки, чтобы сразу видеть весь тест в оверлее
+      settingsModal.classList.add('hidden');
+      // Канал берём прямо из поля, чтобы подсветка упоминаний в тесте работала ещё до сохранения
+      window.api.sendTestMessage(document.getElementById('channel').value.trim());
     };
 
     /* ---------------- Загрузка конфига ---------------- */
@@ -668,7 +752,11 @@
       document.getElementById('layoutMode').value = cfg.layoutMode || 'inline';
 
       document.getElementById('hideCommands').checked = cfg.hideCommands !== false;
+      document.getElementById('mentionLonger').checked = !!cfg.mentionLonger;
       document.getElementById('ignoredBots').value = cfg.ignoredBots || '';
+      NOTICE_SETTING_IDS.forEach((id) => {
+        document.getElementById(id).checked = !!cfg[id];
+      });
 
       applyViewClasses(cfg);
       updateIgnoredBots(cfg.ignoredBots);
@@ -684,8 +772,19 @@
       chat.className = `dir-${cfg.chatDirection || 'top'} layout-${cfg.layoutMode || 'inline'}`;
     }
 
+    // Игнор-лист: логины или имена через запятую, регистр и «@» не важны
     function updateIgnoredBots(str) {
-      ignoredBotsSet = new Set((str || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean));
+      ignoredBotsSet = new Set(
+        (str || '').split(',').map(s => s.trim().replace(/^@/, '').toLowerCase()).filter(Boolean)
+      );
+    }
+
+    // Сверяем с логином (он стабильнее отображаемого имени, особенно для кириллицы) и с именем
+    function isIgnoredUser(msg) {
+      if (!ignoredBotsSet.size) return false;
+      const login = (msg.login || '').toLowerCase();
+      const name = (msg.user || '').toLowerCase();
+      return (login && ignoredBotsSet.has(login)) || ignoredBotsSet.has(name);
     }
 
     document.getElementById('btn-save').onclick = async () => {
@@ -705,8 +804,12 @@
         chatDirection: document.getElementById('chatDirection').value,
         layoutMode: document.getElementById('layoutMode').value,
         hideCommands: document.getElementById('hideCommands').checked,
+        mentionLonger: document.getElementById('mentionLonger').checked,
         ignoredBots: document.getElementById('ignoredBots').value.trim()
       };
+      NOTICE_SETTING_IDS.forEach((id) => {
+        config[id] = document.getElementById(id).checked;
+      });
 
       currentConfig = Object.assign({}, config, { language: languageSelect.value });
       applyViewClasses(config);
@@ -731,7 +834,8 @@
       }
     }
 
-    function scheduleRemoval(element) {
+    // factor — множитель времени жизни (2 для упоминаний, если включена галочка «mentionLonger»)
+    function scheduleRemoval(element, factor = 1) {
       const lifetime = currentConfig.messageLifetime;
       if (!lifetime || lifetime <= 0) return;
 
@@ -740,17 +844,143 @@
         setTimeout(() => {
           if (element.parentNode) element.parentNode.removeChild(element);
         }, 800);
-      }, lifetime * 1000);
+      }, lifetime * factor * 1000);
     }
 
+    function insertMessage(el) {
+      if (currentConfig.chatDirection === 'bottom') {
+        chat.appendChild(el);
+      } else {
+        chat.prepend(el);
+      }
+      enforceMessageLimit();
+    }
+
+    // Подсвечиваем «@ник» внутри текста сообщения, не трогая теги смайлов
+    function highlightMentions(root, nick) {
+      if (!root || !nick) return;
+      const re = new RegExp('(?<![A-Za-z0-9_])@' + escapeRegExp(nick) + '(?![A-Za-z0-9_])', 'gi');
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      const nodes = [];
+      while (walker.nextNode()) nodes.push(walker.currentNode);
+
+      for (const node of nodes) {
+        const text = node.nodeValue;
+        re.lastIndex = 0;
+        if (!re.test(text)) continue;
+
+        re.lastIndex = 0;
+        const frag = document.createDocumentFragment();
+        let last = 0;
+        let m;
+        while ((m = re.exec(text)) !== null) {
+          if (m.index > last) frag.appendChild(document.createTextNode(text.slice(last, m.index)));
+          const span = document.createElement('span');
+          span.className = 'mention-tag';
+          span.textContent = m[0];
+          frag.appendChild(span);
+          last = m.index + m[0].length;
+        }
+        if (last < text.length) frag.appendChild(document.createTextNode(text.slice(last)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    }
+
+    /* ---------------- События чата (подписки, подарки, рейды) ---------------- */
+
+    const NOTICE_ICONS = { sub: '⭐', resub: '🔁', gift: '🎁', raid: '🚀' };
+    const NOTICE_SETTING_BY_TYPE = { sub: 'showSub', resub: 'showResub', gift: 'showGift', raid: 'showRaid' };
+
+    function tierLabel(code) {
+      const c = String(code || '').toLowerCase();
+      if (c === 'prime') return tr('notice.prime');
+      const n = Math.round(parseInt(c, 10) / 1000);
+      return trf('notice.tier', { n: n >= 1 && n <= 3 ? n : 1 });
+    }
+
+    function renderNotice(msg) {
+      const settingKey = NOTICE_SETTING_BY_TYPE[msg.noticeType];
+      if (!settingKey) return;
+      // Тестовые события (force) показываем всегда, чтобы их можно было оценить при любых настройках
+      if (!msg.force && !currentConfig[settingKey]) return;
+
+      let key;
+      switch (msg.noticeType) {
+        case 'sub': key = 'notice.sub'; break;
+        case 'resub': key = 'notice.resub'; break;
+        case 'gift': key = msg.isMassGift ? 'notice.giftMass' : 'notice.gift'; break;
+        default: key = 'notice.raid';
+      }
+
+      const text = trf(key, {
+        user: `<span class="notice-user">${escapeHtml(msg.user)}</span>`,
+        tier: escapeHtml(tierLabel(msg.tier)),
+        months: escapeHtml(String(msg.months || 0)),
+        count: escapeHtml(String(msg.count || 0)),
+        recipient: `<span class="notice-user">${escapeHtml(msg.recipient || '')}</span>`,
+        viewers: escapeHtml(String(msg.viewers || 0))
+      });
+
+      const el = document.createElement('div');
+      el.className = `message anim-${currentConfig.animation || 'slide-left'} is-notice`;
+      el.innerHTML =
+        `<span class="notice-icon">${NOTICE_ICONS[msg.noticeType]}</span>${text}` +
+        (msg.html ? ` <span class="notice-msg">${msg.html}</span>` : '');
+
+      insertMessage(el);
+      scheduleRemoval(el);
+    }
+
+    /* ---------------- Удаление сообщений модератором ---------------- */
+
+    function removeMessageElement(el) {
+      if (el.dataset.removing) return;
+      el.dataset.removing = '1';
+      el.style.transitionDuration = '0.2s';
+      el.classList.add('fade-out');
+      setTimeout(() => {
+        if (el.parentNode) el.parentNode.removeChild(el);
+      }, 220);
+    }
+
+    // info: { id } — удалено одно сообщение; { login, userId } — бан/таймаут; { all: true } — чат очищен
+    window.api.onMessageRemoved((info) => {
+      if (!info) return;
+      Array.from(chat.children).forEach((el) => {
+        if (info.all) {
+          removeMessageElement(el);
+        } else if (info.id) {
+          if (el.dataset.msgId === info.id) removeMessageElement(el);
+        } else if (
+          (info.userId && el.dataset.userId === info.userId) ||
+          (info.login && el.dataset.login === info.login)
+        ) {
+          removeMessageElement(el);
+        }
+      });
+    });
+
+    /* ---------------- Обычные сообщения ---------------- */
+
     window.api.onNewMessage((msg) => {
-      if (ignoredBotsSet.has((msg.user || '').toLowerCase())) return;
+      if (msg.isNotice) {
+        renderNotice(msg);
+        return;
+      }
+
+      if (isIgnoredUser(msg)) return;
       if (currentConfig.hideCommands && msg.rawText && msg.rawText.trim().startsWith('!')) return;
 
       const el = document.createElement('div');
       const animClass = `anim-${currentConfig.animation || 'slide-left'}`;
       const rewardClass = msg.isReward ? 'is-reward' : '';
-      el.className = `message ${animClass} ${rewardClass}`;
+      const mentionClass = msg.isMention ? 'is-mention' : '';
+      el.className = `message ${animClass} ${rewardClass} ${mentionClass}`;
+
+      // Нужны для удаления сообщений после бана/удаления модератором
+      if (msg.id) el.dataset.msgId = msg.id;
+      if (msg.login) el.dataset.login = msg.login;
+      if (msg.userId) el.dataset.userId = msg.userId;
 
       const rewardIcon = escapeHtml(msg.rewardIconUrl || CHANNEL_POINTS_ICON_URL);
       const rewardBadgeHtml = msg.isReward
@@ -771,14 +1001,10 @@
         <span class="text-content" ${actionStyle}>${msg.html}</span>
       `;
 
-      if (currentConfig.chatDirection === 'bottom') {
-        chat.appendChild(el);
-      } else {
-        chat.prepend(el);
-      }
+      if (msg.isMention) highlightMentions(el.querySelector('.text-content'), msg.mentionNick);
 
-      enforceMessageLimit();
-      scheduleRemoval(el);
+      insertMessage(el);
+      scheduleRemoval(el, msg.isMention && currentConfig.mentionLonger ? 2 : 1);
     });
 
     window.api.onStatusUpdate((status) => {
