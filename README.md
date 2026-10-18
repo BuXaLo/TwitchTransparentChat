@@ -7,9 +7,12 @@
 A minimalist, lightweight and fully transparent Twitch chat overlay that sits on top of any window or game. No OAuth login needed: it connects over IRC/TLS as an anonymous `justinfan` user and barely touches your system resources while you stream.
 
 <p align="center">
-  <img src="preview.jpg" alt="Chat overlay on top of a game" width="700">
+  <img src="screenshots/preview.jpg" alt="Chat overlay on top of a game" width="700">
 </p>
 
+<p align="center">
+  <img src="screenshots/preview_chat.jpg" alt="Chat overlay on top of a game" width="700">
+</p>
 ## ⚠️ Important: game display mode
 
 For the overlay to appear on top of a game, set the game to **Borderless Windowed** (or Borderless Fullscreen) in its graphics settings.
@@ -116,7 +119,7 @@ To build a standalone executable that doesn't require Node.js:
 
 2. The result appears in the `dist/` folder:
    ```text
-   dist/TwitchOverlay 1.2.0.exe
+   dist/TwitchOverlay 1.1.1.exe
    ```
 
 > **Note**: Without a paid code-signing certificate, Windows SmartScreen may show a blue warning on first launch. Click **"More info"** → **"Run anyway"**.
