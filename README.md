@@ -7,8 +7,11 @@
 A minimalist, lightweight and fully transparent Twitch chat overlay that sits on top of any window or game. No OAuth login needed: it connects over IRC/TLS as an anonymous `justinfan` user and barely touches your system resources while you stream.
 
 <p align="center">
-  <img src="screenshots/preview.jpg" alt="Chat overlay on top of a game" width="48%">
-  <img src="screenshots/preview_chat.jpg" alt="Chat overlay with chat messages" width="48%">
+  <img src="screenshots/preview.jpg" alt="Chat overlay on top of a game" width="700">
+</p>
+
+<p align="center">
+  <img src="screenshots/preview_chat.jpg" alt="Chat overlay on top of a game" width="700">
 </p>
 
 ## ⚠️ Important: game display mode
