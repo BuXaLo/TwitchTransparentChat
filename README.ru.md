@@ -7,8 +7,11 @@
 Минималистичный, легковесный и полностью прозрачный оверлей чата Twitch поверх любых окон и игр. Не требует OAuth-авторизации, подключается напрямую по IRC/TLS через анонимный аккаунт Justinfan и не нагружает систему во время стрима.
 
 <p align="center">
-  <img src="screenshots/preview_ru.jpg" alt="Chat overlay on top of a game" width="48%">
-  <img src="screenshots/preview_chat_ru.jpg" alt="Chat overlay with chat messages" width="48%">
+  <img src="screenshots/preview_ru.jpg" alt="Chat overlay on top of a game" width="700">
+</p>
+
+<p align="center">
+  <img src="screenshots/preview_chat_ru.jpg" alt="Chat overlay on top of a game" width="700">
 </p>
 
 ## ⚠️ Важно: настройка игр для работы оверлея
