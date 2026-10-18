@@ -43,11 +43,25 @@ const STRINGS = {
     'ui.layoutInline': 'Single line (Nick: text)',
     'ui.layoutBlock': 'Nick on its own line',
     'ui.hideCommands': 'Hide chat commands (starting with !)',
-    'ui.bots': 'Ignore bots (comma separated):',
+    'ui.mentionLonger': 'Keep mentions on screen twice as long',
+    'ui.bots': 'Ignore list: bots and users (comma separated):',
+    'ui.noticeSub': 'Show new subscriptions',
+    'ui.noticeResub': 'Show resubscriptions',
+    'ui.noticeGift': 'Show gifted subscriptions',
+    'ui.noticeRaid': 'Show raids',
     'ui.save': 'Save and connect',
-    'ui.test': 'Send test message',
+    'ui.test': 'Test messages',
     'ui.pointsAlt': 'Points',
     'ui.hotkeyBusy': 'Hotkey Ctrl+Alt+F9 is already used by another app!',
+
+    // --- Chat events (compact lines) ---
+    'notice.sub': '{user} subscribed ({tier})',
+    'notice.resub': '{user} resubscribed ({tier}), months: {months}',
+    'notice.gift': '{user} gifted a sub to {recipient} ({tier})',
+    'notice.giftMass': '{user} gifted subs: {count} ({tier})',
+    'notice.raid': '{user} raided, viewers: {viewers}',
+    'notice.tier': 'Tier {n}',
+    'notice.prime': 'Prime',
 
     // --- Status line (main process) ---
     'status.hint': 'Ctrl+Alt+F9: click-through mode',
@@ -93,7 +107,14 @@ const STRINGS = {
     'test.user2': 'TestModerator',
     'test.user3': 'TestSubscriber',
     'test.user4': 'TestRaider',
-    'test.user5': 'TestVIP'
+    'test.user5': 'TestVIP',
+    'test.user6': 'TestTroll',
+    'test.recipient': 'LuckyViewer',
+    'test.mention': 'you were mentioned in chat!',
+    'test.reply': 'this is a reply straight to you',
+    'test.rewardMention': 'redeemed a reward and tagged you',
+    'test.resub': 'Thanks for the great streams!',
+    'test.spam': 'Spam that a moderator is about to delete'
   },
 
   ru: {
@@ -133,11 +154,25 @@ const STRINGS = {
     'ui.layoutInline': 'В одну строку (Ник: текст)',
     'ui.layoutBlock': 'Ник отдельной строкой',
     'ui.hideCommands': 'Скрывать команды чата (начинающиеся с !)',
-    'ui.bots': 'Игнорировать ботов (через запятую):',
+    'ui.mentionLonger': 'Держать упоминания на экране вдвое дольше',
+    'ui.bots': 'Игнор-лист: боты и пользователи (через запятую):',
+    'ui.noticeSub': 'Показывать новые подписки',
+    'ui.noticeResub': 'Показывать продления подписки',
+    'ui.noticeGift': 'Показывать подаренные подписки',
+    'ui.noticeRaid': 'Показывать рейды',
     'ui.save': 'Сохранить и подключиться',
-    'ui.test': 'Тестовое сообщение',
+    'ui.test': 'Тестовые сообщения',
     'ui.pointsAlt': 'Баллы',
     'ui.hotkeyBusy': 'Хоткей Ctrl+Alt+F9 занят другой программой!',
+
+    // --- Chat events (compact lines) ---
+    'notice.sub': '{user}: новая подписка ({tier})',
+    'notice.resub': '{user}: продление подписки ({tier}), месяцев: {months}',
+    'notice.gift': '{user} дарит подписку: {recipient} ({tier})',
+    'notice.giftMass': '{user} дарит подписки: {count} ({tier})',
+    'notice.raid': '{user}: рейд, зрителей: {viewers}',
+    'notice.tier': 'Уровень {n}',
+    'notice.prime': 'Prime',
 
     // --- Status line (main process) ---
     'status.hint': 'Ctrl+Alt+F9: сквозной режим',
@@ -183,7 +218,14 @@ const STRINGS = {
     'test.user2': 'ТестМодератор',
     'test.user3': 'ТестСаб',
     'test.user4': 'ТестРейдер',
-    'test.user5': 'ТестВИП'
+    'test.user5': 'ТестВИП',
+    'test.user6': 'ТестТролль',
+    'test.recipient': 'СчастливыйЗритель',
+    'test.mention': 'тебя упомянули в чате!',
+    'test.reply': 'это ответ прямо тебе',
+    'test.rewardMention': 'активировал награду и позвал тебя',
+    'test.resub': 'Спасибо за классные стримы!',
+    'test.spam': 'Спам, который сейчас удалит модератор'
   }
 };
 
