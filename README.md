@@ -33,7 +33,8 @@ In classic **Exclusive Fullscreen** the GPU takes over the game output and bypas
 * **Moderation sync**: when a moderator deletes a message, or bans / times out a user, their messages disappear from the overlay at once. A cleared chat (`/clear`) clears the overlay too. This works out of the box, no setting required.
 * **Optional chat event lines**: compact one-line notices for new subscriptions, resubscriptions, gifted subscriptions and raids. Each event type has its own checkbox and all of them are **off by default**. A mass gift is shown as a single line instead of one line per recipient.
 * **Test messages button**: one click closes the settings and plays every scenario in a row (regular, moderator, reward, `/me`, mention, reply, reward + mention, long message, all event types, and a message that gets deleted by a "moderator") without connecting to a chat. Appearance settings apply instantly.
-* **Tray icon**: show/hide the overlay, toggle click-through, open settings, hide from the taskbar, quit.
+* **Can't be minimized by accident**: Win+D, "Show desktop", Win+M or a click on the taskbar button no longer hide the overlay. It comes back within a fraction of a second, on top of everything and without taking focus from the game. The only way to hide it is the tray menu.
+* **Tray icon**: a left or right click opens the menu: show/hide the overlay, toggle click-through, open settings, hide from the taskbar, quit.
 * **Two interface languages**: English (default) and Русский, switchable in settings without a restart.
 * **Proper `/me` handling**: action messages (`\x01ACTION ...\x01`) are cleaned up, tinted with the author's color and never break emote positions.
 * **Custom typography**: fonts (Inter, Montserrat, Roboto, Impact or system UI), font size, message background opacity and text alignment.
@@ -52,7 +53,7 @@ In classic **Exclusive Fullscreen** the GPU takes over the game output and bypas
 | **Bottom-right corner** | Resize handle (visible in settings mode) |
 | **"⚙ Settings" button** | Channel, language, proxy, font, animation, filters and chat events settings |
 | **"Test messages" button** | Closes the settings and plays all message scenarios in the overlay |
-| **Tray icon** | Left click: show/hide the overlay. Right click: click-through mode, settings, hide from taskbar, quit |
+| **Tray icon** | Left or right click opens the menu: show/hide the overlay, click-through mode, settings, hide from taskbar, quit |
 
 > If `Ctrl+Alt+F9` is already taken by another program, a yellow ⚠ appears next to the connection indicator.
 
@@ -63,6 +64,7 @@ In classic **Exclusive Fullscreen** the GPU takes over the game output and bypas
 * **Mentions follow the channel name.** The overlay assumes you watch your own chat, so the channel you enter is also the name it looks for in `@mentions` and replies. If you connect to someone else's channel, highlights are for that channel's owner.
 * **Chat events come from the regular chat connection.** Subscriptions, gifts and raids are shown when Twitch sends them to the chat. Rewards without text and follows are not available without logging in, so they are not shown.
 * **Messages held by AutoMod** are never delivered to an anonymous connection, so they never appear in the overlay in the first place.
+* **The overlay can't be minimized.** To hide it, use **Hide overlay** in the tray menu; the same menu brings it back.
 
 ---
 
@@ -120,7 +122,7 @@ To build a standalone executable that doesn't require Node.js:
 
 2. The result appears in the `dist/` folder:
    ```text
-   dist/TwitchOverlay 1.1.1.exe
+   dist/TwitchOverlay 1.1.2.exe
    ```
 
 > **Note**: Without a paid code-signing certificate, Windows SmartScreen may show a blue warning on first launch. Click **"More info"** → **"Run anyway"**.
