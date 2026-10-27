@@ -23,6 +23,14 @@ let isClickThrough = false;
 let chatStarted = false;
 let testRunning = false;
 
+// Оверлей скрыт только если его скрыл сам пользователь (через меню трея).
+// Любое другое сворачивание или скрытие (Win+D, Win+M, кнопка на панели задач) отменяется.
+let userHidden = false;
+let isQuitting = false;
+let ensureTimer = null;
+
+const ENSURE_DELAY = 120; // пауза перед возвратом окна: даём Windows закончить «свернуть все», мс
+
 const TEST_STEP_DELAY = 450; // пауза между тестовыми сообщениями, мс
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -63,13 +71,40 @@ function toggleClickThrough() {
   setClickThrough(!isClickThrough);
 }
 
+// Показывает окно и ставит его поверх всех, не отбирая фокус у игры
+function revealOverlay() {
+  if (!win || win.isDestroyed()) return;
+  if (win.isMinimized()) {
+    // Обычное восстановление активирует окно и может выбросить игру из фокуса,
+    // поэтому на время восстановления окно делаем неактивируемым.
+    win.setFocusable(false);
+    win.restore();
+    win.setFocusable(true);
+  }
+  if (!win.isVisible()) win.showInactive();
+  win.setAlwaysOnTop(true, 'screen-saver');
+}
+
+// Возвращает окно, если его свернули или скрыли не мы
+function ensureOverlayShown() {
+  if (!win || win.isDestroyed() || userHidden || isQuitting) return;
+  if (win.isMinimized() || !win.isVisible()) revealOverlay();
+}
+
+function scheduleEnsure(delay = ENSURE_DELAY) {
+  clearTimeout(ensureTimer);
+  ensureTimer = setTimeout(ensureOverlayShown, delay);
+}
+
+// Единственный способ скрыть оверлей: пункт меню в трее
 function toggleVisibility() {
   if (!win || win.isDestroyed()) return;
-  if (win.isVisible()) {
-    win.hide();
+  if (userHidden) {
+    userHidden = false;
+    revealOverlay();
   } else {
-    win.showInactive();
-    win.setAlwaysOnTop(true, 'screen-saver');
+    userHidden = true;
+    win.hide();
   }
   refreshTray();
 }
@@ -77,8 +112,8 @@ function toggleVisibility() {
 function openSettings() {
   if (!win || win.isDestroyed()) return;
   if (isClickThrough) setClickThrough(false);
-  if (!win.isVisible()) win.showInactive();
-  win.setAlwaysOnTop(true, 'screen-saver');
+  userHidden = false;
+  revealOverlay();
   win.focus();
   win.webContents.send('open-settings');
   refreshTray();
@@ -95,7 +130,7 @@ function setSkipTaskbar(value) {
 /* ------------------------------------------------------------------ */
 
 function buildTrayMenu() {
-  const visible = !!(win && !win.isDestroyed() && win.isVisible());
+  const visible = !userHidden;
   return Menu.buildFromTemplate([
     { label: visible ? t('tray.hide') : t('tray.show'), click: toggleVisibility },
     { label: t('tray.clickThrough'), type: 'checkbox', checked: isClickThrough, click: toggleClickThrough },
@@ -123,7 +158,11 @@ function createTray() {
   if (!icon.isEmpty()) icon = icon.resize({ width: 32, height: 32, quality: 'best' });
 
   tray = new Tray(icon);
-  tray.on('click', toggleVisibility);
+  // Левый клик открывает то же меню, что и правый, и сам ничего не скрывает
+  tray.on('click', () => {
+    refreshTray();
+    tray.popUpContextMenu();
+  });
   refreshTray();
 }
 
@@ -176,7 +215,12 @@ function createWindow() {
   win.on('resize', debouncedSaveBounds);
   win.on('move', debouncedSaveBounds);
   win.on('show', refreshTray);
-  win.on('hide', refreshTray);
+  win.on('hide', () => {
+    refreshTray();
+    scheduleEnsure();
+  });
+  win.on('minimize', () => scheduleEnsure());
+  win.on('closed', () => clearTimeout(ensureTimer));
   win.on('close', () => {
     clearTimeout(saveBoundsTimeout);
     if (win && !win.isDestroyed() && !win.isMaximized() && !win.isMinimized()) {
@@ -319,6 +363,10 @@ app.whenReady().then(() => {
 
   createWindow();
   createTray();
+});
+
+app.on('before-quit', () => {
+  isQuitting = true;
 });
 
 app.on('will-quit', () => {
