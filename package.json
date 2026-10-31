@@ -29,6 +29,9 @@
       "icon": "icon.ico",
       "signAndEditExecutable": false
     },
+    "portable": {
+      "unpackDirName": true
+    },
     "forceCodeSigning": false,
     "files": [
       "main.js",
