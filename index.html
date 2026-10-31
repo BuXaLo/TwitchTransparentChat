@@ -6,17 +6,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@600;800&family=Montserrat:wght@600;800&family=Roboto:wght@500;700&display=swap" rel="stylesheet">
-  
-  <style>
-    :root {
-      --font-size: 14px;
-      --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      --bg-opacity: 0.5;
-      --text-align: left;
-    }
+  <link rel="stylesheet" href="chat.css">
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    
+  <style>
     body {
       background: transparent;
       color: #fff;
@@ -26,6 +18,8 @@
       user-select: none;
       position: relative;
     }
+
+    .hidden { display: none !important; }
 
     .titlebar {
       height: 28px;
@@ -50,6 +44,8 @@
       overflow: hidden;
       white-space: nowrap;
       text-overflow: ellipsis;
+      min-width: 0;
+      flex-shrink: 100; /* в узком окне первой уступает место строка статуса, потом кнопки */
     }
 
     .status-dot {
@@ -78,303 +74,26 @@
     }
     .btn-settings:hover { background: #7c2cf5; }
 
-    #settings-modal {
-      position: absolute;
-      top: 34px;
-      left: 8px;
-      right: 8px;
-      max-height: calc(100vh - 42px);
-      overflow-y: auto;
-      background: rgba(16, 16, 20, 0.98);
-      border: 1px solid #333;
-      border-radius: 8px;
-      padding: 12px;
+    .titlebar-buttons {
       display: flex;
-      flex-direction: column;
-      gap: 8px;
-      z-index: 1000;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.8);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    }
-
-    .hidden { display: none !important; }
-
-    label {
-      font-size: 11px;
-      color: #aaa;
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
-    }
-
-    .checkbox-label {
-      flex-direction: row;
-      align-items: center;
+      align-items: stretch; /* обе кнопки одной высоты, даже если символ ⚙ чуть выше обычного текста */
       gap: 6px;
-      cursor: pointer;
-      color: #ddd;
+      min-width: 0;
     }
-
-    input[type="text"],
-    input[type="password"],
-    input[type="number"],
-    select {
-      background: #25252b;
-      border: 1px solid #444;
-      color: #fff;
-      padding: 5px 8px;
-      border-radius: 4px;
-      font-size: 12px;
-      outline: none;
+    /* В узком окне сжимается только «Сквозной режим» (с многоточием), «Настройки» остаётся целой */
+    #btn-clickthrough {
+      flex-shrink: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
-    input:focus, select:focus { border-color: #9146FF; }
-
-    .row { display: flex; gap: 6px; }
-    .row input, .row select { flex: 1; }
-
-    .slider-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .slider-row input[type="range"] { flex: 1; cursor: pointer; }
-    .slider-row span { font-size: 11px; min-width: 32px; color: #fff; }
-
-    .proxy-box {
-      border: 1px solid #333;
-      padding: 8px;
-      border-radius: 6px;
-      background: rgba(255, 255, 255, 0.02);
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-    .proxy-box.disabled {
-      opacity: 0.35;
-      pointer-events: none;
-    }
-
-    button.primary {
-      background: #9146FF;
-      color: white;
-      border: none;
-      padding: 8px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-weight: bold;
-      margin-top: 4px;
-    }
-    button.primary:hover { background: #7c2cf5; }
-
-    /* Контейнер сообщений с градиентным растворением у краев */
-    #chat {
-      height: calc(100vh - 28px);
-      overflow-y: hidden;
-      display: flex;
-      padding: 8px;
-      gap: 4px;
-      -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 35px), transparent 100%);
-      mask-image: linear-gradient(to bottom, black calc(100% - 35px), transparent 100%);
-    }
-
-    #chat.dir-top {
-      flex-direction: column;
-      justify-content: flex-start;
-      -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 35px), transparent 100%);
-      mask-image: linear-gradient(to bottom, black calc(100% - 35px), transparent 100%);
-    }
-
-    #chat.dir-bottom {
-      flex-direction: column-reverse;
-      justify-content: flex-start;
-      -webkit-mask-image: linear-gradient(to top, black calc(100% - 35px), transparent 100%);
-      mask-image: linear-gradient(to top, black calc(100% - 35px), transparent 100%);
-    }
-
-    .message {
-      flex-shrink: 0; /* Запрещает сжатие высоты элементов */
-      background: rgba(0, 0, 0, var(--bg-opacity));
-      padding: 4px 8px;
-      border-radius: 6px;
-      font-size: var(--font-size);
-      font-family: var(--font-family);
-      font-weight: 700;
-      line-height: 1.35;
-      text-align: var(--text-align);
-      word-break: break-word;
-      opacity: 1;
-      transform: none;
-      transition: opacity 0.8s ease-out, transform 0.8s ease-out;
-      border-left: 2px solid transparent;
-
-      text-shadow: 
-        -1px -1px 0 #000,  
-         1px -1px 0 #000,
-        -1px  1px 0 #000,
-         1px  1px 0 #000,
-        -2px  0   0 #000,
-         2px  0   0 #000,
-         0   -2px 0 #000,
-         0    2px 0 #000,
-         0    2px 4px rgba(0, 0, 0, 0.9);
-    }
-
-    .message.is-reward {
-      border-left: 2px solid rgba(229, 169, 60, 0.85);
-      background: rgba(30, 24, 12, var(--bg-opacity));
-    }
-
-    .reward-icon {
-      height: calc(var(--font-size) * 1.15);
-      width: auto;
-      vertical-align: middle;
-      margin-right: 4px;
-      display: inline-block;
-      object-fit: contain;
-    }
-
-    /* Упоминание или ответ тебе: голубая заливка (видна даже при прозрачном фоне),
-       голубая линия слева и короткая вспышка при появлении.
-       Награда + упоминание: линия остаётся золотой, заливка голубая. */
-    .message.is-mention {
-      position: relative;
-      background: rgba(35, 105, 190, max(var(--bg-opacity), 0.28));
-      border-left-color: rgba(86, 170, 255, 0.95);
-    }
-    .message.is-reward.is-mention {
-      border-left-color: rgba(229, 169, 60, 0.85);
-    }
-    .message.is-mention::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      border-radius: 6px;
-      pointer-events: none;
-      background: rgba(120, 195, 255, 0.45);
-      opacity: 0;
-      animation: mentionFlash 1.1s ease-out 1;
-    }
-    @keyframes mentionFlash {
-      0%   { opacity: 0.9; }
-      100% { opacity: 0; }
-    }
-    .mention-tag {
-      color: #8fd0ff;
-      font-weight: 800;
-    }
-
-    /* События чата (подписки, подарки, рейды): компактная строка */
-    .message.is-notice {
-      font-size: 0.92em;
-      font-weight: 600;
-      padding: 3px 8px;
-      border-left: 2px solid rgba(145, 70, 255, 0.9);
-      background: rgba(40, 24, 70, var(--bg-opacity));
-    }
-    .notice-icon { margin-right: 5px; }
-    .notice-user { font-weight: 800; }
-    .notice-msg { opacity: 0.9; }
-    .notice-msg::before { content: '\2014\00a0'; }
-
-    .layout-inline .author-wrap {
-      display: inline;
-      margin-right: 6px;
-    }
-    .layout-inline .colon { display: inline; }
-
-    .layout-block .author-wrap {
-      display: block;
-      margin-bottom: 2px;
-      font-size: 0.9em;
-    }
-    .layout-block .colon { display: none; }
-
-    .chat-badge {
-      height: calc(var(--font-size) * 1.15);
-      vertical-align: middle;
-      margin-right: 4px;
-      display: inline-block;
-    }
-
-    /* Идеальная посадка смайлов по базовой линии текста */
-    .chat-emote {
-      height: 1.6em;
-      vertical-align: -0.35em;
-      margin: 0 4px;
-      display: inline-block;
-    }
-
-    .username {
-      font-weight: 800;
-    }
-
-    .message.fade-out {
-      opacity: 0 !important;
-      transform: translateY(-4px) !important;
-    }
-
-    .anim-fade { animation: animFade 0.25s ease-out forwards; }
-    @keyframes animFade {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-
-    .anim-slide-left { animation: animSlideLeft 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-    @keyframes animSlideLeft {
-      from { opacity: 0; transform: translateX(-16px); }
-      to { opacity: 1; transform: translateX(0); }
-    }
-
-    .anim-slide-down { animation: animSlideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-    @keyframes animSlideDown {
-      from { opacity: 0; transform: translateY(-12px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .anim-zoom { animation: animZoom 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-    @keyframes animZoom {
-      from { opacity: 0; transform: scale(0.92); }
-      to { opacity: 1; transform: scale(1); }
-    }
-
-    button.secondary {
-      background: #2f2f37;
-      color: #fff;
-      border: 1px solid #444;
-      padding: 8px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-weight: bold;
-    }
-    button.secondary:hover { background: #3a3a44; }
-
-    .button-row { display: flex; gap: 6px; margin-top: 4px; }
-    .button-row button { flex: 1; margin-top: 0; }
 
     #hotkey-warn {
       cursor: help;
       color: #ffaa00;
       font-size: 12px;
       flex-shrink: 0;
-    }
-
-    /* Смайл + zero-width наложение (7TV/BTTV) */
-    .emote-stack {
-      position: relative;
-      display: inline-block;
-      height: 1.6em;
-      vertical-align: -0.35em;
-      margin: 0 4px;
-    }
-    .emote-stack .chat-emote {
-      margin: 0;
-      vertical-align: top;
-    }
-    .emote-stack .chat-emote.zero-width {
-      position: absolute;
-      top: 0;
-      left: 50%;
-      transform: translateX(-50%);
     }
 
     .resizer-br {
@@ -387,6 +106,9 @@
       background: linear-gradient(135deg, transparent 50%, rgba(255, 255, 255, 0.2) 50%);
       z-index: 100;
     }
+
+    /* Чат занимает окно за вычетом шапки */
+    #chat { --chat-height: calc(100vh - 28px); }
   </style>
 </head>
 <body>
@@ -396,158 +118,17 @@
       <span id="hotkey-warn" class="hidden">⚠</span>
       <span id="status-text"></span>
     </div>
-    <button class="btn-settings" id="toggle-settings" data-i18n="ui.settings"></button>
-  </div>
-
-  <div id="settings-modal" class="hidden">
-    <label>
-      <span data-i18n="ui.language"></span>
-      <select id="language">
-        <option value="en">English</option>
-        <option value="ru">Русский</option>
-      </select>
-    </label>
-
-    <label>
-      <span data-i18n="ui.channel"></span>
-      <input type="text" id="channel" data-i18n-placeholder="ui.channelPlaceholder">
-    </label>
-
-    <label class="checkbox-label">
-      <input type="checkbox" id="useProxy">
-      <span data-i18n="ui.useProxy"></span>
-    </label>
-
-    <div class="proxy-box disabled" id="proxyBox">
-      <div class="row">
-        <input type="text" id="proxyHost" data-i18n-placeholder="ui.proxyHost">
-        <input type="number" id="proxyPort" data-i18n-placeholder="ui.proxyPort" style="max-width: 80px;">
-      </div>
-      <div class="row">
-        <input type="text" id="proxyUser" data-i18n-placeholder="ui.proxyUser">
-        <input type="password" id="proxyPass" data-i18n-placeholder="ui.proxyPass">
-      </div>
-    </div>
-
-    <!-- Типографика -->
-    <div class="row">
-      <label style="flex: 1;">
-        <span data-i18n="ui.font"></span>
-        <select id="fontFamily">
-          <option value="system" data-i18n="ui.fontSystem"></option>
-          <option value="'Inter', sans-serif" data-i18n="ui.fontInter"></option>
-          <option value="'Montserrat', sans-serif" data-i18n="ui.fontMontserrat"></option>
-          <option value="'Roboto', sans-serif" data-i18n="ui.fontRoboto"></option>
-          <option value="Impact, fantasy" data-i18n="ui.fontImpact"></option>
-        </select>
-      </label>
-      <label style="flex: 1;">
-        <span data-i18n="ui.align"></span>
-        <select id="textAlign">
-          <option value="left" data-i18n="ui.alignLeft"></option>
-          <option value="center" data-i18n="ui.alignCenter"></option>
-          <option value="right" data-i18n="ui.alignRight"></option>
-        </select>
-      </label>
-    </div>
-
-    <div class="row">
-      <label style="flex: 1;">
-        <span data-i18n="ui.fontSize"></span>
-        <div class="slider-row">
-          <input type="range" id="fontSize" min="10" max="36" value="14">
-          <span id="fontSizeVal">14px</span>
-        </div>
-      </label>
-      <label style="flex: 1;">
-        <span data-i18n="ui.bg"></span>
-        <div class="slider-row">
-          <input type="range" id="bgOpacity" min="0" max="90" step="5" value="50">
-          <span id="bgOpacityVal">50%</span>
-        </div>
-      </label>
-    </div>
-
-    <div class="row">
-      <label style="flex: 1;">
-        <span data-i18n="ui.lifetime"></span>
-        <input type="number" id="messageLifetime" min="0" max="300" value="15">
-      </label>
-      <label style="flex: 1;">
-        <span data-i18n="ui.animation"></span>
-        <select id="animation">
-          <option value="slide-left" data-i18n="ui.animSlideLeft"></option>
-          <option value="slide-down" data-i18n="ui.animSlideDown"></option>
-          <option value="fade" data-i18n="ui.animFade"></option>
-          <option value="zoom" data-i18n="ui.animZoom"></option>
-        </select>
-      </label>
-    </div>
-
-    <div class="row">
-      <label style="flex: 1;">
-        <span data-i18n="ui.direction"></span>
-        <select id="chatDirection">
-          <option value="top" data-i18n="ui.dirTop"></option>
-          <option value="bottom" data-i18n="ui.dirBottom"></option>
-        </select>
-      </label>
-      <label style="flex: 1;">
-        <span data-i18n="ui.layout"></span>
-        <select id="layoutMode">
-          <option value="inline" data-i18n="ui.layoutInline"></option>
-          <option value="block" data-i18n="ui.layoutBlock"></option>
-        </select>
-      </label>
-    </div>
-
-    <label class="checkbox-label">
-      <input type="checkbox" id="hideCommands" checked>
-      <span data-i18n="ui.hideCommands"></span>
-    </label>
-
-    <label class="checkbox-label">
-      <input type="checkbox" id="mentionLonger">
-      <span data-i18n="ui.mentionLonger"></span>
-    </label>
-
-    <label>
-      <span data-i18n="ui.bots"></span>
-      <input type="text" id="ignoredBots" value="Nightbot, StreamElements, Moobot, Fossabot">
-    </label>
-
-    <label class="checkbox-label">
-      <input type="checkbox" id="showSub">
-      <span data-i18n="ui.noticeSub"></span>
-    </label>
-    <label class="checkbox-label">
-      <input type="checkbox" id="showResub">
-      <span data-i18n="ui.noticeResub"></span>
-    </label>
-    <label class="checkbox-label">
-      <input type="checkbox" id="showGift">
-      <span data-i18n="ui.noticeGift"></span>
-    </label>
-    <label class="checkbox-label">
-      <input type="checkbox" id="showRaid">
-      <span data-i18n="ui.noticeRaid"></span>
-    </label>
-
-    <div class="button-row">
-      <button class="secondary" id="btn-test" data-i18n="ui.test"></button>
-      <button class="primary" id="btn-save" data-i18n="ui.save"></button>
+    <div class="titlebar-buttons">
+      <button class="btn-settings" id="btn-clickthrough" data-i18n="ui.clickThrough" data-i18n-title="tray.clickThrough"></button>
+      <button class="btn-settings" id="toggle-settings" data-i18n="ui.settings"></button>
     </div>
   </div>
 
   <div id="chat" class="dir-top layout-inline"></div>
   <div class="resizer-br" id="resizer"></div>
 
+  <script src="chat-view.js"></script>
   <script>
-    const MAX_DOM_MESSAGES = 150;
-    const CHANNEL_POINTS_ICON_URL = 'https://static-cdn.jtvnw.net/custom-reward-images/default-1.png';
-
-    const settingsModal = document.getElementById('settings-modal');
-    const toggleBtn = document.getElementById('toggle-settings');
     const chat = document.getElementById('chat');
     const titlebar = document.getElementById('titlebar');
     const resizer = document.getElementById('resizer');
@@ -555,48 +136,24 @@
     const statusText = document.getElementById('status-text');
     const hotkeyWarn = document.getElementById('hotkey-warn');
 
-    const useProxyCheck = document.getElementById('useProxy');
-    const proxyBox = document.getElementById('proxyBox');
-
-    const fontSizeInput = document.getElementById('fontSize');
-    const fontSizeVal = document.getElementById('fontSizeVal');
-    const bgOpacityInput = document.getElementById('bgOpacity');
-    const bgOpacityVal = document.getElementById('bgOpacityVal');
-
-    const fontFamilySelect = document.getElementById('fontFamily');
-    const textAlignSelect = document.getElementById('textAlign');
-    const languageSelect = document.getElementById('language');
-
-    let currentConfig = {};
-    let ignoredBotsSet = new Set();
-
-    // Галочки событий чата: ключи настроек совпадают с id элементов
-    const NOTICE_SETTING_IDS = ['showSub', 'showResub', 'showGift', 'showRaid'];
+    const view = ChatView.create({ chat });
 
     /* ---------------- Локализация ---------------- */
 
     let strings = {};
     let statusIsHint = true;
-    let hotkeyBusy = false;
 
     function tr(key) {
       return strings[key] !== undefined ? strings[key] : key;
     }
 
-    // Перевод с подстановкой {name}. Значения вставляются как есть: HTML-экранирование — на вызывающем
-    function trf(key, params) {
-      return tr(key).replace(/\{(\w+)\}/g, (m, k) => (params && params[k] !== undefined ? params[k] : m));
-    }
-
     function applyStrings(newStrings, lang) {
       strings = newStrings || {};
+      view.setStrings(strings);
       document.documentElement.lang = lang || 'en';
 
       document.querySelectorAll('[data-i18n]').forEach((el) => {
         el.textContent = tr(el.dataset.i18n);
-      });
-      document.querySelectorAll('[data-i18n-placeholder]').forEach((el) => {
-        el.placeholder = tr(el.dataset.i18nPlaceholder);
       });
       document.querySelectorAll('[data-i18n-title]').forEach((el) => {
         el.title = tr(el.dataset.i18nTitle);
@@ -606,406 +163,26 @@
       hotkeyWarn.title = tr('ui.hotkeyBusy');
     }
 
-    /* ---------------- Утилиты ---------------- */
+    /* ---------------- Кнопки шапки ---------------- */
 
-    function escapeRegExp(str) {
-      return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    }
+    document.getElementById('toggle-settings').onclick = () => window.api.openSettings();
+    document.getElementById('btn-clickthrough').onclick = () => window.api.enableClickThrough();
 
-    function escapeHtml(str) {
-      if (typeof str !== 'string') return '';
-      return str.replace(/[&<>"']/g, m => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-      })[m]);
-    }
+    /* ---------------- Начальное состояние ---------------- */
 
-    // Автоматическое осветление слишком темных/серых ников для читаемости на черной обводке
-    function ensureReadableColor(rawColor) {
-      let hex = (rawColor || '').replace('#', '').trim();
-      if (hex.length === 3) {
-        hex = hex.split('').map(c => c + c).join('');
-      }
-      if (!/^[0-9a-fA-F]{6}$/.test(hex)) {
-        return '#9146FF';
-      }
-
-      let r = parseInt(hex.substring(0, 2), 16);
-      let g = parseInt(hex.substring(2, 4), 16);
-      let b = parseInt(hex.substring(4, 6), 16);
-
-      // Воспринимаемая яркость по W3C
-      const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
-
-      // Если яркость ниже порога (сливается с черной обводкой) — подтягиваем к читаемому спектру
-      if (luminance < 115) {
-        const factor = (115 - luminance) / 145;
-        r = Math.min(255, Math.round(r + (255 - r) * factor * 0.75 + 45));
-        g = Math.min(255, Math.round(g + (255 - g) * factor * 0.75 + 45));
-        b = Math.min(255, Math.round(b + (255 - b) * factor * 0.75 + 45));
-        return `rgb(${r}, ${g}, ${b})`;
-      }
-
-      return `#${hex}`;
-    }
-
-    /* ---------------- Настройки: живое применение ---------------- */
-
-    useProxyCheck.onchange = () => {
-      proxyBox.classList.toggle('disabled', !useProxyCheck.checked);
-    };
-
-    fontSizeInput.oninput = (e) => {
-      document.documentElement.style.setProperty('--font-size', `${e.target.value}px`);
-      fontSizeVal.textContent = `${e.target.value}px`;
-    };
-
-    bgOpacityInput.oninput = (e) => {
-      const val = (e.target.value / 100).toFixed(2);
-      document.documentElement.style.setProperty('--bg-opacity', val);
-      bgOpacityVal.textContent = `${e.target.value}%`;
-    };
-
-    fontFamilySelect.onchange = (e) => {
-      const font = e.target.value === 'system' ? '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' : e.target.value;
-      document.documentElement.style.setProperty('--font-family', font);
-    };
-
-    textAlignSelect.onchange = (e) => {
-      document.documentElement.style.setProperty('--text-align', e.target.value);
-    };
-
-    // Эти параметры тоже применяются сразу (до нажатия «Сохранить»),
-    // чтобы тестовое сообщение показывало то, что выбрано в форме
-    function applyDisplaySettings() {
-      currentConfig.messageLifetime = parseInt(document.getElementById('messageLifetime').value, 10) || 0;
-      currentConfig.animation = document.getElementById('animation').value;
-      currentConfig.chatDirection = document.getElementById('chatDirection').value;
-      currentConfig.layoutMode = document.getElementById('layoutMode').value;
-      currentConfig.hideCommands = document.getElementById('hideCommands').checked;
-      currentConfig.mentionLonger = document.getElementById('mentionLonger').checked;
-      currentConfig.ignoredBots = document.getElementById('ignoredBots').value.trim();
-      NOTICE_SETTING_IDS.forEach((id) => {
-        currentConfig[id] = document.getElementById(id).checked;
-      });
-      applyViewClasses(currentConfig);
-      updateIgnoredBots(currentConfig.ignoredBots);
-    }
-
-    ['messageLifetime', 'animation', 'chatDirection', 'layoutMode', 'hideCommands', 'mentionLonger', 'ignoredBots', ...NOTICE_SETTING_IDS].forEach((id) => {
-      document.getElementById(id).addEventListener('change', applyDisplaySettings);
+    window.api.getOverlayState().then((state) => {
+      applyStrings(state.strings, state.language);
+      view.applyConfig(state.config);
     });
 
-    languageSelect.onchange = async () => {
-      const lang = languageSelect.value;
-      const newStrings = await window.api.setLanguage(lang);
-      applyStrings(newStrings, lang);
-    };
+    /* ---------------- События от главного процесса ---------------- */
 
-    toggleBtn.onclick = () => settingsModal.classList.toggle('hidden');
+    window.api.onNewMessage((msg) => view.addMessage(msg));
+    window.api.onMessageRemoved((info) => view.removeMessages(info));
 
-    document.getElementById('btn-test').onclick = () => {
-      // Прячем настройки, чтобы сразу видеть весь тест в оверлее
-      settingsModal.classList.add('hidden');
-      // Канал берём прямо из поля, чтобы подсветка упоминаний в тесте работала ещё до сохранения
-      window.api.sendTestMessage(document.getElementById('channel').value.trim());
-    };
-
-    /* ---------------- Загрузка конфига ---------------- */
-
-    window.api.loadConfig().then(async (cfg) => {
-      currentConfig = cfg;
-
-      const lang = cfg.language || 'en';
-      languageSelect.value = lang;
-      applyStrings(await window.api.getStrings(lang), lang);
-
-      document.getElementById('channel').value = cfg.channel || '';
-      useProxyCheck.checked = !!cfg.useProxy;
-      proxyBox.classList.toggle('disabled', !cfg.useProxy);
-
-      document.getElementById('proxyHost').value = cfg.proxyHost || '';
-      document.getElementById('proxyPort').value = cfg.proxyPort || '';
-      document.getElementById('proxyUser').value = cfg.proxyUser || '';
-      document.getElementById('proxyPass').value = cfg.proxyPass || '';
-
-      document.getElementById('messageLifetime').value = cfg.messageLifetime ?? 15;
-
-      const fSize = cfg.fontSize || 14;
-      fontSizeInput.value = fSize;
-      fontSizeVal.textContent = `${fSize}px`;
-      document.documentElement.style.setProperty('--font-size', `${fSize}px`);
-
-      const bgOp = cfg.bgOpacity !== undefined ? cfg.bgOpacity : 50;
-      bgOpacityInput.value = bgOp;
-      bgOpacityVal.textContent = `${bgOp}%`;
-      document.documentElement.style.setProperty('--bg-opacity', (bgOp / 100).toFixed(2));
-
-      fontFamilySelect.value = cfg.fontFamily || 'system';
-      const fontVal = fontFamilySelect.value === 'system' ? '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' : fontFamilySelect.value;
-      document.documentElement.style.setProperty('--font-family', fontVal);
-
-      textAlignSelect.value = cfg.textAlign || 'left';
-      document.documentElement.style.setProperty('--text-align', cfg.textAlign || 'left');
-
-      document.getElementById('animation').value = cfg.animation || 'slide-left';
-      document.getElementById('chatDirection').value = cfg.chatDirection || 'top';
-      document.getElementById('layoutMode').value = cfg.layoutMode || 'inline';
-
-      document.getElementById('hideCommands').checked = cfg.hideCommands !== false;
-      document.getElementById('mentionLonger').checked = !!cfg.mentionLonger;
-      document.getElementById('ignoredBots').value = cfg.ignoredBots || '';
-      NOTICE_SETTING_IDS.forEach((id) => {
-        document.getElementById(id).checked = !!cfg[id];
-      });
-
-      applyViewClasses(cfg);
-      updateIgnoredBots(cfg.ignoredBots);
-
-      if (cfg.channel) {
-        window.api.startChat(cfg);
-      } else {
-        settingsModal.classList.remove('hidden');
-      }
-    });
-
-    function applyViewClasses(cfg) {
-      chat.className = `dir-${cfg.chatDirection || 'top'} layout-${cfg.layoutMode || 'inline'}`;
-    }
-
-    // Игнор-лист: логины или имена через запятую, регистр и «@» не важны
-    function updateIgnoredBots(str) {
-      ignoredBotsSet = new Set(
-        (str || '').split(',').map(s => s.trim().replace(/^@/, '').toLowerCase()).filter(Boolean)
-      );
-    }
-
-    // Сверяем с логином (он стабильнее отображаемого имени, особенно для кириллицы) и с именем
-    function isIgnoredUser(msg) {
-      if (!ignoredBotsSet.size) return false;
-      const login = (msg.login || '').toLowerCase();
-      const name = (msg.user || '').toLowerCase();
-      return (login && ignoredBotsSet.has(login)) || ignoredBotsSet.has(name);
-    }
-
-    document.getElementById('btn-save').onclick = async () => {
-      const config = {
-        channel: document.getElementById('channel').value.trim(),
-        useProxy: useProxyCheck.checked,
-        proxyHost: document.getElementById('proxyHost').value.trim(),
-        proxyPort: document.getElementById('proxyPort').value.trim(),
-        proxyUser: document.getElementById('proxyUser').value.trim(),
-        proxyPass: document.getElementById('proxyPass').value.trim(),
-        messageLifetime: parseInt(document.getElementById('messageLifetime').value, 10) || 0,
-        fontSize: parseInt(fontSizeInput.value, 10) || 14,
-        fontFamily: fontFamilySelect.value,
-        textAlign: textAlignSelect.value,
-        bgOpacity: parseInt(bgOpacityInput.value, 10) || 0,
-        animation: document.getElementById('animation').value,
-        chatDirection: document.getElementById('chatDirection').value,
-        layoutMode: document.getElementById('layoutMode').value,
-        hideCommands: document.getElementById('hideCommands').checked,
-        mentionLonger: document.getElementById('mentionLonger').checked,
-        ignoredBots: document.getElementById('ignoredBots').value.trim()
-      };
-      NOTICE_SETTING_IDS.forEach((id) => {
-        config[id] = document.getElementById(id).checked;
-      });
-
-      currentConfig = Object.assign({}, config, { language: languageSelect.value });
-      applyViewClasses(config);
-      updateIgnoredBots(config.ignoredBots);
-
-      await window.api.saveConfig(config);
-      window.api.startChat(config);
-      settingsModal.classList.add('hidden');
-    };
-
-    /* ---------------- Сообщения ---------------- */
-
-    function enforceMessageLimit() {
-      // 1. Ограничение по максимальному числу элементов в памяти
-      while (chat.children.length > MAX_DOM_MESSAGES) {
-        chat.removeChild(currentConfig.chatDirection === 'bottom' ? chat.firstChild : chat.lastChild);
-      }
-
-      // 2. Очистка старых сообщений, вышедших за видимую область контейнера
-      while (chat.scrollHeight > chat.clientHeight + 30 && chat.children.length > 1) {
-        chat.removeChild(currentConfig.chatDirection === 'bottom' ? chat.firstChild : chat.lastChild);
-      }
-    }
-
-    // factor — множитель времени жизни (2 для упоминаний, если включена галочка «mentionLonger»)
-    function scheduleRemoval(element, factor = 1) {
-      const lifetime = currentConfig.messageLifetime;
-      if (!lifetime || lifetime <= 0) return;
-
-      setTimeout(() => {
-        element.classList.add('fade-out');
-        setTimeout(() => {
-          if (element.parentNode) element.parentNode.removeChild(element);
-        }, 800);
-      }, lifetime * factor * 1000);
-    }
-
-    function insertMessage(el) {
-      if (currentConfig.chatDirection === 'bottom') {
-        chat.appendChild(el);
-      } else {
-        chat.prepend(el);
-      }
-      enforceMessageLimit();
-    }
-
-    // Подсвечиваем «@ник» внутри текста сообщения, не трогая теги смайлов
-    function highlightMentions(root, nick) {
-      if (!root || !nick) return;
-      const re = new RegExp('(?<![A-Za-z0-9_])@' + escapeRegExp(nick) + '(?![A-Za-z0-9_])', 'gi');
-      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-      const nodes = [];
-      while (walker.nextNode()) nodes.push(walker.currentNode);
-
-      for (const node of nodes) {
-        const text = node.nodeValue;
-        re.lastIndex = 0;
-        if (!re.test(text)) continue;
-
-        re.lastIndex = 0;
-        const frag = document.createDocumentFragment();
-        let last = 0;
-        let m;
-        while ((m = re.exec(text)) !== null) {
-          if (m.index > last) frag.appendChild(document.createTextNode(text.slice(last, m.index)));
-          const span = document.createElement('span');
-          span.className = 'mention-tag';
-          span.textContent = m[0];
-          frag.appendChild(span);
-          last = m.index + m[0].length;
-        }
-        if (last < text.length) frag.appendChild(document.createTextNode(text.slice(last)));
-        node.parentNode.replaceChild(frag, node);
-      }
-    }
-
-    /* ---------------- События чата (подписки, подарки, рейды) ---------------- */
-
-    const NOTICE_ICONS = { sub: '⭐', resub: '🔁', gift: '🎁', raid: '🚀' };
-    const NOTICE_SETTING_BY_TYPE = { sub: 'showSub', resub: 'showResub', gift: 'showGift', raid: 'showRaid' };
-
-    function tierLabel(code) {
-      const c = String(code || '').toLowerCase();
-      if (c === 'prime') return tr('notice.prime');
-      const n = Math.round(parseInt(c, 10) / 1000);
-      return trf('notice.tier', { n: n >= 1 && n <= 3 ? n : 1 });
-    }
-
-    function renderNotice(msg) {
-      const settingKey = NOTICE_SETTING_BY_TYPE[msg.noticeType];
-      if (!settingKey) return;
-      // Тестовые события (force) показываем всегда, чтобы их можно было оценить при любых настройках
-      if (!msg.force && !currentConfig[settingKey]) return;
-
-      let key;
-      switch (msg.noticeType) {
-        case 'sub': key = 'notice.sub'; break;
-        case 'resub': key = 'notice.resub'; break;
-        case 'gift': key = msg.isMassGift ? 'notice.giftMass' : 'notice.gift'; break;
-        default: key = 'notice.raid';
-      }
-
-      const text = trf(key, {
-        user: `<span class="notice-user">${escapeHtml(msg.user)}</span>`,
-        tier: escapeHtml(tierLabel(msg.tier)),
-        months: escapeHtml(String(msg.months || 0)),
-        count: escapeHtml(String(msg.count || 0)),
-        recipient: `<span class="notice-user">${escapeHtml(msg.recipient || '')}</span>`,
-        viewers: escapeHtml(String(msg.viewers || 0))
-      });
-
-      const el = document.createElement('div');
-      el.className = `message anim-${currentConfig.animation || 'slide-left'} is-notice`;
-      el.innerHTML =
-        `<span class="notice-icon">${NOTICE_ICONS[msg.noticeType]}</span>${text}` +
-        (msg.html ? ` <span class="notice-msg">${msg.html}</span>` : '');
-
-      insertMessage(el);
-      scheduleRemoval(el);
-    }
-
-    /* ---------------- Удаление сообщений модератором ---------------- */
-
-    function removeMessageElement(el) {
-      if (el.dataset.removing) return;
-      el.dataset.removing = '1';
-      el.style.transitionDuration = '0.2s';
-      el.classList.add('fade-out');
-      setTimeout(() => {
-        if (el.parentNode) el.parentNode.removeChild(el);
-      }, 220);
-    }
-
-    // info: { id } — удалено одно сообщение; { login, userId } — бан/таймаут; { all: true } — чат очищен
-    window.api.onMessageRemoved((info) => {
-      if (!info) return;
-      Array.from(chat.children).forEach((el) => {
-        if (info.all) {
-          removeMessageElement(el);
-        } else if (info.id) {
-          if (el.dataset.msgId === info.id) removeMessageElement(el);
-        } else if (
-          (info.userId && el.dataset.userId === info.userId) ||
-          (info.login && el.dataset.login === info.login)
-        ) {
-          removeMessageElement(el);
-        }
-      });
-    });
-
-    /* ---------------- Обычные сообщения ---------------- */
-
-    window.api.onNewMessage((msg) => {
-      if (msg.isNotice) {
-        renderNotice(msg);
-        return;
-      }
-
-      if (isIgnoredUser(msg)) return;
-      if (currentConfig.hideCommands && msg.rawText && msg.rawText.trim().startsWith('!')) return;
-
-      const el = document.createElement('div');
-      const animClass = `anim-${currentConfig.animation || 'slide-left'}`;
-      const rewardClass = msg.isReward ? 'is-reward' : '';
-      const mentionClass = msg.isMention ? 'is-mention' : '';
-      el.className = `message ${animClass} ${rewardClass} ${mentionClass}`;
-
-      // Нужны для удаления сообщений после бана/удаления модератором
-      if (msg.id) el.dataset.msgId = msg.id;
-      if (msg.login) el.dataset.login = msg.login;
-      if (msg.userId) el.dataset.userId = msg.userId;
-
-      const rewardIcon = escapeHtml(msg.rewardIconUrl || CHANNEL_POINTS_ICON_URL);
-      const rewardBadgeHtml = msg.isReward
-        ? `<img class="reward-icon" src="${rewardIcon}" alt="${escapeHtml(tr('ui.pointsAlt'))}" onerror="this.style.display='none'" />`
-        : '';
-
-      const safeUser = escapeHtml(msg.user);
-      const readableColor = ensureReadableColor(msg.color);
-      const safeBadges = msg.badgesHtml || '';
-      const actionStyle = msg.isAction ? `style="color: ${readableColor}; font-style: italic;"` : '';
-
-      el.innerHTML = `
-        <span class="author-wrap">
-          ${rewardBadgeHtml}
-          ${safeBadges}
-          <span class="username" style="color: ${readableColor}">${safeUser}</span><span class="colon">:</span>
-        </span>
-        <span class="text-content" ${actionStyle}>${msg.html}</span>
-      `;
-
-      if (msg.isMention) highlightMentions(el.querySelector('.text-content'), msg.mentionNick);
-
-      insertMessage(el);
-      scheduleRemoval(el, msg.isMention && currentConfig.mentionLonger ? 2 : 1);
-    });
+    // Настройки изменились: сохранены или показываются как предпросмотр из окна настроек
+    window.api.onConfigApplied((cfg) => view.applyConfig(cfg));
+    window.api.onStringsUpdated((data) => applyStrings(data.strings, data.language));
 
     window.api.onStatusUpdate((status) => {
       if (status.code) statusDot.className = `status-dot ${status.code}`;
@@ -1018,17 +195,10 @@
     window.api.onModeChanged((isClickThrough) => {
       titlebar.style.display = isClickThrough ? 'none' : 'flex';
       resizer.style.display = isClickThrough ? 'none' : 'block';
-      if (isClickThrough) settingsModal.classList.add('hidden');
-    });
-
-    // Команда из трея: «Настройки…»
-    window.api.onOpenSettings(() => {
-      settingsModal.classList.remove('hidden');
     });
 
     // Результат регистрации глобального хоткея
     window.api.onHotkeyStatus((info) => {
-      hotkeyBusy = !info.ok;
       hotkeyWarn.classList.toggle('hidden', info.ok);
     });
   </script>

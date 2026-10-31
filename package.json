@@ -1,6 +1,6 @@
 {
   "name": "twitch-overlay",
-  "version": "1.1.2",
+  "version": "1.2.0",
   "description": "Twitch Transparent Chat Overlay",
   "main": "main.js",
   "scripts": {
@@ -37,6 +37,12 @@
       "emotes.js",
       "locales.js",
       "index.html",
+      "settings.html",
+      "widget.html",
+      "chat.css",
+      "chat-view.js",
+      "config.js",
+      "widget-server.js",
       "icon.ico",
       "node_modules/**/*"
     ]
