@@ -118,15 +118,18 @@
 
     /* ---------------- Список сообщений ---------------- */
 
+    // Порядок элементов в DOM всегда один: самое новое сообщение первым, самое старое последним.
+    // Какая сторона экрана «верх», решает только CSS (#chat.dir-top / #chat.dir-bottom с column-reverse),
+    // поэтому старые сообщения всегда лежат в конце DOM и удаляются оттуда.
     function enforceMessageLimit() {
       // 1. Ограничение по максимальному числу элементов в памяти
       while (chat.children.length > MAX_DOM_MESSAGES) {
-        chat.removeChild(config.chatDirection === 'bottom' ? chat.firstChild : chat.lastChild);
+        chat.removeChild(chat.lastChild);
       }
 
       // 2. Очистка старых сообщений, вышедших за видимую область контейнера
       while (chat.scrollHeight > chat.clientHeight + 30 && chat.children.length > 1) {
-        chat.removeChild(config.chatDirection === 'bottom' ? chat.firstChild : chat.lastChild);
+        chat.removeChild(chat.lastChild);
       }
     }
 
@@ -144,11 +147,8 @@
     }
 
     function insertMessage(el) {
-      if (config.chatDirection === 'bottom') {
-        chat.appendChild(el);
-      } else {
-        chat.prepend(el);
-      }
+      // В обоих режимах новое сообщение идёт первым в DOM; в режиме «снизу» column-reverse рисует его внизу
+      chat.prepend(el);
       enforceMessageLimit();
     }
 
