@@ -1,0 +1,200 @@
+/* Общие стили отображения чата: их использует и оверлей, и страница виджета для OBS */
+:root {
+  --font-size: 14px;
+  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --bg-opacity: 0.5;
+  --text-align: left;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* Контейнер сообщений с градиентным растворением у краев */
+#chat {
+  height: var(--chat-height, 100vh);
+  overflow-y: hidden;
+  display: flex;
+  padding: 8px;
+  gap: 4px;
+  -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 35px), transparent 100%);
+  mask-image: linear-gradient(to bottom, black calc(100% - 35px), transparent 100%);
+}
+
+#chat.dir-top {
+  flex-direction: column;
+  justify-content: flex-start;
+  -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 35px), transparent 100%);
+  mask-image: linear-gradient(to bottom, black calc(100% - 35px), transparent 100%);
+}
+
+#chat.dir-bottom {
+  flex-direction: column-reverse;
+  justify-content: flex-start;
+  -webkit-mask-image: linear-gradient(to top, black calc(100% - 35px), transparent 100%);
+  mask-image: linear-gradient(to top, black calc(100% - 35px), transparent 100%);
+}
+
+.message {
+  flex-shrink: 0; /* Запрещает сжатие высоты элементов */
+  background: rgba(0, 0, 0, var(--bg-opacity));
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: var(--font-size);
+  font-family: var(--font-family);
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: var(--text-align);
+  word-break: break-word;
+  opacity: 1;
+  transform: none;
+  transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+  border-left: 2px solid transparent;
+
+  text-shadow: 
+    -1px -1px 0 #000,  
+     1px -1px 0 #000,
+    -1px  1px 0 #000,
+     1px  1px 0 #000,
+    -2px  0   0 #000,
+     2px  0   0 #000,
+     0   -2px 0 #000,
+     0    2px 0 #000,
+     0    2px 4px rgba(0, 0, 0, 0.9);
+}
+
+.message.is-reward {
+  border-left: 2px solid rgba(229, 169, 60, 0.85);
+  background: rgba(30, 24, 12, var(--bg-opacity));
+}
+
+.reward-icon {
+  height: calc(var(--font-size) * 1.15);
+  width: auto;
+  vertical-align: middle;
+  margin-right: 4px;
+  display: inline-block;
+  object-fit: contain;
+}
+
+/* Упоминание или ответ тебе: голубая заливка (видна даже при прозрачном фоне),
+   голубая линия слева и короткая вспышка при появлении.
+   Награда + упоминание: линия остаётся золотой, заливка голубая. */
+.message.is-mention {
+  position: relative;
+  background: rgba(35, 105, 190, max(var(--bg-opacity), 0.28));
+  border-left-color: rgba(86, 170, 255, 0.95);
+}
+.message.is-reward.is-mention {
+  border-left-color: rgba(229, 169, 60, 0.85);
+}
+.message.is-mention::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 6px;
+  pointer-events: none;
+  background: rgba(120, 195, 255, 0.45);
+  opacity: 0;
+  animation: mentionFlash 1.1s ease-out 1;
+}
+@keyframes mentionFlash {
+  0%   { opacity: 0.9; }
+  100% { opacity: 0; }
+}
+.mention-tag {
+  color: #8fd0ff;
+  font-weight: 800;
+}
+
+/* События чата (подписки, подарки, рейды): компактная строка */
+.message.is-notice {
+  /* Считаем от выбранного размера шрифта, а не от шрифта родителя, иначе настройка на строки событий не действует */
+  font-size: calc(var(--font-size) * 0.92);
+  font-weight: 600;
+  padding: 3px 8px;
+  border-left: 2px solid rgba(145, 70, 255, 0.9);
+  background: rgba(40, 24, 70, var(--bg-opacity));
+}
+.notice-icon { margin-right: 5px; }
+.notice-user { font-weight: 800; }
+.notice-msg { opacity: 0.9; }
+.notice-msg::before { content: '\2014\00a0'; }
+
+.layout-inline .author-wrap {
+  display: inline;
+  margin-right: 6px;
+}
+.layout-inline .colon { display: inline; }
+
+.layout-block .author-wrap {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 0.9em;
+}
+.layout-block .colon { display: none; }
+
+.chat-badge {
+  height: calc(var(--font-size) * 1.15);
+  vertical-align: middle;
+  margin-right: 4px;
+  display: inline-block;
+}
+
+/* Идеальная посадка смайлов по базовой линии текста */
+.chat-emote {
+  height: 1.6em;
+  vertical-align: -0.35em;
+  margin: 0 4px;
+  display: inline-block;
+}
+
+.username {
+  font-weight: 800;
+}
+
+.message.fade-out {
+  opacity: 0 !important;
+  transform: translateY(-4px) !important;
+}
+
+.anim-fade { animation: animFade 0.25s ease-out forwards; }
+@keyframes animFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.anim-slide-left { animation: animSlideLeft 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+@keyframes animSlideLeft {
+  from { opacity: 0; transform: translateX(-16px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.anim-slide-down { animation: animSlideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+@keyframes animSlideDown {
+  from { opacity: 0; transform: translateY(-12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.anim-zoom { animation: animZoom 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+@keyframes animZoom {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Смайл + zero-width наложение (7TV/BTTV) */
+.emote-stack {
+  position: relative;
+  display: inline-block;
+  height: 1.6em;
+  vertical-align: -0.35em;
+  margin: 0 4px;
+}
+.emote-stack .chat-emote {
+  margin: 0;
+  vertical-align: top;
+}
+.emote-stack .chat-emote.zero-width {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}

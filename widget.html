@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Twitch Transparent Chat: OBS widget</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@600;800&family=Montserrat:wght@600;800&family=Roboto:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/chat.css">
+  <style>
+    html, body { background: transparent; height: 100%; }
+    body {
+      color: #fff;
+      font-family: var(--font-family);
+      overflow: hidden;
+      user-select: none;
+    }
+    /* Размер виджета задаётся в OBS: чат занимает всё окно источника */
+    #chat { --chat-height: 100vh; }
+  </style>
+</head>
+<body>
+  <div id="chat" class="dir-top layout-inline"></div>
+
+  <script src="/chat-view.js"></script>
+  <script>
+    const view = ChatView.create({ chat: document.getElementById('chat') });
+
+    function applyState(state) {
+      document.documentElement.lang = state.language || 'en';
+      view.setStrings(state.strings);
+      view.applyConfig(state.config);
+    }
+
+    async function loadState() {
+      const response = await fetch('/api/state', { cache: 'no-store' });
+      applyState(await response.json());
+    }
+
+    function connect() {
+      const source = new EventSource('/events');
+      let lostConnection = false;
+
+      source.addEventListener('chat', (e) => view.addMessage(JSON.parse(e.data)));
+      source.addEventListener('remove', (e) => view.removeMessages(JSON.parse(e.data)));
+      source.addEventListener('state', (e) => applyState(JSON.parse(e.data)));
+
+      // После обрыва (например, приложение перезапустили) браузер переподключается сам,
+      // а мы заново читаем настройки: они могли измениться
+      source.onerror = () => { lostConnection = true; };
+      source.onopen = () => {
+        if (lostConnection) {
+          lostConnection = false;
+          loadState().catch(() => {});
+        }
+      };
+    }
+
+    loadState().catch(() => {}).then(connect);
+  </script>
+</body>
+</html>

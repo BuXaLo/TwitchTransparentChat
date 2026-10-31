@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Twitch Overlay: Settings</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body { height: 100%; }
+    body {
+      background: #101014;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 13px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .hidden { display: none !important; }
+
+    /* Вкладки */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      padding: 10px 14px 0;
+      border-bottom: 1px solid #2a2a31;
+      flex-shrink: 0;
+    }
+    .tab-btn {
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: #aaa;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .tab-btn:hover { color: #fff; }
+    .tab-btn.active { color: #fff; border-bottom-color: #9146FF; }
+
+    .content { flex: 1; overflow-y: auto; padding: 14px 18px; }
+    .tab { display: flex; flex-direction: column; gap: 10px; max-width: 540px; }
+
+    .footer {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 10px 18px;
+      border-top: 1px solid #2a2a31;
+      flex-shrink: 0;
+    }
+    #save-status { font-size: 12px; color: #7ddc7d; }
+    #save-status.warn { color: #ffaa00; }
+
+    label {
+      font-size: 12px;
+      color: #aaa;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .checkbox-label {
+      flex-direction: row;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      color: #ddd;
+    }
+    .checkbox-label.sub { margin-left: 22px; }
+    .checkbox-label.disabled { opacity: 0.4; cursor: default; }
+
+    input[type="text"], input[type="password"], input[type="number"], select {
+      background: #25252b;
+      border: 1px solid #444;
+      color: #fff;
+      padding: 6px 9px;
+      border-radius: 4px;
+      font-size: 13px;
+      outline: none;
+    }
+    input:focus, select:focus { border-color: #9146FF; }
+    input[readonly] { color: #cfcfd6; cursor: text; }
+
+    .row { display: flex; gap: 8px; }
+    .row > * { flex: 1; min-width: 0; }
+    .row > button { flex: 0 0 auto; }
+
+    .slider-row { display: flex; align-items: center; gap: 8px; }
+    .slider-row input[type="range"] { flex: 1; cursor: pointer; }
+    .slider-row span { font-size: 12px; min-width: 38px; color: #fff; }
+
+    .proxy-box {
+      border: 1px solid #333;
+      padding: 10px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.02);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .proxy-box.disabled { opacity: 0.35; pointer-events: none; }
+
+    .note { font-size: 12px; color: #888; line-height: 1.45; }
+    hr { border: none; border-top: 1px solid #2a2a31; margin: 4px 0; }
+
+    button.primary, button.accent {
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 13px;
+      padding: 8px 16px;
+    }
+    /* Главная кнопка: сплошная заливка */
+    button.primary { background: #9146FF; color: #fff; border: none; }
+    button.primary:hover { background: #7c2cf5; }
+    /* Кнопки действий (тест, копирование): фиолетовая рамка, заливка при наведении.
+       Так они не похожи на поля и выпадающие списки */
+    button.accent {
+      background: rgba(145, 70, 255, 0.14);
+      color: #e9dcff;
+      border: 1px solid #9146FF;
+    }
+    button.accent:hover:not(:disabled) { background: #9146FF; color: #fff; }
+    .tab > button.accent { align-self: flex-start; }
+    button:disabled { opacity: 0.4; cursor: default; }
+
+    .widget-status { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #bbb; }
+    .dot { width: 9px; height: 9px; border-radius: 50%; background: #666; flex-shrink: 0; }
+    .dot.ok { background: #3fcf3f; }
+    .dot.error { background: #ff5252; }
+    #widget-status-text.error { color: #ff8585; }
+  </style>
+</head>
+<body>
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="general" data-i18n="ui.tabGeneral"></button>
+    <button class="tab-btn" data-tab="overlay" data-i18n="ui.tabOverlay"></button>
+    <button class="tab-btn" data-tab="widget" data-i18n="ui.tabWidget"></button>
+  </div>
+
+  <div class="content">
+    <!-- Общие -->
+    <section class="tab" id="tab-general">
+      <label>
+        <span data-i18n="ui.language"></span>
+        <select id="language">
+          <option value="en">English</option>
+          <option value="ru">Русский</option>
+        </select>
+      </label>
+
+      <label>
+        <span data-i18n="ui.channel"></span>
+        <input type="text" id="channel" data-i18n-placeholder="ui.channelPlaceholder">
+      </label>
+
+      <label class="checkbox-label">
+        <input type="checkbox" id="useProxy">
+        <span data-i18n="ui.useProxy"></span>
+      </label>
+
+      <div class="proxy-box disabled" id="proxyBox">
+        <div class="row">
+          <input type="text" id="proxyHost" data-i18n-placeholder="ui.proxyHost">
+          <input type="number" id="proxyPort" data-i18n-placeholder="ui.proxyPort" style="max-width: 90px;">
+        </div>
+        <div class="row">
+          <input type="text" id="proxyUser" data-i18n-placeholder="ui.proxyUser">
+          <input type="password" id="proxyPass" data-i18n-placeholder="ui.proxyPass">
+        </div>
+      </div>
+
+      <label class="checkbox-label">
+        <input type="checkbox" id="hideCommands">
+        <span data-i18n="ui.hideCommands"></span>
+      </label>
+
+      <label>
+        <span data-i18n="ui.bots"></span>
+        <input type="text" id="ignoredBots">
+      </label>
+
+      <label class="checkbox-label">
+        <input type="checkbox" id="autoStart">
+        <span data-i18n="ui.autoStart"></span>
+      </label>
+
+      <p class="note" data-i18n="ui.sharedNote"></p>
+    </section>
+
+    <!-- Оверлей -->
+    <section class="tab hidden" id="tab-overlay">
+      <div id="overlay-form" style="display: flex; flex-direction: column; gap: 10px;"></div>
+      <button class="accent" id="btn-test" data-i18n="ui.test"></button>
+    </section>
+
+    <!-- Виджет для OBS -->
+    <section class="tab hidden" id="tab-widget">
+      <label class="checkbox-label">
+        <input type="checkbox" id="widgetEnabled">
+        <span data-i18n="ui.widgetEnable"></span>
+      </label>
+
+      <label>
+        <span data-i18n="ui.widgetPort"></span>
+        <input type="number" id="widgetPort" min="1024" max="65535" style="max-width: 120px;">
+      </label>
+
+      <label>
+        <span data-i18n="ui.widgetLink"></span>
+        <div class="row">
+          <input type="text" id="widgetLink" readonly>
+          <button class="accent" id="btn-copy" data-i18n="ui.copyLink"></button>
+        </div>
+      </label>
+
+      <div class="widget-status">
+        <span class="dot" id="widget-dot"></span>
+        <span id="widget-status-text"></span>
+      </div>
+      <p class="note" data-i18n="ui.widgetHint"></p>
+
+      <hr>
+      <div id="widget-form" style="display: flex; flex-direction: column; gap: 10px;"></div>
+      <button class="accent" id="btn-widget-test" data-i18n="ui.widgetTest"></button>
+    </section>
+  </div>
+
+  <div class="footer">
+    <button class="primary" id="btn-save" data-i18n="ui.save"></button>
+    <span id="save-status"></span>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const NOTICE_IDS = ['showSub', 'showResub', 'showGift', 'showRaid'];
+
+    /* ---------------- Локализация ---------------- */
+
+    let strings = {};
+    let widgetStatus = {};
+
+    function tr(key) {
+      return strings[key] !== undefined ? strings[key] : key;
+    }
+
+    function trf(key, params) {
+      return tr(key).replace(/\{(\w+)\}/g, (m, k) => (params && params[k] !== undefined ? params[k] : m));
+    }
+
+    function applyStrings(newStrings, lang) {
+      strings = newStrings || {};
+      document.documentElement.lang = lang || 'en';
+      document.title = tr('settings.title');
+
+      document.querySelectorAll('[data-i18n]').forEach((el) => { el.textContent = tr(el.dataset.i18n); });
+      document.querySelectorAll('[data-i18n-placeholder]').forEach((el) => { el.placeholder = tr(el.dataset.i18nPlaceholder); });
+      document.querySelectorAll('[data-i18n-title]').forEach((el) => { el.title = tr(el.dataset.i18nTitle); });
+
+      renderWidgetStatus(widgetStatus);
+    }
+
+    /* ---------------- Форма внешнего вида (один шаблон на оверлей и виджет) ---------------- */
+
+    function appearanceHtml(p) {
+      return `
+        <div class="row">
+          <label>
+            <span data-i18n="ui.font"></span>
+            <select id="${p}fontFamily">
+              <option value="system" data-i18n="ui.fontSystem"></option>
+              <option value="'Inter', sans-serif" data-i18n="ui.fontInter"></option>
+              <option value="'Montserrat', sans-serif" data-i18n="ui.fontMontserrat"></option>
+              <option value="'Roboto', sans-serif" data-i18n="ui.fontRoboto"></option>
+            </select>
+          </label>
+          <label>
+            <span data-i18n="ui.align"></span>
+            <select id="${p}textAlign">
+              <option value="left" data-i18n="ui.alignLeft"></option>
+              <option value="center" data-i18n="ui.alignCenter"></option>
+              <option value="right" data-i18n="ui.alignRight"></option>
+            </select>
+          </label>
+        </div>
+
+        <div class="row">
+          <label>
+            <span data-i18n="ui.fontSize"></span>
+            <div class="slider-row">
+              <input type="range" id="${p}fontSize" min="10" max="${p === 'w_' ? 72 : 36}" value="14">
+              <span id="${p}fontSizeVal">14px</span>
+            </div>
+          </label>
+          <label>
+            <span data-i18n="ui.bg"></span>
+            <div class="slider-row">
+              <input type="range" id="${p}bgOpacity" min="0" max="100" step="5" value="50">
+              <span id="${p}bgOpacityVal">50%</span>
+            </div>
+          </label>
+        </div>
+
+        <div class="row">
+          <label>
+            <span data-i18n="ui.lifetime"></span>
+            <input type="number" id="${p}messageLifetime" min="0" max="300" value="15">
+          </label>
+          <label>
+            <span data-i18n="ui.animation"></span>
+            <select id="${p}animation">
+              <option value="slide-left" data-i18n="ui.animSlideLeft"></option>
+              <option value="slide-down" data-i18n="ui.animSlideDown"></option>
+              <option value="fade" data-i18n="ui.animFade"></option>
+              <option value="zoom" data-i18n="ui.animZoom"></option>
+            </select>
+          </label>
+        </div>
+
+        <div class="row">
+          <label>
+            <span data-i18n="ui.direction"></span>
+            <select id="${p}chatDirection">
+              <option value="top" data-i18n="ui.dirTop"></option>
+              <option value="bottom" data-i18n="ui.dirBottom"></option>
+            </select>
+          </label>
+          <label>
+            <span data-i18n="ui.layout"></span>
+            <select id="${p}layoutMode">
+              <option value="inline" data-i18n="ui.layoutInline"></option>
+              <option value="block" data-i18n="ui.layoutBlock"></option>
+            </select>
+          </label>
+        </div>
+
+        <label class="checkbox-label">
+          <input type="checkbox" id="${p}highlightMentions">
+          <span data-i18n="ui.highlightMentions"></span>
+        </label>
+        <label class="checkbox-label sub" id="${p}mentionLongerLabel">
+          <input type="checkbox" id="${p}mentionLonger">
+          <span data-i18n="ui.mentionLonger"></span>
+        </label>
+
+        <label class="checkbox-label"><input type="checkbox" id="${p}showSub"><span data-i18n="ui.noticeSub"></span></label>
+        <label class="checkbox-label"><input type="checkbox" id="${p}showResub"><span data-i18n="ui.noticeResub"></span></label>
+        <label class="checkbox-label"><input type="checkbox" id="${p}showGift"><span data-i18n="ui.noticeGift"></span></label>
+        <label class="checkbox-label"><input type="checkbox" id="${p}showRaid"><span data-i18n="ui.noticeRaid"></span></label>
+      `;
+    }
+
+    function readAppearance(p) {
+      const a = {
+        messageLifetime: parseInt($(p + 'messageLifetime').value, 10) || 0,
+        fontSize: parseInt($(p + 'fontSize').value, 10) || 14,
+        fontFamily: $(p + 'fontFamily').value,
+        textAlign: $(p + 'textAlign').value,
+        bgOpacity: parseInt($(p + 'bgOpacity').value, 10) || 0,
+        animation: $(p + 'animation').value,
+        chatDirection: $(p + 'chatDirection').value,
+        layoutMode: $(p + 'layoutMode').value,
+        highlightMentions: $(p + 'highlightMentions').checked,
+        mentionLonger: $(p + 'mentionLonger').checked
+      };
+      NOTICE_IDS.forEach((id) => { a[id] = $(p + id).checked; });
+      return a;
+    }
+
+    function writeAppearance(p, a) {
+      $(p + 'messageLifetime').value = a.messageLifetime;
+      $(p + 'fontSize').value = a.fontSize;
+      $(p + 'fontSizeVal').textContent = `${a.fontSize}px`;
+      $(p + 'fontFamily').value = a.fontFamily;
+      $(p + 'textAlign').value = a.textAlign;
+      $(p + 'bgOpacity').value = a.bgOpacity;
+      $(p + 'bgOpacityVal').textContent = `${a.bgOpacity}%`;
+      $(p + 'animation').value = a.animation;
+      $(p + 'chatDirection').value = a.chatDirection;
+      $(p + 'layoutMode').value = a.layoutMode;
+      $(p + 'highlightMentions').checked = !!a.highlightMentions;
+      $(p + 'mentionLonger').checked = !!a.mentionLonger;
+      NOTICE_IDS.forEach((id) => { $(p + id).checked = !!a[id]; });
+      syncMentionDependency(p);
+    }
+
+    // «Держать упоминания дольше» доступно только при включённой подсветке
+    function syncMentionDependency(p) {
+      const on = $(p + 'highlightMentions').checked;
+      $(p + 'mentionLonger').disabled = !on;
+      $(p + 'mentionLongerLabel').classList.toggle('disabled', !on);
+    }
+
+    function wireAppearance(p, onChange) {
+      $(p + 'fontSize').addEventListener('input', () => { $(p + 'fontSizeVal').textContent = `${$(p + 'fontSize').value}px`; });
+      $(p + 'bgOpacity').addEventListener('input', () => { $(p + 'bgOpacityVal').textContent = `${$(p + 'bgOpacity').value}%`; });
+      $(p + 'highlightMentions').addEventListener('change', () => syncMentionDependency(p));
+      if (onChange) {
+        $(p === 'o_' ? 'overlay-form' : 'widget-form').addEventListener('input', onChange);
+        $(p === 'o_' ? 'overlay-form' : 'widget-form').addEventListener('change', onChange);
+      }
+    }
+
+    /* ---------------- Общие настройки ---------------- */
+
+    function readGeneral() {
+      return {
+        channel: $('channel').value.trim(),
+        useProxy: $('useProxy').checked,
+        proxyHost: $('proxyHost').value.trim(),
+        proxyPort: $('proxyPort').value.trim(),
+        proxyUser: $('proxyUser').value.trim(),
+        proxyPass: $('proxyPass').value.trim(),
+        hideCommands: $('hideCommands').checked,
+        ignoredBots: $('ignoredBots').value.trim(),
+        autoStart: $('autoStart').checked
+      };
+    }
+
+    /* ---------------- Живой предпросмотр оверлея (до сохранения) ---------------- */
+
+    let previewTimer = null;
+    function schedulePreview() {
+      clearTimeout(previewTimer);
+      previewTimer = setTimeout(() => {
+        window.api.previewOverlay(Object.assign(readAppearance('o_'), {
+          hideCommands: $('hideCommands').checked,
+          ignoredBots: $('ignoredBots').value.trim()
+        }));
+      }, 40);
+    }
+
+    /* ---------------- Виджет для OBS ---------------- */
+
+    function widgetLinkFor(port) {
+      return `http://127.0.0.1:${port}/`;
+    }
+
+    function updateLink() {
+      const port = parseInt($('widgetPort').value, 10);
+      $('widgetLink').value = Number.isInteger(port) && port >= 1024 && port <= 65535 ? widgetLinkFor(port) : '';
+    }
+
+    function renderWidgetStatus(st) {
+      widgetStatus = st || {};
+      const dot = $('widget-dot');
+      const label = $('widget-status-text');
+      dot.className = 'dot';
+      label.className = '';
+
+      if (widgetStatus.error) {
+        dot.classList.add('error');
+        label.classList.add('error');
+        label.textContent = widgetStatus.error.code === 'EADDRINUSE'
+          ? trf('ui.widgetPortBusy', { port: widgetStatus.error.port || $('widgetPort').value })
+          : trf('ui.widgetError', { msg: widgetStatus.error.message });
+      } else if (widgetStatus.running) {
+        dot.classList.add('ok');
+        label.textContent = trf('ui.widgetStatusOn', { n: widgetStatus.clients || 0 });
+      } else {
+        label.textContent = tr('ui.widgetStatusOff');
+      }
+
+      $('btn-widget-test').disabled = !widgetStatus.running;
+    }
+
+    function showSaveStatus(textValue, warn) {
+      const el = $('save-status');
+      el.textContent = textValue;
+      el.classList.toggle('warn', !!warn);
+      clearTimeout(showSaveStatus.timer);
+      showSaveStatus.timer = setTimeout(() => { el.textContent = ''; }, 4000);
+    }
+
+    /* ---------------- Вкладки ---------------- */
+
+    function showTab(name) {
+      document.querySelectorAll('.tab-btn').forEach((b) => b.classList.toggle('active', b.dataset.tab === name));
+      document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('hidden', t.id !== `tab-${name}`));
+    }
+
+    document.querySelectorAll('.tab-btn').forEach((b) => { b.onclick = () => showTab(b.dataset.tab); });
+
+    /* ---------------- Сохранение ---------------- */
+
+    async function save() {
+      const widgetEnabled = $('widgetEnabled').checked;
+      const portText = $('widgetPort').value.trim();
+      const portNumber = Number(portText);
+      const portValid = Number.isInteger(portNumber) && portNumber >= 1024 && portNumber <= 65535;
+
+      if (widgetEnabled && !portValid) {
+        showTab('widget');
+        const dot = $('widget-dot');
+        const label = $('widget-status-text');
+        dot.className = 'dot error';
+        label.className = 'error';
+        label.textContent = tr('ui.widgetPortInvalid');
+        $('widgetPort').focus();
+        return;
+      }
+
+      const cfg = Object.assign(readGeneral(), readAppearance('o_'), {
+        widgetEnabled,
+        widgetPort: portText,
+        widget: readAppearance('w_')
+      });
+
+      const result = await window.api.saveConfig(cfg);
+      if (result && result.widgetPort) {
+        $('widgetPort').value = result.widgetPort;
+        updateLink();
+      }
+      if (result && result.widget) renderWidgetStatus(result.widget);
+
+      const widgetFailed = widgetEnabled && result && result.widget && result.widget.error;
+      showSaveStatus(tr(widgetFailed ? 'ui.savedWidgetFailed' : 'ui.saved'), widgetFailed);
+    }
+
+    /* ---------------- Запуск ---------------- */
+
+    async function init() {
+      $('overlay-form').innerHTML = appearanceHtml('o_');
+      $('widget-form').innerHTML = appearanceHtml('w_');
+      wireAppearance('o_', schedulePreview);
+      wireAppearance('w_', null);
+
+      $('useProxy').onchange = () => $('proxyBox').classList.toggle('disabled', !$('useProxy').checked);
+      $('hideCommands').addEventListener('change', schedulePreview);
+      $('ignoredBots').addEventListener('input', schedulePreview);
+
+      $('widgetPort').addEventListener('input', updateLink);
+
+      $('language').onchange = async () => {
+        const lang = $('language').value;
+        applyStrings(await window.api.setLanguage(lang), lang);
+      };
+
+      $('btn-copy').onclick = async () => {
+        if (!$('widgetLink').value) return;
+        await window.api.copyText($('widgetLink').value);
+        const original = tr('ui.copyLink');
+        $('btn-copy').textContent = tr('ui.copied');
+        setTimeout(() => { $('btn-copy').textContent = original; }, 1500);
+      };
+
+      // Канал берём прямо из поля, чтобы подсветка упоминаний в тесте работала ещё до сохранения
+      $('btn-test').onclick = () => window.api.sendTestMessage($('channel').value.trim());
+      $('btn-widget-test').onclick = () => window.api.sendWidgetTest($('channel').value.trim());
+      $('btn-save').onclick = save;
+
+      const cfg = await window.api.loadConfig();
+      const lang = cfg.language || 'en';
+      $('language').value = lang;
+
+      $('channel').value = cfg.channel;
+      $('useProxy').checked = cfg.useProxy;
+      $('proxyBox').classList.toggle('disabled', !cfg.useProxy);
+      $('proxyHost').value = cfg.proxyHost;
+      $('proxyPort').value = cfg.proxyPort;
+      $('proxyUser').value = cfg.proxyUser;
+      $('proxyPass').value = cfg.proxyPass;
+      $('hideCommands').checked = cfg.hideCommands;
+      $('ignoredBots').value = cfg.ignoredBots;
+      $('autoStart').checked = cfg.autoStart;
+
+      writeAppearance('o_', cfg);
+      writeAppearance('w_', cfg.widget);
+      $('widgetEnabled').checked = cfg.widgetEnabled;
+      $('widgetPort').value = cfg.widgetPort;
+      updateLink();
+
+      applyStrings(await window.api.getStrings(lang), lang);
+      renderWidgetStatus(await window.api.getWidgetStatus());
+
+      window.api.onWidgetStatus(renderWidgetStatus);
+      window.api.onStringsUpdated((data) => {
+        $('language').value = data.language;
+        applyStrings(data.strings, data.language);
+      });
+    }
+
+    init();
+  </script>
+</body>
+</html>
