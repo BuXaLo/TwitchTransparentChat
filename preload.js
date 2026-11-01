@@ -7,6 +7,14 @@ contextBridge.exposeInMainWorld('api', {
   saveConfig: (cfg) => ipcRenderer.invoke('save-config', cfg),
   getOverlayState: () => ipcRenderer.invoke('get-overlay-state'),
   previewOverlay: (view) => ipcRenderer.send('preview-overlay', view),
+  previewWidget: (view) => ipcRenderer.send('preview-widget', view),
+
+  // --- Обновления ---
+  checkForUpdates: (opts) => ipcRenderer.invoke('check-for-updates', opts),
+  installUpdate: (info) => ipcRenderer.invoke('install-update', info),
+  skipUpdateVersion: (ver) => ipcRenderer.invoke('skip-update-version', ver),
+  onUpdateAvailable: (cb) => ipcRenderer.on('update-available', (e, data) => cb(data)),
+  onUpdateProgress: (cb) => ipcRenderer.on('update-progress', (e, data) => cb(data)),
 
   // --- Язык ---
   getStrings: (lang) => ipcRenderer.invoke('get-strings', lang),

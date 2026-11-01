@@ -4,17 +4,52 @@
   --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --bg-opacity: 0.5;
   --text-align: left;
+
+  /* Переменные движка стилей v1.3.4 */
+  --plate-bg: rgba(0, 0, 0, 0.5);
+  --plate-radius: 6px;
+  --plate-border-width: 0px;
+  --plate-border-color: #9146FF;
+  --effect-speed-mult: 1;
+  --msg-text-color: #FFFFFF;
+  --msg-text-shadow:
+    -1px -1px 0 #000,
+    1px -1px 0 #000,
+    -1px 1px 0 #000,
+    1px 1px 0 #000,
+    -2px 0 0 #000,
+    2px 0 0 #000,
+    0 -2px 0 #000,
+    0 2px 0 #000,
+    0 2px 4px rgba(0, 0, 0, 0.9);
+  --nick-text-shadow:
+    -1px -1px 0 #000,
+    1px -1px 0 #000,
+    -1px 1px 0 #000,
+    1px 1px 0 #000,
+    -2px 0 0 #000,
+    2px 0 0 #000,
+    0 -2px 0 #000,
+    0 2px 0 #000,
+    0 2px 4px rgba(0, 0, 0, 0.9);
+}
+
+@property --cyber-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* Контейнер сообщений с градиентным растворением у краев */
+/* Контейнер сообщений с безопасным отступом 8px под свечение и градиентным растворением у краев */
 #chat {
   height: var(--chat-height, 100vh);
   overflow-y: hidden;
+  overflow-x: hidden;
   display: flex;
-  padding: 8px;
-  gap: 4px;
+  padding: 8px 10px;
+  gap: 5px;
   -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 35px), transparent 100%);
   mask-image: linear-gradient(to bottom, black calc(100% - 35px), transparent 100%);
 }
@@ -34,10 +69,12 @@
 }
 
 .message {
-  flex-shrink: 0; /* Запрещает сжатие высоты элементов */
-  background: rgba(0, 0, 0, var(--bg-opacity));
-  padding: 4px 8px;
-  border-radius: 6px;
+  position: relative;
+  flex-shrink: 0;
+  background: var(--plate-bg);
+  padding: 4px 9px;
+  border-radius: var(--plate-radius);
+  border: var(--plate-border-width) solid var(--plate-border-color);
   font-size: var(--font-size);
   font-family: var(--font-family);
   font-weight: 700;
@@ -47,23 +84,82 @@
   opacity: 1;
   transform: none;
   transition: opacity 0.8s ease-out, transform 0.8s ease-out;
-  border-left: 2px solid transparent;
-
-  text-shadow: 
-    -1px -1px 0 #000,  
-     1px -1px 0 #000,
-    -1px  1px 0 #000,
-     1px  1px 0 #000,
-    -2px  0   0 #000,
-     2px  0   0 #000,
-     0   -2px 0 #000,
-     0    2px 0 #000,
-     0    2px 4px rgba(0, 0, 0, 0.9);
 }
 
+/* Эффекты границы (однородные слои box-shadow для идеально плавной интерполяции в Chromium без ухода в белый) */
+.message.effect-neon {
+  box-shadow: 0 0 7px var(--plate-border-color), inset 0 0 4px rgba(255, 255, 255, 0.12);
+}
+
+.message.effect-pulse {
+  animation: borderPulse calc(2.2s * var(--effect-speed-mult, 1)) infinite ease-in-out var(--effect-sync-delay, 0s);
+}
+@keyframes borderPulse {
+  0%, 100% {
+    box-shadow: 0 0 2px var(--plate-border-color), inset 0 0 1px var(--plate-border-color);
+  }
+  50% {
+    box-shadow: 0 0 10px var(--plate-border-color), inset 0 0 5px var(--plate-border-color);
+  }
+}
+
+.message.effect-rgb {
+  animation: borderRgb calc(3s * var(--effect-speed-mult, 1)) infinite linear var(--effect-sync-delay, 0s);
+}
+@keyframes borderRgb {
+  0% {
+    box-shadow: -2px 0 5px rgba(255, 0, 85, 0.75), 2px 0 5px rgba(0, 229, 255, 0.75);
+    border-color: #ff0055;
+  }
+  33% {
+    box-shadow: 2px 0 5px rgba(0, 255, 136, 0.75), -2px 0 5px rgba(145, 70, 255, 0.75);
+    border-color: #00ff88;
+  }
+  66% {
+    box-shadow: 0 -2px 5px rgba(0, 229, 255, 0.75), 0 2px 5px rgba(255, 204, 0, 0.75);
+    border-color: #00e5ff;
+  }
+  100% {
+    box-shadow: -2px 0 5px rgba(255, 0, 85, 0.75), 2px 0 5px rgba(0, 229, 255, 0.75);
+    border-color: #ff0055;
+  }
+}
+
+.message.effect-breathing {
+  animation: borderBreathing calc(2.8s * var(--effect-speed-mult, 1)) infinite ease-in-out var(--effect-sync-delay, 0s);
+}
+@keyframes borderBreathing {
+  0%, 100% {
+    border-color: var(--plate-border-color);
+    box-shadow: 0 0 6px var(--plate-border-color);
+  }
+  50% {
+    border-color: transparent;
+    box-shadow: 0 0 0px transparent;
+  }
+}
+
+.message.effect-cyber::after {
+  content: '';
+  position: absolute;
+  inset: calc(-1 * max(var(--plate-border-width), 1px));
+  border-radius: inherit;
+  padding: max(var(--plate-border-width), 2px);
+  background: conic-gradient(from var(--cyber-angle), transparent 25%, var(--plate-border-color), #ffffff, var(--plate-border-color), transparent 75%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  animation: cyberSpin calc(3.2s * var(--effect-speed-mult, 1)) linear infinite var(--effect-sync-delay, 0s);
+}
+@keyframes cyberSpin {
+  to { --cyber-angle: 360deg; }
+}
+
+/* Награда за баллы канала: золотая полоса внутренней тенью, чтобы не конфликтовать с рамкой */
 .message.is-reward {
-  border-left: 2px solid rgba(229, 169, 60, 0.85);
-  background: rgba(30, 24, 12, var(--bg-opacity));
+  box-shadow: inset 3px 0 0 rgba(229, 169, 60, 0.95);
+  background: rgba(30, 24, 12, max(var(--bg-opacity), 0.35));
 }
 
 .reward-icon {
@@ -75,29 +171,27 @@
   object-fit: contain;
 }
 
-/* Упоминание или ответ тебе: голубая заливка (видна даже при прозрачном фоне),
-   голубая линия слева и короткая вспышка при появлении.
-   Награда + упоминание: линия остаётся золотой, заливка голубая. */
+/* Упоминание или ответ тебе: сохраняет фирменный голубой вид, как согласовано в ТЗ */
 .message.is-mention {
   position: relative;
-  background: rgba(35, 105, 190, max(var(--bg-opacity), 0.28));
-  border-left-color: rgba(86, 170, 255, 0.95);
+  background: rgba(35, 105, 190, max(var(--bg-opacity), 0.28)) !important;
+  box-shadow: inset 3px 0 0 rgba(86, 170, 255, 0.95);
 }
 .message.is-reward.is-mention {
-  border-left-color: rgba(229, 169, 60, 0.85);
+  box-shadow: inset 3px 0 0 rgba(229, 169, 60, 0.95);
 }
 .message.is-mention::before {
   content: '';
   position: absolute;
   inset: 0;
-  border-radius: 6px;
+  border-radius: inherit;
   pointer-events: none;
   background: rgba(120, 195, 255, 0.45);
   opacity: 0;
   animation: mentionFlash 1.1s ease-out 1;
 }
 @keyframes mentionFlash {
-  0%   { opacity: 0.9; }
+  0% { opacity: 0.9; }
   100% { opacity: 0; }
 }
 .mention-tag {
@@ -105,14 +199,24 @@
   font-weight: 800;
 }
 
-/* События чата (подписки, подарки, рейды): компактная строка */
+/* События чата (подписки, подарки, рейды): компактная системная строка (настройки плашки/текста не трогают её) */
 .message.is-notice {
-  /* Считаем от выбранного размера шрифта, а не от шрифта родителя, иначе настройка на строки событий не действует */
   font-size: calc(var(--font-size) * 0.92);
   font-weight: 600;
   padding: 3px 8px;
+  border-radius: 6px;
+  border: none;
   border-left: 2px solid rgba(145, 70, 255, 0.9);
-  background: rgba(40, 24, 70, var(--bg-opacity));
+  background: rgba(40, 24, 70, max(var(--bg-opacity), 0.45)) !important;
+  color: #ffffff;
+  box-shadow: none !important;
+  filter: none !important;
+  text-shadow:
+    -1px -1px 0 #000,
+    1px -1px 0 #000,
+    -1px 1px 0 #000,
+    1px 1px 0 #000,
+    0 2px 4px rgba(0, 0, 0, 0.9);
 }
 .notice-icon { margin-right: 5px; }
 .notice-user { font-weight: 800; }
@@ -123,7 +227,11 @@
   display: inline;
   margin-right: 6px;
 }
-.layout-inline .colon { display: inline; }
+.layout-inline .colon {
+  display: inline;
+  color: #ffffff;
+  text-shadow: var(--nick-text-shadow);
+}
 
 .layout-block .author-wrap {
   display: block;
@@ -147,13 +255,26 @@
   display: inline-block;
 }
 
+/* Никнейм использует только свою окантовку (--nick-text-shadow), настройки текста сообщений на него не влияют */
 .username {
   font-weight: 800;
+  text-shadow: var(--nick-text-shadow);
+}
+
+/* Настройки типографики и текста применяются строго к тексту сообщения */
+.text-content {
+  color: var(--msg-text-color);
+  text-shadow: var(--msg-text-shadow);
 }
 
 .message.fade-out {
   opacity: 0 !important;
   transform: translateY(-4px) !important;
+}
+
+/* Внутренняя обертка под анимацию появления, чтобы не перезаписывать animation динамических эффектов рамки на .message */
+.msg-appear-wrap {
+  display: contents;
 }
 
 .anim-fade { animation: animFade 0.25s ease-out forwards; }
@@ -178,6 +299,46 @@
 @keyframes animZoom {
   from { opacity: 0; transform: scale(0.92); }
   to { opacity: 1; transform: scale(1); }
+}
+
+/* Комбинирование анимации появления и бесконечного эффекта рамки, чтобы обе анимации работали одновременно */
+.message.anim-fade.effect-pulse {
+  animation: animFade 0.25s ease-out forwards, borderPulse calc(2.2s * var(--effect-speed-mult, 1)) infinite ease-in-out var(--effect-sync-delay, 0s);
+}
+.message.anim-slide-left.effect-pulse {
+  animation: animSlideLeft 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards, borderPulse calc(2.2s * var(--effect-speed-mult, 1)) infinite ease-in-out var(--effect-sync-delay, 0s);
+}
+.message.anim-slide-down.effect-pulse {
+  animation: animSlideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards, borderPulse calc(2.2s * var(--effect-speed-mult, 1)) infinite ease-in-out var(--effect-sync-delay, 0s);
+}
+.message.anim-zoom.effect-pulse {
+  animation: animZoom 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards, borderPulse calc(2.2s * var(--effect-speed-mult, 1)) infinite ease-in-out var(--effect-sync-delay, 0s);
+}
+
+.message.anim-fade.effect-rgb {
+  animation: animFade 0.25s ease-out forwards, borderRgb calc(3s * var(--effect-speed-mult, 1)) infinite linear var(--effect-sync-delay, 0s);
+}
+.message.anim-slide-left.effect-rgb {
+  animation: animSlideLeft 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards, borderRgb calc(3s * var(--effect-speed-mult, 1)) infinite linear var(--effect-sync-delay, 0s);
+}
+.message.anim-slide-down.effect-rgb {
+  animation: animSlideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards, borderRgb calc(3s * var(--effect-speed-mult, 1)) infinite linear var(--effect-sync-delay, 0s);
+}
+.message.anim-zoom.effect-rgb {
+  animation: animZoom 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards, borderRgb calc(3s * var(--effect-speed-mult, 1)) infinite linear var(--effect-sync-delay, 0s);
+}
+
+.message.anim-fade.effect-breathing {
+  animation: animFade 0.25s ease-out forwards, borderBreathing calc(2.8s * var(--effect-speed-mult, 1)) infinite ease-in-out var(--effect-sync-delay, 0s);
+}
+.message.anim-slide-left.effect-breathing {
+  animation: animSlideLeft 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards, borderBreathing calc(2.8s * var(--effect-speed-mult, 1)) infinite ease-in-out var(--effect-sync-delay, 0s);
+}
+.message.anim-slide-down.effect-breathing {
+  animation: animSlideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards, borderBreathing calc(2.8s * var(--effect-speed-mult, 1)) infinite ease-in-out var(--effect-sync-delay, 0s);
+}
+.message.anim-zoom.effect-breathing {
+  animation: animZoom 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards, borderBreathing calc(2.8s * var(--effect-speed-mult, 1)) infinite ease-in-out var(--effect-sync-delay, 0s);
 }
 
 /* Смайл + zero-width наложение (7TV/BTTV) */

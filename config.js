@@ -14,6 +14,13 @@ const ANIMATIONS = ['slide-left', 'slide-down', 'fade', 'zoom'];
 const DIRECTIONS = ['top', 'bottom'];
 const LAYOUTS = ['inline', 'block'];
 
+// Константы движка стилей v1.3.4
+const BG_MODES = ['solid', 'grad-mono', 'grad-dual'];
+const BG_MONO_MODES = ['tone', 'fade'];
+const BG_DIRECTIONS = ['to right', 'to left', 'to bottom', 'to top', '45deg', '135deg', 'radial'];
+const PLATE_SHAPES = ['rounded', 'strict'];
+const BORDER_EFFECTS = ['static', 'neon', 'pulse', 'rgb', 'cyber', 'breathing'];
+
 const DEFAULT_WIDGET_PORT = 8769;
 const MIN_PORT = 1024;
 const MAX_PORT = 65535;
@@ -37,12 +44,36 @@ const OVERLAY_APPEARANCE_DEFAULTS = {
   showGift: false,
   showRaid: false,
   highlightMentions: true,
-  mentionLonger: false
+  mentionLonger: false,
+
+  // --- Плашка (Контейнер) ---
+  bgMode: 'solid', // 'solid' | 'grad-mono' | 'grad-dual'
+  bgColor1: '#000000',
+  bgColor2: '#251640',
+  bgMonoMode: 'tone', // 'tone' (светлее<->темнее) | 'fade' (в прозрачность)
+  bgDirection: 'to right', // 'to right' | 'to left' | 'to bottom' | 'to top' | '45deg' | '135deg' | 'radial'
+  plateShape: 'rounded', // 'rounded' (6px) | 'strict' (0px)
+  borderWidth: 0, // 0..5 px
+  borderColor: '#9146FF',
+  borderEffect: 'static', // 'static' | 'neon' | 'pulse' | 'rgb' | 'cyber' | 'breathing'
+  borderEffectSpeed: 5, // 1..10 (скорость анимации эффекта границы, 5 = стандартная 1x)
+  borderEffectSync: false, // синхронизация фазы динамического эффекта между всеми сообщениями
+
+  // --- Текст сообщения ---
+  textColor: '#FFFFFF',
+  textOutlineWidth: 2, // 0..4 px (дефолт 2px сохраняет прежний вид)
+  textOutlineColor: '#000000',
+
+  // --- Кастомизация никнеймов ---
+  customNickEnabled: false,
+  customNickColor: '#9146FF',
+  customNickOutlineWidth: 2, // 0..4 px
+  customNickOutlineColor: '#000000'
 };
 
 const APPEARANCE_KEYS = Object.keys(OVERLAY_APPEARANCE_DEFAULTS);
 
-// Общее для оверлея и виджета: подключение и фильтры
+// Общее для оверлея и виджета: подключение, фильтры и пропущенная версия обновления
 const GENERAL_DEFAULTS = {
   channel: '',
   useProxy: false,
@@ -54,7 +85,8 @@ const GENERAL_DEFAULTS = {
   ignoredBots: 'Nightbot, StreamElements, Moobot, Fossabot',
   autoStart: false,
   widgetEnabled: false,
-  widgetPort: DEFAULT_WIDGET_PORT
+  widgetPort: DEFAULT_WIDGET_PORT,
+  ignoredUpdateVersion: ''
 };
 
 const DEFAULT_CONFIG = Object.assign({}, GENERAL_DEFAULTS, OVERLAY_APPEARANCE_DEFAULTS);
@@ -76,6 +108,16 @@ function bool(v, def) {
 function text(v, def = '') {
   if (typeof v === 'string') return v.trim();
   if (typeof v === 'number' && Number.isFinite(v)) return String(v);
+  return def;
+}
+
+function hexColor(v, def = '#000000') {
+  if (typeof v !== 'string') return def;
+  const s = v.trim();
+  if (/^#[0-9a-fA-F]{6}$/.test(s)) return s.toUpperCase();
+  if (/^#[0-9a-fA-F]{3}$/.test(s)) {
+    return ('#' + s[1] + s[1] + s[2] + s[2] + s[3] + s[3]).toUpperCase();
+  }
   return def;
 }
 
@@ -107,7 +149,31 @@ function sanitizeAppearance(src, defaults = OVERLAY_APPEARANCE_DEFAULTS, maxFont
     showGift: bool(s.showGift, d.showGift),
     showRaid: bool(s.showRaid, d.showRaid),
     highlightMentions: bool(s.highlightMentions, d.highlightMentions),
-    mentionLonger: bool(s.mentionLonger, d.mentionLonger)
+    mentionLonger: bool(s.mentionLonger, d.mentionLonger),
+
+    // Плашка
+    bgMode: oneOf(s.bgMode, BG_MODES, d.bgMode),
+    bgColor1: hexColor(s.bgColor1, d.bgColor1),
+    bgColor2: hexColor(s.bgColor2, d.bgColor2),
+    bgMonoMode: oneOf(s.bgMonoMode, BG_MONO_MODES, d.bgMonoMode),
+    bgDirection: oneOf(s.bgDirection, BG_DIRECTIONS, d.bgDirection),
+    plateShape: oneOf(s.plateShape, PLATE_SHAPES, d.plateShape),
+    borderWidth: clampInt(s.borderWidth, 0, 5, d.borderWidth),
+    borderColor: hexColor(s.borderColor, d.borderColor),
+    borderEffect: oneOf(s.borderEffect, BORDER_EFFECTS, d.borderEffect),
+    borderEffectSpeed: clampInt(s.borderEffectSpeed, 1, 10, d.borderEffectSpeed),
+    borderEffectSync: bool(s.borderEffectSync, d.borderEffectSync),
+
+    // Текст
+    textColor: hexColor(s.textColor, d.textColor),
+    textOutlineWidth: clampInt(s.textOutlineWidth, 0, 4, d.textOutlineWidth),
+    textOutlineColor: hexColor(s.textOutlineColor, d.textOutlineColor),
+
+    // Никнеймы
+    customNickEnabled: bool(s.customNickEnabled, d.customNickEnabled),
+    customNickColor: hexColor(s.customNickColor, d.customNickColor),
+    customNickOutlineWidth: clampInt(s.customNickOutlineWidth, 0, 4, d.customNickOutlineWidth),
+    customNickOutlineColor: hexColor(s.customNickOutlineColor, d.customNickOutlineColor)
   };
 }
 
@@ -136,7 +202,8 @@ function normalizeConfig(src) {
     ignoredBots: typeof s.ignoredBots === 'string' ? s.ignoredBots.trim() : g.ignoredBots,
     autoStart: bool(s.autoStart, g.autoStart),
     widgetEnabled: bool(s.widgetEnabled, g.widgetEnabled),
-    widgetPort: normalizePort(s.widgetPort)
+    widgetPort: normalizePort(s.widgetPort),
+    ignoredUpdateVersion: text(s.ignoredUpdateVersion, g.ignoredUpdateVersion)
   };
 
   Object.assign(out, sanitizeAppearance(s, OVERLAY_APPEARANCE_DEFAULTS));
@@ -166,10 +233,10 @@ function widgetView(cfg) {
   });
 }
 
-// Живой предпросмотр из окна настроек: те же поля, что в overlayView, но проверенные
-function sanitizePreview(src) {
+// Живой предпросмотр из окна настроек: те же поля, что в overlayView / widgetView, но проверенные
+function sanitizePreview(src, maxFontSize = MAX_FONT_SIZE_OVERLAY) {
   const s = src && typeof src === 'object' ? src : {};
-  return Object.assign(sanitizeAppearance(s, OVERLAY_APPEARANCE_DEFAULTS), {
+  return Object.assign(sanitizeAppearance(s, OVERLAY_APPEARANCE_DEFAULTS, maxFontSize), {
     hideCommands: bool(s.hideCommands, GENERAL_DEFAULTS.hideCommands),
     ignoredBots: typeof s.ignoredBots === 'string' ? s.ignoredBots.trim() : GENERAL_DEFAULTS.ignoredBots
   });
@@ -177,6 +244,11 @@ function sanitizePreview(src) {
 
 module.exports = {
   FONT_FAMILIES,
+  BG_MODES,
+  BG_MONO_MODES,
+  BG_DIRECTIONS,
+  PLATE_SHAPES,
+  BORDER_EFFECTS,
   DEFAULT_WIDGET_PORT,
   MAX_FONT_SIZE_OVERLAY,
   MAX_FONT_SIZE_WIDGET,

@@ -6,6 +6,7 @@ const emotes = require('./emotes');
 const { t, setLang, getStrings } = require('./locales');
 const configLib = require('./config');
 const { createWidgetServer } = require('./widget-server');
+const updater = require('./updater');
 
 const HOTKEY = 'CommandOrControl+Alt+F9';
 
@@ -28,6 +29,8 @@ let tray = null;
 let isClickThrough = false;
 let settingsWin = null;
 let chatStarted = false;
+let lastConnectedKey = null;
+let pendingUpdateInfo = null;
 const testRunning = { overlay: false, widget: false };
 
 const TEST_STEP_DELAY = 450; // пауза между тестовыми сообщениями, мс
@@ -47,6 +50,17 @@ function proxyFromConfig(cfg) {
   return null;
 }
 
+function connectionKey(cfg) {
+  return [
+    String(cfg.channel || '').trim().toLowerCase(),
+    cfg.useProxy ? '1' : '0',
+    String(cfg.proxyHost || '').trim(),
+    String(cfg.proxyPort || '').trim(),
+    String(cfg.proxyUser || '').trim(),
+    String(cfg.proxyPass || '')
+  ].join('|');
+}
+
 function sendToWindow(channel, payload) {
   if (win && !win.isDestroyed()) {
     win.webContents.send(channel, payload);
@@ -60,7 +74,7 @@ function sendToSettings(channel, payload) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Сквозной режим, видимость, панель задач                             */
+/* Сквозной режим, видимость, панель задач */
 /* ------------------------------------------------------------------ */
 
 function setClickThrough(value) {
@@ -96,19 +110,21 @@ function openSettingsWindow() {
     if (settingsWin.isMinimized()) settingsWin.restore();
     settingsWin.show();
     settingsWin.focus();
+    if (pendingUpdateInfo) {
+      sendToSettings('update-available', pendingUpdateInfo);
+    }
     return;
   }
 
   settingsWin = new BrowserWindow({
-    width: 600,
-    height: 760,
-    minWidth: 500,
-    minHeight: 520,
+    width: 620,
+    height: 780,
+    minWidth: 520,
+    minHeight: 540,
     title: t('settings.title'),
     icon: path.join(__dirname, 'icon.ico'),
     backgroundColor: '#101014',
     autoHideMenuBar: true,
-    // Оверлей стоит поверх всех окон, поэтому окно настроек тоже должно быть над ним
     alwaysOnTop: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -119,20 +135,25 @@ function openSettingsWindow() {
   settingsWin.setMenu(null);
   settingsWin.loadFile('settings.html');
 
+  settingsWin.webContents.once('did-finish-load', () => {
+    if (pendingUpdateInfo) {
+      sendToSettings('update-available', pendingUpdateInfo);
+    }
+  });
+
   settingsWin.on('closed', () => {
     settingsWin = null;
-    // Окно закрыли без сохранения: оверлей возвращается к сохранённому виду (после предпросмотра)
-    sendToWindow('config-applied', configLib.overlayView(getConfig()));
+    // Окно закрыли без сохранения: и оверлей, и виджет возвращаются к сохранённому виду (после предпросмотра)
+    const saved = getConfig();
+    sendToWindow('config-applied', configLib.overlayView(saved));
+    widgetServer.broadcast('state', widgetState());
   });
 }
 
 /* ------------------------------------------------------------------ */
-/* Автозапуск вместе с Windows                                         */
+/* Автозапуск вместе с Windows */
 /* ------------------------------------------------------------------ */
 
-// В portable-сборке process.execPath указывает на временную распаковку, а настоящий путь к .exe
-// electron-builder кладёт в PORTABLE_EXECUTABLE_FILE. Из исходников (npm start) автозапуск не трогаем,
-// чтобы не зарегистрировать electron.exe.
 function getAutoStartPath() {
   if (!app.isPackaged) return null;
   return process.env.PORTABLE_EXECUTABLE_FILE || process.execPath;
@@ -143,8 +164,6 @@ function applyAutoStart(enabled) {
   if (!exe) return;
   try {
     const wanted = !!enabled;
-    // Пишем в систему, только если состояние отличается: при каждом запуске это заодно
-    // обновляет путь, если пользователь переложил .exe в другую папку
     if (app.getLoginItemSettings({ path: exe }).openAtLogin !== wanted) {
       app.setLoginItemSettings({ openAtLogin: wanted, path: exe });
     }
@@ -154,7 +173,7 @@ function applyAutoStart(enabled) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Иконка в трее                                                       */
+/* Иконка в трее */
 /* ------------------------------------------------------------------ */
 
 function buildTrayMenu() {
@@ -179,7 +198,6 @@ function createTray() {
   if (!icon.isEmpty()) icon = icon.resize({ width: 32, height: 32, quality: 'best' });
 
   tray = new Tray(icon);
-  // Левый клик открывает то же меню, что и правый, и сам ничего не скрывает
   tray.on('click', () => {
     refreshTray();
     tray.popUpContextMenu();
@@ -188,18 +206,16 @@ function createTray() {
 }
 
 /* ------------------------------------------------------------------ */
-/* Окно                                                                */
+/* Окно */
 /* ------------------------------------------------------------------ */
 
 const DEFAULT_BOUNDS = { width: 420, height: 650 };
-const MIN_WINDOW_W = 200; // совпадает с minWidth/minHeight окна
+const MIN_WINDOW_W = 200;
 const MIN_WINDOW_H = 150;
-const MIN_VISIBLE_W = 100;  // окно считается потерянным, если ни на одном мониторе не видно хотя бы такой части
+const MIN_VISIBLE_W = 100;
 const MIN_VISIBLE_H = 50;
-const BOUNDS_TOLERANCE = 3; // допуск при сравнении границ (округления при масштабировании Windows), px
+const BOUNDS_TOLERANCE = 3;
 
-// Если не null, окно стоит в исправленной позиции. Её нельзя записывать в конфиг:
-// сохранённая раньше позиция остаётся, пока пользователь сам не сдвинет или не растянет окно.
 let correctedBounds = null;
 
 function numberOrUndefined(v) {
@@ -216,20 +232,16 @@ function visibleSize(bounds, area) {
   return { w: Math.max(0, w), h: Math.max(0, h) };
 }
 
-// Проверяет сохранённые границы окна. Если окно и так видно хотя бы на одном мониторе, возвращает их как есть.
-// Если оно «уехало» (например, отключили монитор), возвращает границы по центру основного монитора.
 function fitBoundsToDisplays(saved, displays, primary) {
   const w = numberOrUndefined(saved && saved.width);
   const h = numberOrUndefined(saved && saved.height);
   const bounds = {
-    // Размер: испорченное значение (нет, ноль, отрицательное) заменяем на стандартное; допустимые не трогаем
     width: w > 0 ? Math.max(w, MIN_WINDOW_W) : DEFAULT_BOUNDS.width,
     height: h > 0 ? Math.max(h, MIN_WINDOW_H) : DEFAULT_BOUNDS.height,
     x: numberOrUndefined(saved && saved.x),
     y: numberOrUndefined(saved && saved.y)
   };
 
-  // Позиции нет (первый запуск или повреждённый конфиг): место выберет система
   if (bounds.x === undefined || bounds.y === undefined) return { bounds, corrected: false };
 
   const onScreen = displays.some((d) => {
@@ -256,7 +268,6 @@ function persistBounds() {
   if (!win || win.isDestroyed() || win.isMaximized() || win.isMinimized()) return;
   const current = win.getBounds();
   if (correctedBounds) {
-    // Пользователь ещё не трогал окно: старую сохранённую позицию не перезаписываем
     if (sameBounds(current, correctedBounds)) return;
     correctedBounds = null;
   }
@@ -280,7 +291,6 @@ function createWindow() {
     alwaysOnTop: true,
     hasShadow: false,
     resizable: true,
-    // Окно без кнопки на панели задач (и в Alt+Tab): Win+D, Win+M и «Свернуть все окна» его не трогают
     skipTaskbar: true,
     icon: path.join(__dirname, 'icon.ico'),
     webPreferences: {
@@ -292,7 +302,6 @@ function createWindow() {
   win.setAlwaysOnTop(true, 'screen-saver');
   win.loadFile('index.html');
 
-  // Debounce сохранения положения окна (400мс)
   let saveBoundsTimeout = null;
   const debouncedSaveBounds = () => {
     clearTimeout(saveBoundsTimeout);
@@ -311,20 +320,18 @@ function createWindow() {
     if (settingsWin && !settingsWin.isDestroyed()) settingsWin.close();
   });
 
-  // Регистрируем хоткей после загрузки страницы, чтобы предупреждение не потерялось
   win.webContents.once('did-finish-load', () => {
     const ok = globalShortcut.register(HOTKEY, toggleClickThrough);
     win.webContents.send('hotkey-status', { ok });
     startInitialChat();
+    runStartupUpdateCheck();
   });
 }
 
 /* ------------------------------------------------------------------ */
-/* Настройки, чат и виджет для OBS                                     */
+/* Настройки, чат и виджет для OBS */
 /* ------------------------------------------------------------------ */
 
-// Настройки хранятся в прежнем плоском виде, поэтому после обновления ничего не теряется;
-// недостающие поля (виджет, подсветка упоминаний) дополняются значениями по умолчанию
 function getConfig() {
   return configLib.normalizeConfig(store.get('twitch_config', {}));
 }
@@ -333,14 +340,15 @@ function currentLanguage() {
   return store.get('language', 'en');
 }
 
-function widgetState() {
+function widgetState(customWidgetView) {
   const lang = currentLanguage();
-  return { config: configLib.widgetView(getConfig()), strings: getStrings(lang), language: lang };
+  const view = customWidgetView || configLib.widgetView(getConfig());
+  return { config: view, strings: getStrings(lang), language: lang };
 }
 
 const widgetServer = createWidgetServer({
   rootDir: __dirname,
-  getState: widgetState,
+  getState: () => widgetState(),
   fetchImage: (url) => emotes.fetchImage(url),
   isHostAllowed: (host) => emotes.ALLOWED_IMAGE_HOSTS.has(host),
   onChange: () => sendToSettings('widget-status', widgetStatus())
@@ -362,7 +370,6 @@ async function applyWidgetSettings(cfg) {
   }
 }
 
-// Каждое сообщение чата получают и оверлей, и подключённые виджеты
 function broadcastMessage(msg) {
   sendToWindow('new-message', msg);
   widgetServer.broadcast('chat', msg);
@@ -375,6 +382,7 @@ function broadcastRemove(info) {
 
 function startChat(cfg) {
   chatStarted = true;
+  lastConnectedKey = connectionKey(cfg);
   connectTwitch({
     channel: cfg.channel,
     useProxy: cfg.useProxy,
@@ -391,24 +399,93 @@ function startChat(cfg) {
   });
 }
 
-// Первый запуск (канал не задан): сразу открываем настройки
 function startInitialChat() {
   const cfg = getConfig();
   if (cfg.channel) startChat(cfg);
   else openSettingsWindow();
 }
 
-// Загрузка конфигурации (+ язык интерфейса, он хранится отдельно)
-ipcMain.handle('load-config', () => Object.assign({}, getConfig(), { language: currentLanguage() }));
+/* ------------------------------------------------------------------ */
+/* Проверка обновлений при старте и через настройки */
+/* ------------------------------------------------------------------ */
 
-// Сохранение: применяем к оверлею, переподключаем чат, запускаем или останавливаем виджет
+async function runStartupUpdateCheck() {
+  const cfg = getConfig();
+  emotes.setNetwork(proxyFromConfig(cfg));
+
+  const res = await updater.checkForUpdates({
+    ignoredVersion: cfg.ignoredUpdateVersion,
+    lang: currentLanguage(),
+    ignoreSkipped: false
+  });
+
+  if (res && res.hasUpdate) {
+    pendingUpdateInfo = res;
+    openSettingsWindow();
+  }
+}
+
+ipcMain.handle('check-for-updates', async (event, opts) => {
+  const cfg = getConfig();
+  emotes.setNetwork(proxyFromConfig(cfg));
+  const res = await updater.checkForUpdates({
+    ignoredVersion: cfg.ignoredUpdateVersion,
+    lang: currentLanguage(),
+    ignoreSkipped: !!(opts && opts.manual)
+  });
+  if (res && res.hasUpdate) pendingUpdateInfo = res;
+  return res;
+});
+
+ipcMain.handle('skip-update-version', (event, version) => {
+  const cfg = getConfig();
+  cfg.ignoredUpdateVersion = String(version || '').trim();
+  store.set('twitch_config', cfg);
+  pendingUpdateInfo = null;
+  return { ok: true, ignoredUpdateVersion: cfg.ignoredUpdateVersion };
+});
+
+ipcMain.handle('install-update', async (event, updateInfo) => {
+  const cfg = getConfig();
+  pendingUpdateInfo = null;
+  return updater.downloadAndInstallUpdate(updateInfo || pendingUpdateInfo, {
+    useProxy: !!(cfg.useProxy && cfg.proxyHost && cfg.proxyPort),
+    onProgress: (prog) => sendToSettings('update-progress', prog),
+    onDownloaded: () => sendToSettings('update-progress', { downloaded: true }),
+    onError: (msg) => sendToSettings('update-progress', { error: msg })
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* IPC обработчики настроек и предпросмотра */
+/* ------------------------------------------------------------------ */
+
+ipcMain.handle('load-config', () => Object.assign({}, getConfig(), {
+  language: currentLanguage(),
+  currentVersion: app.getVersion(),
+  isPortable: updater.isPortableBuild(),
+  pendingUpdate: pendingUpdateInfo,
+  defaults: configLib.OVERLAY_APPEARANCE_DEFAULTS
+}));
+
 ipcMain.handle('save-config', async (event, raw) => {
-  const cfg = configLib.normalizeConfig(raw);
+  const prev = getConfig();
+  const forceReconnect = !!(raw && raw._forceReconnect);
+  const cfg = configLib.normalizeConfig(Object.assign({}, raw, {
+    ignoredUpdateVersion: raw.ignoredUpdateVersion !== undefined ? raw.ignoredUpdateVersion : prev.ignoredUpdateVersion
+  }));
   store.set('twitch_config', cfg);
   applyAutoStart(cfg.autoStart);
 
   sendToWindow('config-applied', configLib.overlayView(cfg));
-  startChat(cfg);
+
+  // Перезапускаем подключение к чату только при явном нажатии «Сохранить и подключиться»
+  // либо если изменились параметры канала/прокси (чтобы сохранение стилей из модалок не рвало сокет)
+  const newKey = connectionKey(cfg);
+  if (forceReconnect || !chatStarted || newKey !== lastConnectedKey) {
+    startChat(cfg);
+  }
+
   await applyWidgetSettings(cfg);
   widgetServer.broadcast('state', widgetState());
 
@@ -420,20 +497,22 @@ ipcMain.handle('get-overlay-state', () => {
   return { config: configLib.overlayView(getConfig()), strings: getStrings(lang), language: lang };
 });
 
-// Живой предпросмотр из окна настроек: применяется к оверлею, но не сохраняется
+// Живой предпросмотр оверлея (применяется на лету, но не сохраняется в store)
 ipcMain.on('preview-overlay', (event, view) => {
-  sendToWindow('config-applied', configLib.sanitizePreview(view));
+  sendToWindow('config-applied', configLib.sanitizePreview(view, configLib.MAX_FONT_SIZE_OVERLAY));
+});
+
+// Живой предпросмотр виджета OBS по SSE (на лету, без сохранения)
+ipcMain.on('preview-widget', (event, view) => {
+  const sanitized = configLib.sanitizePreview(view, configLib.MAX_FONT_SIZE_WIDGET);
+  widgetServer.broadcast('state', widgetState(sanitized));
 });
 
 ipcMain.on('open-settings-window', openSettingsWindow);
-
-// Кнопка «Сквозной режим» в шапке окна (обратно из этого режима выходят хоткеем или через трей)
 ipcMain.on('enable-click-through', () => setClickThrough(true));
 
-// Строки интерфейса для окна
 ipcMain.handle('get-strings', (event, lang) => getStrings(lang || currentLanguage()));
 
-// Смена языка: сохраняем сразу, переключаем строки в main (статусы, трей) и сообщаем всем окнам и виджету
 ipcMain.handle('set-language', (event, lang) => {
   const applied = setLang(lang);
   store.set('language', applied);
@@ -454,16 +533,12 @@ ipcMain.handle('copy-text', (event, text) => {
   return true;
 });
 
-// Тест: по одному клику выдаёт все сценарии (обычные сообщения, награды, /me, упоминания и ответы,
-// события подписок и рейдов, удаление сообщения модератором). Работает и без подключения к чату.
-// Тест оверлея и тест виджета независимы: сообщения уходят только в выбранное место.
 async function runTest(kind, channel, sendMessage, sendRemove) {
   if (testRunning[kind]) return;
   testRunning[kind] = true;
   try {
     const cfg = getConfig();
     if (!chatStarted) {
-      // Чата ещё нет: берём сетевые настройки из сохранённого конфига, чтобы подтянуть глобальные смайлы
       emotes.setNetwork(proxyFromConfig(cfg));
     }
     await Promise.race([emotes.ensureGlobalEmotes(), new Promise((resolve) => setTimeout(resolve, 2500))]);
@@ -479,7 +554,6 @@ async function runTest(kind, channel, sendMessage, sendRemove) {
 }
 
 ipcMain.on('send-test-message', (event, channel) => {
-  // Если оверлей скрыт через трей, тест всё равно должен быть виден
   revealOverlay();
   runTest(
     'overlay',
@@ -499,10 +573,9 @@ ipcMain.on('send-widget-test', (event, channel) => {
 });
 
 /* ------------------------------------------------------------------ */
-/* Запуск                                                              */
+/* Запуск */
 /* ------------------------------------------------------------------ */
 
-// Повторный запуск: выходим из сквозного режима и показываем обычное окно (даже если его скрыли через трей)
 app.on('second-instance', () => {
   if (!win || win.isDestroyed()) return;
   if (isClickThrough) setClickThrough(false);
@@ -512,9 +585,8 @@ app.on('second-instance', () => {
 });
 
 app.whenReady().then(() => {
-  if (!gotSingleInstanceLock) return; // лишний экземпляр: он уже закрывается
+  if (!gotSingleInstanceLock) return;
 
-  // emote://cdn.7tv.app/emote/<id>/2x.webp  ->  https://cdn.7tv.app/emote/<id>/2x.webp (через прокси, если включён)
   protocol.handle('emote', async (request) => {
     try {
       const u = new URL(request.url);
@@ -531,17 +603,13 @@ app.whenReady().then(() => {
     }
   });
 
-  // Устаревший ключ: окно теперь всегда скрыто с панели задач
   store.delete('skip_taskbar');
 
   createWindow();
   createTray();
 
-  // Синхронизируем автозапуск с сохранённой настройкой (заодно обновляет путь, если .exe переложили)
   const cfg = getConfig();
   applyAutoStart(cfg.autoStart);
-
-  // Виджет для OBS по умолчанию выключен; если он был включён, поднимаем сервер
   applyWidgetSettings(cfg);
 });
 

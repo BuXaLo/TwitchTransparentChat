@@ -3,7 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <title>Twitch Overlay: Settings</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@600;800&family=Montserrat:wght@600;800&family=Roboto:wght@500;700&display=swap" rel="stylesheet">
   <style>
+    @property --cyber-angle {
+      syntax: '<angle>';
+      initial-value: 0deg;
+      inherits: false;
+    }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     html, body { height: 100%; }
@@ -41,7 +50,7 @@
     .tab-btn.active { color: #fff; border-bottom-color: #9146FF; }
 
     .content { flex: 1; overflow-y: auto; padding: 14px 18px; }
-    .tab { display: flex; flex-direction: column; gap: 10px; max-width: 540px; }
+    .tab { display: flex; flex-direction: column; gap: 10px; max-width: 560px; }
 
     .footer {
       display: flex;
@@ -80,6 +89,15 @@
       font-size: 13px;
       outline: none;
     }
+    input[type="color"] {
+      background: #25252b;
+      border: 1px solid #444;
+      border-radius: 4px;
+      height: 32px;
+      width: 100%;
+      padding: 2px;
+      cursor: pointer;
+    }
     input:focus, select:focus { border-color: #9146FF; }
     input[readonly] { color: #cfcfd6; cursor: text; }
 
@@ -105,25 +123,34 @@
     .note { font-size: 12px; color: #888; line-height: 1.45; }
     hr { border: none; border-top: 1px solid #2a2a31; margin: 4px 0; }
 
-    button.primary, button.accent {
+    button.primary, button.accent, button.secondary {
       border-radius: 4px;
       cursor: pointer;
       font-weight: bold;
       font-size: 13px;
       padding: 8px 16px;
     }
-    /* Главная кнопка: сплошная заливка */
     button.primary { background: #9146FF; color: #fff; border: none; }
-    button.primary:hover { background: #7c2cf5; }
-    /* Кнопки действий (тест, копирование): фиолетовая рамка, заливка при наведении.
-       Так они не похожи на поля и выпадающие списки */
+    button.primary:hover:not(:disabled) { background: #7c2cf5; }
     button.accent {
       background: rgba(145, 70, 255, 0.14);
       color: #e9dcff;
       border: 1px solid #9146FF;
     }
     button.accent:hover:not(:disabled) { background: #9146FF; color: #fff; }
-    .tab > button.accent { align-self: flex-start; }
+    button.secondary {
+      background: #25252b;
+      color: #ccc;
+      border: 1px solid #444;
+    }
+    button.secondary:hover:not(:disabled) { background: #32323a; color: #fff; }
+    .tab-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 4px;
+    }
     button:disabled { opacity: 0.4; cursor: default; }
 
     .widget-status { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #bbb; }
@@ -131,6 +158,307 @@
     .dot.ok { background: #3fcf3f; }
     .dot.error { background: #ff5252; }
     #widget-status-text.error { color: #ff8585; }
+
+    /* Карточки кастомизации стилей */
+    .section-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #b5b5c0;
+      margin-top: 4px;
+    }
+    .style-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+    .style-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 9px 12px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid #2d2d36;
+      border-radius: 6px;
+    }
+    .style-card-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+    .style-card-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #f0f0f5;
+    }
+    .style-card-desc {
+      font-size: 11px;
+      color: #8c8c99;
+    }
+    .style-card button {
+      padding: 6px 12px;
+      font-size: 12px;
+      flex-shrink: 0;
+    }
+
+    /* Блок проверки обновлений во вкладке Общие */
+    .update-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 9px 12px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid #2d2d36;
+      border-radius: 6px;
+    }
+    #update-check-status {
+      font-size: 12px;
+      color: #aaa;
+    }
+
+    /* Модальные окна (Плашка, Текст, Никнеймы и Обновление) */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(8, 8, 11, 0.78);
+      backdrop-filter: blur(2px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 500;
+      padding: 18px;
+    }
+    .modal-window {
+      background: #16161d;
+      border: 1px solid #383846;
+      border-radius: 8px;
+      width: 100%;
+      max-width: 480px;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 14px 36px rgba(0, 0, 0, 0.65);
+      overflow: hidden;
+    }
+    .modal-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid #2a2a34;
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .modal-body {
+      padding: 14px 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 11px;
+    }
+    .modal-footer {
+      padding: 10px 16px;
+      border-top: 1px solid #2a2a34;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      background: #121218;
+    }
+    .modal-footer-right {
+      display: flex;
+      gap: 8px;
+    }
+
+    /* Мини-превью плашки и текста внутри модальных окон */
+    .modal-preview-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      margin-bottom: 2px;
+    }
+    .modal-preview-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #9696a6;
+    }
+    .modal-preview-stage {
+      padding: 14px 16px;
+      border-radius: 6px;
+      border: 1px solid #2b2b36;
+      background-color: #14141a;
+      background-image:
+        linear-gradient(45deg, #1d1d26 25%, transparent 25%),
+        linear-gradient(-45deg, #1d1d26 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #1d1d26 75%),
+        linear-gradient(-45deg, transparent 75%, #1d1d26 75%);
+      background-size: 16px 16px;
+      background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+      overflow: hidden;
+    }
+    .mini-preview-plate {
+      --plate-bg: rgba(0, 0, 0, 0.5);
+      --plate-radius: 6px;
+      --plate-border-width: 0px;
+      --plate-border-color: #9146FF;
+      --effect-speed-mult: 1;
+      --msg-text-color: #FFFFFF;
+      --msg-text-shadow: none;
+      --nick-text-shadow: none;
+
+      position: relative;
+      background: var(--plate-bg);
+      padding: 5px 10px;
+      border-radius: var(--plate-radius);
+      border: var(--plate-border-width) solid var(--plate-border-color);
+      font-size: 14px !important;
+      font-weight: 700;
+      line-height: 1.35;
+      word-break: break-word;
+    }
+    .mini-preview-plate .mini-author-wrap {
+      display: inline;
+      margin-right: 6px;
+    }
+    .mini-preview-plate.layout-block .mini-author-wrap {
+      display: block;
+      margin-bottom: 2px;
+      font-size: 0.9em;
+    }
+    .mini-preview-plate.layout-block .mini-colon {
+      display: none;
+    }
+    .mini-preview-plate .mini-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 15px;
+      height: 15px;
+      border-radius: 3px;
+      background: #9146FF;
+      color: #fff;
+      font-size: 10px;
+      vertical-align: middle;
+      margin-right: 4px;
+      text-shadow: none;
+    }
+    .mini-preview-plate .mini-nick {
+      font-weight: 800;
+      text-shadow: var(--nick-text-shadow);
+    }
+    .mini-preview-plate .mini-colon,
+    .mini-preview-plate .mini-text {
+      color: var(--msg-text-color);
+      text-shadow: var(--msg-text-shadow);
+    }
+
+    /* Эффекты границы на мини-плашке (точно повторяют chat.css) */
+    .mini-preview-plate.effect-neon {
+      box-shadow: 0 0 7px var(--plate-border-color), inset 0 0 4px rgba(255, 255, 255, 0.12);
+    }
+    .mini-preview-plate.effect-pulse {
+      animation: borderPulse calc(2.2s * var(--effect-speed-mult, 1)) infinite ease-in-out;
+    }
+    @keyframes borderPulse {
+      0%, 100% {
+        box-shadow: 0 0 2px var(--plate-border-color), inset 0 0 1px var(--plate-border-color);
+      }
+      50% {
+        box-shadow: 0 0 10px var(--plate-border-color), inset 0 0 5px var(--plate-border-color);
+      }
+    }
+    .mini-preview-plate.effect-rgb {
+      animation: borderRgb calc(3s * var(--effect-speed-mult, 1)) infinite linear;
+    }
+    @keyframes borderRgb {
+      0% {
+        box-shadow: -2px 0 5px rgba(255, 0, 85, 0.75), 2px 0 5px rgba(0, 229, 255, 0.75);
+        border-color: #ff0055;
+      }
+      33% {
+        box-shadow: 2px 0 5px rgba(0, 255, 136, 0.75), -2px 0 5px rgba(145, 70, 255, 0.75);
+        border-color: #00ff88;
+      }
+      66% {
+        box-shadow: 0 -2px 5px rgba(0, 229, 255, 0.75), 0 2px 5px rgba(255, 204, 0, 0.75);
+        border-color: #00e5ff;
+      }
+      100% {
+        box-shadow: -2px 0 5px rgba(255, 0, 85, 0.75), 2px 0 5px rgba(0, 229, 255, 0.75);
+        border-color: #ff0055;
+      }
+    }
+    .mini-preview-plate.effect-breathing {
+      animation: borderBreathing calc(2.8s * var(--effect-speed-mult, 1)) infinite ease-in-out;
+    }
+    @keyframes borderBreathing {
+      0%, 100% {
+        border-color: var(--plate-border-color);
+        box-shadow: 0 0 6px var(--plate-border-color);
+      }
+      50% {
+        border-color: transparent;
+        box-shadow: 0 0 0px transparent;
+      }
+    }
+    .mini-preview-plate.effect-cyber::after {
+      content: '';
+      position: absolute;
+      inset: calc(-1 * max(var(--plate-border-width), 1px));
+      border-radius: inherit;
+      padding: max(var(--plate-border-width), 2px);
+      background: conic-gradient(from var(--cyber-angle), transparent 25%, var(--plate-border-color), #ffffff, var(--plate-border-color), transparent 75%);
+      -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+      animation: cyberSpin calc(3.2s * var(--effect-speed-mult, 1)) linear infinite;
+    }
+    @keyframes cyberSpin {
+      to { --cyber-angle: 360deg; }
+    }
+
+    .release-notes-box {
+      background: #101015;
+      border: 1px solid #2c2c38;
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-size: 12px;
+      line-height: 1.55;
+      color: #ddd;
+      max-height: 230px;
+      overflow-y: auto;
+    }
+    .release-notes-box h3, .release-notes-box h4 {
+      color: #fff;
+      font-size: 13px;
+      margin: 6px 0 4px;
+    }
+    .release-notes-box h3:first-child, .release-notes-box h4:first-child {
+      margin-top: 0;
+    }
+    .release-notes-box p {
+      margin: 4px 0;
+    }
+    .release-notes-box ul {
+      margin: 4px 0 6px 18px;
+    }
+    .release-notes-box li {
+      margin: 2px 0;
+    }
+    .release-notes-box code {
+      background: rgba(255, 255, 255, 0.08);
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-family: Consolas, monospace;
+      font-size: 11px;
+      color: #e9dcff;
+    }
+    #update-progress-text {
+      font-size: 12px;
+      color: #9146FF;
+      font-weight: 600;
+    }
   </style>
 </head>
 <body>
@@ -187,13 +515,21 @@
         <span data-i18n="ui.autoStart"></span>
       </label>
 
+      <div class="update-bar">
+        <span id="update-check-status"></span>
+        <button class="accent" id="btn-check-updates" data-i18n="ui.checkUpdates"></button>
+      </div>
+
       <p class="note" data-i18n="ui.sharedNote"></p>
     </section>
 
     <!-- Оверлей -->
     <section class="tab hidden" id="tab-overlay">
       <div id="overlay-form" style="display: flex; flex-direction: column; gap: 10px;"></div>
-      <button class="accent" id="btn-test" data-i18n="ui.test"></button>
+      <div class="tab-actions">
+        <button class="accent" id="btn-test" data-i18n="ui.test"></button>
+        <button class="secondary" id="btn-reset-overlay" data-i18n="ui.resetTabDefaults"></button>
+      </div>
     </section>
 
     <!-- Виджет для OBS -->
@@ -224,7 +560,10 @@
 
       <hr>
       <div id="widget-form" style="display: flex; flex-direction: column; gap: 10px;"></div>
-      <button class="accent" id="btn-widget-test" data-i18n="ui.widgetTest"></button>
+      <div class="tab-actions">
+        <button class="accent" id="btn-widget-test" data-i18n="ui.widgetTest"></button>
+        <button class="secondary" id="btn-reset-widget" data-i18n="ui.resetTabDefaults"></button>
+      </div>
     </section>
   </div>
 
@@ -233,9 +572,393 @@
     <span id="save-status"></span>
   </div>
 
+  <!-- МОДАЛЬНОЕ ОКНО 1: Внешний вид плашки -->
+  <div class="modal-backdrop hidden" id="modal-plate">
+    <div class="modal-window">
+      <div class="modal-header" data-i18n="ui.plateModalTitle"></div>
+      <div class="modal-body">
+        <div class="modal-preview-wrap">
+          <span class="modal-preview-label" data-i18n="ui.previewLabel"></span>
+          <div class="modal-preview-stage">
+            <div class="mini-preview-plate" data-mini-preview>
+              <span class="mini-author-wrap"><span class="mini-badge">★</span><span class="mini-nick" data-mini-nick>TestViewer</span><span class="mini-colon">: </span></span><span class="mini-text" data-i18n="ui.previewSampleText"></span>
+            </div>
+          </div>
+        </div>
+
+        <label>
+          <span data-i18n="ui.bgMode"></span>
+          <select id="m_bgMode">
+            <option value="solid" data-i18n="ui.bgModeSolid"></option>
+            <option value="grad-mono" data-i18n="ui.bgModeMono"></option>
+            <option value="grad-dual" data-i18n="ui.bgModeDual"></option>
+          </select>
+        </label>
+
+        <div class="row">
+          <label>
+            <span data-i18n="ui.bgColor1"></span>
+            <input type="color" id="m_bgColor1" value="#000000">
+          </label>
+          <label id="m_bgColor2Wrap">
+            <span data-i18n="ui.bgColor2"></span>
+            <input type="color" id="m_bgColor2" value="#251640">
+          </label>
+        </div>
+
+        <label id="m_bgMonoModeWrap">
+          <span data-i18n="ui.bgMonoMode"></span>
+          <select id="m_bgMonoMode">
+            <option value="tone" data-i18n="ui.bgMonoTone"></option>
+            <option value="fade" data-i18n="ui.bgMonoFade"></option>
+          </select>
+        </label>
+
+        <label id="m_bgDirectionWrap">
+          <span data-i18n="ui.bgDirection"></span>
+          <select id="m_bgDirection">
+            <option value="to right" data-i18n="ui.dirToRight"></option>
+            <option value="to left" data-i18n="ui.dirToLeft"></option>
+            <option value="to bottom" data-i18n="ui.dirToBottom"></option>
+            <option value="to top" data-i18n="ui.dirToTop"></option>
+            <option value="45deg" data-i18n="ui.dir45"></option>
+            <option value="135deg" data-i18n="ui.dir135"></option>
+            <option value="radial" data-i18n="ui.dirRadial"></option>
+          </select>
+        </label>
+
+        <label>
+          <span data-i18n="ui.bg"></span>
+          <div class="slider-row">
+            <input type="range" id="m_bgOpacity" min="0" max="100" step="5" value="50">
+            <span id="m_bgOpacityVal">50%</span>
+          </div>
+        </label>
+
+        <hr>
+
+        <label>
+          <span data-i18n="ui.plateShape"></span>
+          <select id="m_plateShape">
+            <option value="rounded" data-i18n="ui.shapeRounded"></option>
+            <option value="strict" data-i18n="ui.shapeStrict"></option>
+          </select>
+        </label>
+
+        <div class="row">
+          <label>
+            <span data-i18n="ui.borderWidth"></span>
+            <div class="slider-row">
+              <input type="range" id="m_borderWidth" min="0" max="5" step="1" value="0">
+              <span id="m_borderWidthVal">0px</span>
+            </div>
+          </label>
+          <label>
+            <span data-i18n="ui.borderColor"></span>
+            <input type="color" id="m_borderColor" value="#9146FF">
+          </label>
+        </div>
+
+        <label>
+          <span data-i18n="ui.borderEffect"></span>
+          <select id="m_borderEffect">
+            <option value="static" data-i18n="ui.effectStatic"></option>
+            <option value="neon" data-i18n="ui.effectNeon"></option>
+            <option value="pulse" data-i18n="ui.effectPulse"></option>
+            <option value="rgb" data-i18n="ui.effectRgb"></option>
+            <option value="cyber" data-i18n="ui.effectCyber"></option>
+            <option value="breathing" data-i18n="ui.effectBreathing"></option>
+          </select>
+        </label>
+
+        <label id="m_borderEffectSpeedWrap">
+          <span data-i18n="ui.borderEffectSpeed"></span>
+          <div class="slider-row">
+            <input type="range" id="m_borderEffectSpeed" min="1" max="10" step="1" value="5">
+            <span id="m_borderEffectSpeedVal">5</span>
+          </div>
+        </label>
+
+        <label class="checkbox-label" id="m_borderEffectSyncWrap">
+          <input type="checkbox" id="m_borderEffectSync">
+          <span data-i18n="ui.borderEffectSync"></span>
+        </label>
+      </div>
+      <div class="modal-footer">
+        <button class="secondary" data-modal-reset="plate" data-i18n="ui.modalReset"></button>
+        <div class="modal-footer-right">
+          <button class="secondary" data-modal-cancel="plate" data-i18n="ui.modalCancel"></button>
+          <button class="primary" data-modal-apply="plate" data-i18n="ui.modalSave"></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- МОДАЛЬНОЕ ОКНО 2: Типографика и текст -->
+  <div class="modal-backdrop hidden" id="modal-text">
+    <div class="modal-window">
+      <div class="modal-header" data-i18n="ui.textModalTitle"></div>
+      <div class="modal-body">
+        <div class="modal-preview-wrap">
+          <span class="modal-preview-label" data-i18n="ui.previewLabel"></span>
+          <div class="modal-preview-stage">
+            <div class="mini-preview-plate" data-mini-preview>
+              <span class="mini-author-wrap"><span class="mini-badge">★</span><span class="mini-nick" data-mini-nick>TestViewer</span><span class="mini-colon">: </span></span><span class="mini-text" data-i18n="ui.previewSampleText"></span>
+            </div>
+          </div>
+        </div>
+
+        <label>
+          <span data-i18n="ui.textColor"></span>
+          <input type="color" id="m_textColor" value="#FFFFFF">
+        </label>
+
+        <label>
+          <span data-i18n="ui.textOutlineWidth"></span>
+          <div class="slider-row">
+            <input type="range" id="m_textOutlineWidth" min="0" max="4" step="1" value="2">
+            <span id="m_textOutlineWidthVal">2px</span>
+          </div>
+        </label>
+
+        <label>
+          <span data-i18n="ui.textOutlineColor"></span>
+          <input type="color" id="m_textOutlineColor" value="#000000">
+        </label>
+      </div>
+      <div class="modal-footer">
+        <button class="secondary" data-modal-reset="text" data-i18n="ui.modalReset"></button>
+        <div class="modal-footer-right">
+          <button class="secondary" data-modal-cancel="text" data-i18n="ui.modalCancel"></button>
+          <button class="primary" data-modal-apply="text" data-i18n="ui.modalSave"></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- МОДАЛЬНОЕ ОКНО 3: Кастомизация никнеймов -->
+  <div class="modal-backdrop hidden" id="modal-nick">
+    <div class="modal-window">
+      <div class="modal-header" data-i18n="ui.nickModalTitle"></div>
+      <div class="modal-body">
+        <div class="modal-preview-wrap">
+          <span class="modal-preview-label" data-i18n="ui.previewLabel"></span>
+          <div class="modal-preview-stage">
+            <div class="mini-preview-plate" data-mini-preview>
+              <span class="mini-author-wrap"><span class="mini-badge">★</span><span class="mini-nick" data-mini-nick>TestViewer</span><span class="mini-colon">: </span></span><span class="mini-text" data-i18n="ui.previewSampleText"></span>
+            </div>
+          </div>
+        </div>
+
+        <label class="checkbox-label">
+          <input type="checkbox" id="m_customNickEnabled">
+          <span data-i18n="ui.customNickEnabled"></span>
+        </label>
+
+        <div class="proxy-box" id="m_nickControlsBox">
+          <label>
+            <span data-i18n="ui.customNickColor"></span>
+            <input type="color" id="m_customNickColor" value="#9146FF">
+          </label>
+
+          <label>
+            <span data-i18n="ui.customNickOutlineWidth"></span>
+            <div class="slider-row">
+              <input type="range" id="m_customNickOutlineWidth" min="0" max="4" step="1" value="2">
+              <span id="m_customNickOutlineWidthVal">2px</span>
+            </div>
+          </label>
+
+          <label>
+            <span data-i18n="ui.customNickOutlineColor"></span>
+            <input type="color" id="m_customNickOutlineColor" value="#000000">
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="secondary" data-modal-reset="nick" data-i18n="ui.modalReset"></button>
+        <div class="modal-footer-right">
+          <button class="secondary" data-modal-cancel="nick" data-i18n="ui.modalCancel"></button>
+          <button class="primary" data-modal-apply="nick" data-i18n="ui.modalSave"></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- МОДАЛЬНОЕ ОКНО 4: Доступно обновление -->
+  <div class="modal-backdrop hidden" id="modal-update">
+    <div class="modal-window">
+      <div class="modal-header" id="update-modal-title"></div>
+      <div class="modal-body">
+        <span class="section-title" data-i18n="ui.updateNotesLabel"></span>
+        <div class="release-notes-box" id="update-modal-notes"></div>
+        <div id="update-progress-text" class="hidden"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="secondary" id="btn-skip-version" data-i18n="ui.btnSkipVersion"></button>
+        <div class="modal-footer-right">
+          <button class="secondary" id="btn-remind-later" data-i18n="ui.btnRemindLater"></button>
+          <button class="primary" id="btn-update-now"></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
     const $ = (id) => document.getElementById(id);
+    const SYSTEM_FONT = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    const DEFAULT_TWITCH_NICK_SHADOW =
+      '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, ' +
+      '-2px 0 0 #000, 2px 0 0 #000, 0 -2px 0 #000, 0 2px 0 #000, 0 2px 4px rgba(0, 0, 0, 0.9)';
+    const DEFAULT_TWITCH_SAMPLE_COLOR = '#00FF7F';
+
     const NOTICE_IDS = ['showSub', 'showResub', 'showGift', 'showRaid'];
+    const ANIMATED_EFFECTS = ['pulse', 'rgb', 'cyber', 'breathing'];
+    const STYLE_KEYS = [
+      'bgOpacity', 'bgMode', 'bgColor1', 'bgColor2', 'bgMonoMode', 'bgDirection',
+      'plateShape', 'borderWidth', 'borderColor', 'borderEffect', 'borderEffectSpeed', 'borderEffectSync',
+      'textColor', 'textOutlineWidth', 'textOutlineColor',
+      'customNickEnabled', 'customNickColor', 'customNickOutlineWidth', 'customNickOutlineColor'
+    ];
+
+    // Запасной фоллбек на случай, если config.js еще не ответил, но перезаписывается из cfg.defaults при инициализации
+    let defaultAppearance = {
+      messageLifetime: 15,
+      fontSize: 14,
+      fontFamily: 'system',
+      textAlign: 'left',
+      bgOpacity: 50,
+      animation: 'slide-left',
+      chatDirection: 'top',
+      layoutMode: 'inline',
+      showSub: false,
+      showResub: false,
+      showGift: false,
+      showRaid: false,
+      highlightMentions: true,
+      mentionLonger: false,
+      bgMode: 'solid',
+      bgColor1: '#000000',
+      bgColor2: '#251640',
+      bgMonoMode: 'tone',
+      bgDirection: 'to right',
+      plateShape: 'rounded',
+      borderWidth: 0,
+      borderColor: '#9146FF',
+      borderEffect: 'static',
+      borderEffectSpeed: 5,
+      borderEffectSync: false,
+      textColor: '#FFFFFF',
+      textOutlineWidth: 2,
+      textOutlineColor: '#000000',
+      customNickEnabled: false,
+      customNickColor: '#9146FF',
+      customNickOutlineWidth: 2,
+      customNickOutlineColor: '#000000'
+    };
+
+    /* ---------------- Вспомогательные функции генерации стилей для мини-превью ---------------- */
+
+    function parseHexRgb(hexStr) {
+      let hex = String(hexStr || '').replace('#', '').trim();
+      if (hex.length === 3) hex = hex.split('').map((c) => c + c).join('');
+      if (!/^[0-9a-fA-F]{6}$/.test(hex)) return { r: 0, g: 0, b: 0 };
+      return {
+        r: parseInt(hex.substring(0, 2), 16),
+        g: parseInt(hex.substring(2, 4), 16),
+        b: parseInt(hex.substring(4, 6), 16)
+      };
+    }
+
+    function rgbaStr(hex, alpha) {
+      const { r, g, b } = parseHexRgb(hex);
+      return `rgba(${r}, ${g}, ${b}, ${Number(alpha).toFixed(2)})`;
+    }
+
+    function shiftTone(hex, delta) {
+      const { r, g, b } = parseHexRgb(hex);
+      const clamp = (v) => Math.max(0, Math.min(255, Math.round(v)));
+      return {
+        r: clamp(r + delta),
+        g: clamp(g + delta),
+        b: clamp(b + delta)
+      };
+    }
+
+    function buildPlateBackground(cfg) {
+      const alpha = (cfg.bgOpacity !== undefined ? cfg.bgOpacity : 50) / 100;
+      const mode = cfg.bgMode || 'solid';
+      const c1 = cfg.bgColor1 || '#000000';
+      const c2 = cfg.bgColor2 || '#251640';
+      const dir = cfg.bgDirection || 'to right';
+
+      if (mode === 'solid') {
+        return rgbaStr(c1, alpha);
+      }
+
+      let startRgba;
+      let endRgba;
+
+      if (mode === 'grad-mono') {
+        if (cfg.bgMonoMode === 'fade') {
+          startRgba = rgbaStr(c1, alpha);
+          endRgba = rgbaStr(c1, 0);
+        } else {
+          const light = shiftTone(c1, 38);
+          const dark = shiftTone(c1, -28);
+          startRgba = `rgba(${light.r}, ${light.g}, ${light.b}, ${alpha.toFixed(2)})`;
+          endRgba = `rgba(${dark.r}, ${dark.g}, ${dark.b}, ${alpha.toFixed(2)})`;
+        }
+      } else {
+        startRgba = rgbaStr(c1, alpha);
+        endRgba = rgbaStr(c2, alpha);
+      }
+
+      if (dir === 'radial') {
+        return `radial-gradient(circle at center, ${startRgba} 0%, ${endRgba} 100%)`;
+      }
+      return `linear-gradient(${dir}, ${startRgba} 0%, ${endRgba} 100%)`;
+    }
+
+    function buildOutlineShadow(width, color) {
+      const w = parseInt(width, 10) || 0;
+      if (w <= 0) return 'none';
+      const c = color || '#000000';
+      const layers = [];
+      for (let step = 1; step <= w; step++) {
+        layers.push(
+          `-${step}px -${step}px 0 ${c}`,
+          `${step}px -${step}px 0 ${c}`,
+          `-${step}px ${step}px 0 ${c}`,
+          `${step}px ${step}px 0 ${c}`,
+          `-${step}px 0 0 ${c}`,
+          `${step}px 0 0 ${c}`,
+          `0 -${step}px 0 ${c}`,
+          `0 ${step}px 0 ${c}`
+        );
+      }
+      layers.push('0 2px 4px rgba(0, 0, 0, 0.85)');
+      return layers.join(', ');
+    }
+
+    function speedToDurationMultiplier(speedVal) {
+      const s = Math.max(1, Math.min(10, parseInt(speedVal, 10) || 5));
+      return Number((5 / s).toFixed(2));
+    }
+
+    /* ---------------- Состояние внешнего вида для Оверлея и Виджета ---------------- */
+
+    const appearanceState = {
+      o_: {},
+      w_: {}
+    };
+
+    let activeModalTarget = 'o_'; // 'o_' | 'w_'
+    let modalSnapshot = null;
+    let currentUpdateData = null;
+    let stringsLoaded = false;
+    let appVersion = '1.3.4';
+    let isPortableBuild = false;
 
     /* ---------------- Локализация ---------------- */
 
@@ -250,19 +973,143 @@
       return tr(key).replace(/\{(\w+)\}/g, (m, k) => (params && params[k] !== undefined ? params[k] : m));
     }
 
+    function escapeHtml(str) {
+      return String(str || '').replace(/[&<>"']/g, (m) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      })[m]);
+    }
+
+    function formatInlineMarkdown(escapedLine) {
+      return escapedLine
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/`([^`]+)`/g, '<code>$1</code>');
+    }
+
+    function renderMarkdownNotes(mdText) {
+      const raw = String(mdText || '').replace(/\r\n/g, '\n').trim();
+      if (!raw) return '<p>—</p>';
+
+      const lines = raw.split('\n');
+      const html = [];
+      let inList = false;
+
+      const closeList = () => {
+        if (inList) {
+          html.push('</ul>');
+          inList = false;
+        }
+      };
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed) {
+          closeList();
+          continue;
+        }
+        if (/^---+$/.test(trimmed)) {
+          closeList();
+          html.push('<hr>');
+          continue;
+        }
+        const hMatch = /^(#{1,4})\s+(.+)$/.exec(trimmed);
+        if (hMatch) {
+          closeList();
+          const tag = hMatch[1].length <= 2 ? 'h3' : 'h4';
+          html.push(`<${tag}>${formatInlineMarkdown(escapeHtml(hMatch[2]))}</${tag}>`);
+          continue;
+        }
+        const liMatch = /^[-*•]\s+(.+)$/.exec(trimmed);
+        if (liMatch) {
+          if (!inList) {
+            html.push('<ul>');
+            inList = true;
+          }
+          html.push(`<li>${formatInlineMarkdown(escapeHtml(liMatch[1]))}</li>`);
+          continue;
+        }
+        closeList();
+        html.push(`<p>${formatInlineMarkdown(escapeHtml(trimmed))}</p>`);
+      }
+
+      closeList();
+      return html.join('');
+    }
+
     function applyStrings(newStrings, lang) {
       strings = newStrings || {};
+      stringsLoaded = true;
       document.documentElement.lang = lang || 'en';
       document.title = tr('settings.title');
 
       document.querySelectorAll('[data-i18n]').forEach((el) => { el.textContent = tr(el.dataset.i18n); });
       document.querySelectorAll('[data-i18n-placeholder]').forEach((el) => { el.placeholder = tr(el.dataset.i18nPlaceholder); });
       document.querySelectorAll('[data-i18n-title]').forEach((el) => { el.title = tr(el.dataset.i18nTitle); });
+      document.querySelectorAll('[data-mini-nick]').forEach((el) => { el.textContent = tr('test.user1'); });
 
+      if (!$('update-check-status').dataset.custom) {
+        $('update-check-status').textContent = `v${appVersion}`;
+      }
       renderWidgetStatus(widgetStatus);
+
+      if (currentUpdateData && currentUpdateData.hasUpdate) {
+        renderUpdateModalContent(currentUpdateData);
+      }
     }
 
-    /* ---------------- Форма внешнего вида (один шаблон на оверлей и виджет) ---------------- */
+    /* ---------------- Отрисовка мини-превью внутри модальных окон ---------------- */
+
+    function updateMiniPreviews(prefix) {
+      const p = prefix || activeModalTarget || 'o_';
+      const cfg = readAppearance(p);
+
+      const family = !cfg.fontFamily || cfg.fontFamily === 'system' ? SYSTEM_FONT : cfg.fontFamily;
+      const align = cfg.textAlign || 'left';
+      const layout = cfg.layoutMode || 'inline';
+      const plateBg = buildPlateBackground(cfg);
+      const radius = cfg.plateShape === 'strict' ? '0px' : '6px';
+      const bw = Math.max(0, Math.min(5, parseInt(cfg.borderWidth, 10) || 0));
+      const bc = cfg.borderColor || '#9146FF';
+      const effect = cfg.borderEffect || 'static';
+      const effectiveBw = bw === 0 && effect !== 'static' && effect !== 'cyber' ? 1 : bw;
+      const speedMult = String(speedToDurationMultiplier(cfg.borderEffectSpeed));
+
+      const textCol = cfg.textColor || '#FFFFFF';
+      const textTw = cfg.textOutlineWidth !== undefined ? cfg.textOutlineWidth : 2;
+      const textTc = cfg.textOutlineColor || '#000000';
+      const msgShadow = buildOutlineShadow(textTw, textTc);
+
+      const nickCustom = !!cfg.customNickEnabled;
+      const nickColor = nickCustom ? (cfg.customNickColor || '#9146FF') : DEFAULT_TWITCH_SAMPLE_COLOR;
+      const nickShadow = nickCustom
+        ? buildOutlineShadow(cfg.customNickOutlineWidth !== undefined ? cfg.customNickOutlineWidth : 2, cfg.customNickOutlineColor || '#000000')
+        : DEFAULT_TWITCH_NICK_SHADOW;
+
+      document.querySelectorAll('[data-mini-preview]').forEach((el) => {
+        el.style.fontFamily = family;
+        el.style.textAlign = align;
+        el.style.setProperty('--plate-bg', plateBg);
+        el.style.setProperty('--plate-radius', radius);
+        el.style.setProperty('--plate-border-width', `${effectiveBw}px`);
+        el.style.setProperty('--plate-border-color', bc);
+        el.style.setProperty('--effect-speed-mult', speedMult);
+        el.style.setProperty('--msg-text-color', textCol);
+        el.style.setProperty('--msg-text-shadow', msgShadow);
+        el.style.setProperty('--nick-text-shadow', nickShadow);
+
+        const classes = ['mini-preview-plate', `layout-${layout}`];
+        if (bw > 0 || effect !== 'static') {
+          classes.push(`effect-${effect}`);
+        }
+        el.className = classes.join(' ');
+
+        const nickEl = el.querySelector('[data-mini-nick]');
+        if (nickEl) {
+          nickEl.style.color = nickColor;
+        }
+      });
+    }
+
+    /* ---------------- Форма базовых настроек внешнего вида ---------------- */
 
     function appearanceHtml(p) {
       return `
@@ -295,19 +1142,12 @@
             </div>
           </label>
           <label>
-            <span data-i18n="ui.bg"></span>
-            <div class="slider-row">
-              <input type="range" id="${p}bgOpacity" min="0" max="100" step="5" value="50">
-              <span id="${p}bgOpacityVal">50%</span>
-            </div>
+            <span data-i18n="ui.lifetime"></span>
+            <input type="number" id="${p}messageLifetime" min="0" max="300" value="15">
           </label>
         </div>
 
         <div class="row">
-          <label>
-            <span data-i18n="ui.lifetime"></span>
-            <input type="number" id="${p}messageLifetime" min="0" max="300" value="15">
-          </label>
           <label>
             <span data-i18n="ui.animation"></span>
             <select id="${p}animation">
@@ -317,9 +1157,6 @@
               <option value="zoom" data-i18n="ui.animZoom"></option>
             </select>
           </label>
-        </div>
-
-        <div class="row">
           <label>
             <span data-i18n="ui.direction"></span>
             <select id="${p}chatDirection">
@@ -327,14 +1164,42 @@
               <option value="bottom" data-i18n="ui.dirBottom"></option>
             </select>
           </label>
-          <label>
-            <span data-i18n="ui.layout"></span>
-            <select id="${p}layoutMode">
-              <option value="inline" data-i18n="ui.layoutInline"></option>
-              <option value="block" data-i18n="ui.layoutBlock"></option>
-            </select>
-          </label>
         </div>
+
+        <label>
+          <span data-i18n="ui.layout"></span>
+          <select id="${p}layoutMode">
+            <option value="inline" data-i18n="ui.layoutInline"></option>
+            <option value="block" data-i18n="ui.layoutBlock"></option>
+          </select>
+        </label>
+
+        <div class="section-title" data-i18n="ui.customizeSection"></div>
+        <div class="style-cards">
+          <div class="style-card">
+            <div class="style-card-info">
+              <span class="style-card-title" data-i18n="ui.cardPlate"></span>
+              <span class="style-card-desc" data-i18n="ui.cardPlateDesc"></span>
+            </div>
+            <button type="button" class="accent" data-open-modal="plate" data-prefix="${p}" data-i18n="ui.btnConfigure"></button>
+          </div>
+          <div class="style-card">
+            <div class="style-card-info">
+              <span class="style-card-title" data-i18n="ui.cardText"></span>
+              <span class="style-card-desc" data-i18n="ui.cardTextDesc"></span>
+            </div>
+            <button type="button" class="accent" data-open-modal="text" data-prefix="${p}" data-i18n="ui.btnConfigure"></button>
+          </div>
+          <div class="style-card">
+            <div class="style-card-info">
+              <span class="style-card-title" data-i18n="ui.cardNick"></span>
+              <span class="style-card-desc" data-i18n="ui.cardNickDesc"></span>
+            </div>
+            <button type="button" class="accent" data-open-modal="nick" data-prefix="${p}" data-i18n="ui.btnConfigure"></button>
+          </div>
+        </div>
+
+        <hr>
 
         <label class="checkbox-label">
           <input type="checkbox" id="${p}highlightMentions">
@@ -353,30 +1218,30 @@
     }
 
     function readAppearance(p) {
-      const a = {
+      const a = Object.assign({}, appearanceState[p], {
         messageLifetime: parseInt($(p + 'messageLifetime').value, 10) || 0,
         fontSize: parseInt($(p + 'fontSize').value, 10) || 14,
         fontFamily: $(p + 'fontFamily').value,
         textAlign: $(p + 'textAlign').value,
-        bgOpacity: parseInt($(p + 'bgOpacity').value, 10) || 0,
         animation: $(p + 'animation').value,
         chatDirection: $(p + 'chatDirection').value,
         layoutMode: $(p + 'layoutMode').value,
         highlightMentions: $(p + 'highlightMentions').checked,
         mentionLonger: $(p + 'mentionLonger').checked
-      };
+      });
       NOTICE_IDS.forEach((id) => { a[id] = $(p + id).checked; });
       return a;
     }
 
     function writeAppearance(p, a) {
+      STYLE_KEYS.forEach((k) => {
+        if (a[k] !== undefined) appearanceState[p][k] = a[k];
+      });
       $(p + 'messageLifetime').value = a.messageLifetime;
       $(p + 'fontSize').value = a.fontSize;
       $(p + 'fontSizeVal').textContent = `${a.fontSize}px`;
       $(p + 'fontFamily').value = a.fontFamily;
       $(p + 'textAlign').value = a.textAlign;
-      $(p + 'bgOpacity').value = a.bgOpacity;
-      $(p + 'bgOpacityVal').textContent = `${a.bgOpacity}%`;
       $(p + 'animation').value = a.animation;
       $(p + 'chatDirection').value = a.chatDirection;
       $(p + 'layoutMode').value = a.layoutMode;
@@ -386,7 +1251,6 @@
       syncMentionDependency(p);
     }
 
-    // «Держать упоминания дольше» доступно только при включённой подсветке
     function syncMentionDependency(p) {
       const on = $(p + 'highlightMentions').checked;
       $(p + 'mentionLonger').disabled = !on;
@@ -395,12 +1259,329 @@
 
     function wireAppearance(p, onChange) {
       $(p + 'fontSize').addEventListener('input', () => { $(p + 'fontSizeVal').textContent = `${$(p + 'fontSize').value}px`; });
-      $(p + 'bgOpacity').addEventListener('input', () => { $(p + 'bgOpacityVal').textContent = `${$(p + 'bgOpacity').value}%`; });
       $(p + 'highlightMentions').addEventListener('change', () => syncMentionDependency(p));
       if (onChange) {
         $(p === 'o_' ? 'overlay-form' : 'widget-form').addEventListener('input', onChange);
         $(p === 'o_' ? 'overlay-form' : 'widget-form').addEventListener('change', onChange);
       }
+    }
+
+    /* ---------------- Модальные окна кастомизации стилей ---------------- */
+
+    function syncPlateModalVisibility() {
+      const mode = $('m_bgMode').value;
+      const effect = $('m_borderEffect').value;
+      const isAnimated = ANIMATED_EFFECTS.includes(effect);
+      $('m_bgColor2Wrap').classList.toggle('hidden', mode !== 'grad-dual');
+      $('m_bgMonoModeWrap').classList.toggle('hidden', mode !== 'grad-mono');
+      $('m_bgDirectionWrap').classList.toggle('hidden', mode === 'solid');
+      $('m_borderEffectSpeedWrap').classList.toggle('hidden', !isAnimated);
+      $('m_borderEffectSyncWrap').classList.toggle('hidden', !isAnimated);
+    }
+
+    function syncNickModalDisabled() {
+      const enabled = $('m_customNickEnabled').checked;
+      $('m_nickControlsBox').classList.toggle('disabled', !enabled);
+      $('m_customNickColor').disabled = !enabled;
+      $('m_customNickOutlineWidth').disabled = !enabled;
+      $('m_customNickOutlineColor').disabled = !enabled;
+    }
+
+    function populateModalInputsFromState(kind, st) {
+      if (kind === 'plate') {
+        $('m_bgMode').value = st.bgMode || 'solid';
+        $('m_bgColor1').value = st.bgColor1 || '#000000';
+        $('m_bgColor2').value = st.bgColor2 || '#251640';
+        $('m_bgMonoMode').value = st.bgMonoMode || 'tone';
+        $('m_bgDirection').value = st.bgDirection || 'to right';
+        $('m_bgOpacity').value = st.bgOpacity !== undefined ? st.bgOpacity : 50;
+        $('m_bgOpacityVal').textContent = `${$('m_bgOpacity').value}%`;
+        $('m_plateShape').value = st.plateShape === 'strict' ? 'strict' : 'rounded';
+        $('m_borderWidth').value = st.borderWidth || 0;
+        $('m_borderWidthVal').textContent = `${$('m_borderWidth').value}px`;
+        $('m_borderColor').value = st.borderColor || '#9146FF';
+        $('m_borderEffect').value = st.borderEffect || 'static';
+        $('m_borderEffectSpeed').value = st.borderEffectSpeed !== undefined ? st.borderEffectSpeed : 5;
+        $('m_borderEffectSpeedVal').textContent = `${$('m_borderEffectSpeed').value}`;
+        $('m_borderEffectSync').checked = !!st.borderEffectSync;
+        syncPlateModalVisibility();
+      } else if (kind === 'text') {
+        $('m_textColor').value = st.textColor || '#FFFFFF';
+        $('m_textOutlineWidth').value = st.textOutlineWidth !== undefined ? st.textOutlineWidth : 2;
+        $('m_textOutlineWidthVal').textContent = `${$('m_textOutlineWidth').value}px`;
+        $('m_textOutlineColor').value = st.textOutlineColor || '#000000';
+      } else if (kind === 'nick') {
+        $('m_customNickEnabled').checked = !!st.customNickEnabled;
+        $('m_customNickColor').value = st.customNickColor || '#9146FF';
+        $('m_customNickOutlineWidth').value = st.customNickOutlineWidth !== undefined ? st.customNickOutlineWidth : 2;
+        $('m_customNickOutlineWidthVal').textContent = `${$('m_customNickOutlineWidth').value}px`;
+        $('m_customNickOutlineColor').value = st.customNickOutlineColor || '#000000';
+        syncNickModalDisabled();
+      }
+      updateMiniPreviews(activeModalTarget);
+    }
+
+    function openStyleModal(kind, prefix) {
+      activeModalTarget = prefix;
+      modalSnapshot = Object.assign({}, appearanceState[prefix]);
+      populateModalInputsFromState(kind, appearanceState[prefix]);
+      $(`modal-${kind}`).classList.remove('hidden');
+    }
+
+    function resetModalToDefaults(kind) {
+      const st = appearanceState[activeModalTarget];
+      const d = defaultAppearance;
+      if (kind === 'plate') {
+        Object.assign(st, {
+          bgMode: d.bgMode,
+          bgColor1: d.bgColor1,
+          bgColor2: d.bgColor2,
+          bgMonoMode: d.bgMonoMode,
+          bgDirection: d.bgDirection,
+          bgOpacity: d.bgOpacity,
+          plateShape: d.plateShape,
+          borderWidth: d.borderWidth,
+          borderColor: d.borderColor,
+          borderEffect: d.borderEffect,
+          borderEffectSpeed: d.borderEffectSpeed,
+          borderEffectSync: !!d.borderEffectSync
+        });
+      } else if (kind === 'text') {
+        Object.assign(st, {
+          textColor: d.textColor,
+          textOutlineWidth: d.textOutlineWidth,
+          textOutlineColor: d.textOutlineColor
+        });
+      } else if (kind === 'nick') {
+        Object.assign(st, {
+          customNickEnabled: d.customNickEnabled,
+          customNickColor: d.customNickColor,
+          customNickOutlineWidth: d.customNickOutlineWidth,
+          customNickOutlineColor: d.customNickOutlineColor
+        });
+      }
+      populateModalInputsFromState(kind, st);
+      triggerTargetPreview(activeModalTarget);
+    }
+
+    function readModalIntoState(kind) {
+      const st = appearanceState[activeModalTarget];
+      if (kind === 'plate') {
+        st.bgMode = $('m_bgMode').value;
+        st.bgColor1 = $('m_bgColor1').value;
+        st.bgColor2 = $('m_bgColor2').value;
+        st.bgMonoMode = $('m_bgMonoMode').value;
+        st.bgDirection = $('m_bgDirection').value;
+        st.bgOpacity = parseInt($('m_bgOpacity').value, 10) || 0;
+        st.plateShape = $('m_plateShape').value;
+        st.borderWidth = parseInt($('m_borderWidth').value, 10) || 0;
+        st.borderColor = $('m_borderColor').value;
+        st.borderEffect = $('m_borderEffect').value;
+        st.borderEffectSpeed = parseInt($('m_borderEffectSpeed').value, 10) || 5;
+        st.borderEffectSync = $('m_borderEffectSync').checked;
+      } else if (kind === 'text') {
+        st.textColor = $('m_textColor').value;
+        st.textOutlineWidth = parseInt($('m_textOutlineWidth').value, 10) || 0;
+        st.textOutlineColor = $('m_textOutlineColor').value;
+      } else if (kind === 'nick') {
+        st.customNickEnabled = $('m_customNickEnabled').checked;
+        st.customNickColor = $('m_customNickColor').value;
+        st.customNickOutlineWidth = parseInt($('m_customNickOutlineWidth').value, 10) || 0;
+        st.customNickOutlineColor = $('m_customNickOutlineColor').value;
+      }
+      updateMiniPreviews(activeModalTarget);
+    }
+
+    function triggerTargetPreview(prefix) {
+      updateMiniPreviews(prefix);
+      if (prefix === 'o_') schedulePreview();
+      else scheduleWidgetPreview();
+    }
+
+    async function closeStyleModal(kind, applyAndSave) {
+      if (!applyAndSave && modalSnapshot) {
+        appearanceState[activeModalTarget] = Object.assign({}, modalSnapshot);
+        triggerTargetPreview(activeModalTarget);
+      }
+      modalSnapshot = null;
+      $(`modal-${kind}`).classList.add('hidden');
+      if (applyAndSave) {
+        await save({ forceReconnect: false });
+      }
+    }
+
+    function wireStyleModals() {
+      document.querySelectorAll('[data-open-modal]').forEach((btn) => {
+        btn.addEventListener('click', () => openStyleModal(btn.dataset.openModal, btn.dataset.prefix));
+      });
+
+      document.querySelectorAll('[data-modal-cancel]').forEach((btn) => {
+        btn.addEventListener('click', () => closeStyleModal(btn.dataset.modalCancel, false));
+      });
+
+      document.querySelectorAll('[data-modal-reset]').forEach((btn) => {
+        btn.addEventListener('click', () => resetModalToDefaults(btn.dataset.modalReset));
+      });
+
+      document.querySelectorAll('[data-modal-apply]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          readModalIntoState(btn.dataset.modalApply);
+          triggerTargetPreview(activeModalTarget);
+          await closeStyleModal(btn.dataset.modalApply, true);
+        });
+      });
+
+      // Live-preview при любом изменении внутри модальных окон
+      $('m_bgMode').addEventListener('change', () => {
+        syncPlateModalVisibility();
+        readModalIntoState('plate');
+        triggerTargetPreview(activeModalTarget);
+      });
+      $('m_borderEffect').addEventListener('change', () => {
+        syncPlateModalVisibility();
+        readModalIntoState('plate');
+        triggerTargetPreview(activeModalTarget);
+      });
+      $('m_bgOpacity').addEventListener('input', () => {
+        $('m_bgOpacityVal').textContent = `${$('m_bgOpacity').value}%`;
+      });
+      $('m_borderWidth').addEventListener('input', () => {
+        $('m_borderWidthVal').textContent = `${$('m_borderWidth').value}px`;
+      });
+      $('m_borderEffectSpeed').addEventListener('input', () => {
+        $('m_borderEffectSpeedVal').textContent = `${$('m_borderEffectSpeed').value}`;
+      });
+      $('modal-plate').addEventListener('input', () => {
+        readModalIntoState('plate');
+        triggerTargetPreview(activeModalTarget);
+      });
+      $('modal-plate').addEventListener('change', () => {
+        readModalIntoState('plate');
+        triggerTargetPreview(activeModalTarget);
+      });
+
+      $('m_textOutlineWidth').addEventListener('input', () => {
+        $('m_textOutlineWidthVal').textContent = `${$('m_textOutlineWidth').value}px`;
+      });
+      $('modal-text').addEventListener('input', () => {
+        readModalIntoState('text');
+        triggerTargetPreview(activeModalTarget);
+      });
+
+      $('m_customNickEnabled').addEventListener('change', () => {
+        syncNickModalDisabled();
+        readModalIntoState('nick');
+        triggerTargetPreview(activeModalTarget);
+      });
+      $('m_customNickOutlineWidth').addEventListener('input', () => {
+        $('m_customNickOutlineWidthVal').textContent = `${$('m_customNickOutlineWidth').value}px`;
+      });
+      $('modal-nick').addEventListener('input', () => {
+        readModalIntoState('nick');
+        triggerTargetPreview(activeModalTarget);
+      });
+    }
+
+    /* ---------------- Полный сброс вкладки Оверлей / Виджет до заводских настроек ---------------- */
+
+    async function resetSectionToDefaults(prefix) {
+      const defaults = Object.assign({}, defaultAppearance);
+      if (prefix === 'w_') {
+        defaults.highlightMentions = false;
+        defaults.mentionLonger = false;
+      }
+      appearanceState[prefix] = Object.assign({}, defaults);
+      writeAppearance(prefix, defaults);
+      triggerTargetPreview(prefix);
+      await save({ forceReconnect: false });
+    }
+
+    /* ---------------- Модальное окно Обновления ---------------- */
+
+    function renderUpdateModalContent(data) {
+      if (!data || !data.hasUpdate) return;
+      const lang = document.documentElement.lang || $('language').value || 'en';
+      const localizedNotes = (lang === 'ru' ? data.notesRu : data.notesEn) || data.releaseNotes || '';
+
+      $('update-modal-title').textContent = trf('ui.updateAvailableTitle', {
+        latest: data.latestVersion,
+        current: data.currentVersion
+      });
+      $('update-modal-notes').innerHTML = renderMarkdownNotes(localizedNotes);
+      $('btn-update-now').textContent = data.isPortable ? tr('ui.btnUpdateDownload') : tr('ui.btnUpdateNow');
+      $('modal-update').classList.remove('hidden');
+    }
+
+    function showUpdateModal(data) {
+      if (!data || !data.hasUpdate) return;
+      currentUpdateData = data;
+      $('update-progress-text').classList.add('hidden');
+      $('btn-update-now').disabled = false;
+      if (stringsLoaded) {
+        renderUpdateModalContent(data);
+      }
+    }
+
+    function wireUpdateControls() {
+      $('btn-check-updates').onclick = async () => {
+        const btn = $('btn-check-updates');
+        const statusEl = $('update-check-status');
+        btn.disabled = true;
+        btn.textContent = tr('ui.checkingUpdates');
+        try {
+          const res = await window.api.checkForUpdates({ manual: true });
+          if (res && res.hasUpdate) {
+            showUpdateModal(res);
+          } else if (res && res.error) {
+            statusEl.dataset.custom = '1';
+            statusEl.textContent = trf('ui.updateError', { msg: res.error });
+          } else {
+            statusEl.dataset.custom = '1';
+            statusEl.textContent = trf('ui.upToDate', { v: (res && res.currentVersion) || appVersion });
+          }
+        } finally {
+          btn.disabled = false;
+          btn.textContent = tr('ui.checkUpdates');
+        }
+      };
+
+      $('btn-remind-later').onclick = () => {
+        $('modal-update').classList.add('hidden');
+      };
+
+      $('btn-skip-version').onclick = async () => {
+        if (currentUpdateData && currentUpdateData.latestVersion) {
+          await window.api.skipUpdateVersion(currentUpdateData.latestVersion);
+        }
+        $('modal-update').classList.add('hidden');
+      };
+
+      $('btn-update-now').onclick = async () => {
+        if (!currentUpdateData) return;
+        $('btn-update-now').disabled = true;
+        const progEl = $('update-progress-text');
+        progEl.classList.remove('hidden');
+        progEl.textContent = trf('ui.updateDownloading', { percent: 0 });
+
+        const res = await window.api.installUpdate(currentUpdateData);
+        if (res && (res.mode === 'browser' || res.mode === 'browser-fallback')) {
+          $('modal-update').classList.add('hidden');
+        }
+      };
+
+      window.api.onUpdateAvailable((data) => showUpdateModal(data));
+      window.api.onUpdateProgress((prog) => {
+        const progEl = $('update-progress-text');
+        progEl.classList.remove('hidden');
+        if (prog.downloaded) {
+          progEl.textContent = tr('ui.updateInstalling');
+        } else if (prog.error) {
+          progEl.textContent = trf('ui.updateError', { msg: prog.error });
+          $('btn-update-now').disabled = false;
+        } else if (prog.percent !== undefined) {
+          progEl.textContent = trf('ui.updateDownloading', { percent: prog.percent });
+        }
+      });
     }
 
     /* ---------------- Общие настройки ---------------- */
@@ -419,7 +1600,7 @@
       };
     }
 
-    /* ---------------- Живой предпросмотр оверлея (до сохранения) ---------------- */
+    /* ---------------- Живой предпросмотр оверлея и виджета (до сохранения) ---------------- */
 
     let previewTimer = null;
     function schedulePreview() {
@@ -429,7 +1610,18 @@
           hideCommands: $('hideCommands').checked,
           ignoredBots: $('ignoredBots').value.trim()
         }));
-      }, 40);
+      }, 35);
+    }
+
+    let widgetPreviewTimer = null;
+    function scheduleWidgetPreview() {
+      clearTimeout(widgetPreviewTimer);
+      widgetPreviewTimer = setTimeout(() => {
+        window.api.previewWidget(Object.assign(readAppearance('w_'), {
+          hideCommands: $('hideCommands').checked,
+          ignoredBots: $('ignoredBots').value.trim()
+        }));
+      }, 35);
     }
 
     /* ---------------- Виджет для OBS ---------------- */
@@ -485,7 +1677,8 @@
 
     /* ---------------- Сохранение ---------------- */
 
-    async function save() {
+    async function save(opts = {}) {
+      const forceReconnect = opts.forceReconnect !== undefined ? !!opts.forceReconnect : true;
       const widgetEnabled = $('widgetEnabled').checked;
       const portText = $('widgetPort').value.trim();
       const portNumber = Number(portText);
@@ -505,7 +1698,8 @@
       const cfg = Object.assign(readGeneral(), readAppearance('o_'), {
         widgetEnabled,
         widgetPort: portText,
-        widget: readAppearance('w_')
+        widget: readAppearance('w_'),
+        _forceReconnect: forceReconnect
       });
 
       const result = await window.api.saveConfig(cfg);
@@ -525,11 +1719,13 @@
       $('overlay-form').innerHTML = appearanceHtml('o_');
       $('widget-form').innerHTML = appearanceHtml('w_');
       wireAppearance('o_', schedulePreview);
-      wireAppearance('w_', null);
+      wireAppearance('w_', scheduleWidgetPreview);
+      wireStyleModals();
+      wireUpdateControls();
 
       $('useProxy').onchange = () => $('proxyBox').classList.toggle('disabled', !$('useProxy').checked);
-      $('hideCommands').addEventListener('change', schedulePreview);
-      $('ignoredBots').addEventListener('input', schedulePreview);
+      $('hideCommands').addEventListener('change', () => { schedulePreview(); scheduleWidgetPreview(); });
+      $('ignoredBots').addEventListener('input', () => { schedulePreview(); scheduleWidgetPreview(); });
 
       $('widgetPort').addEventListener('input', updateLink);
 
@@ -546,13 +1742,20 @@
         setTimeout(() => { $('btn-copy').textContent = original; }, 1500);
       };
 
-      // Канал берём прямо из поля, чтобы подсветка упоминаний в тесте работала ещё до сохранения
       $('btn-test').onclick = () => window.api.sendTestMessage($('channel').value.trim());
       $('btn-widget-test').onclick = () => window.api.sendWidgetTest($('channel').value.trim());
-      $('btn-save').onclick = save;
+      $('btn-reset-overlay').onclick = () => resetSectionToDefaults('o_');
+      $('btn-reset-widget').onclick = () => resetSectionToDefaults('w_');
+      $('btn-save').onclick = () => save({ forceReconnect: true });
 
       const cfg = await window.api.loadConfig();
+      if (cfg.defaults && typeof cfg.defaults === 'object') {
+        defaultAppearance = Object.assign({}, defaultAppearance, cfg.defaults);
+      }
+
       const lang = cfg.language || 'en';
+      appVersion = cfg.currentVersion || '1.3.4';
+      isPortableBuild = !!cfg.isPortable;
       $('language').value = lang;
 
       $('channel').value = cfg.channel;
@@ -573,6 +1776,11 @@
       updateLink();
 
       applyStrings(await window.api.getStrings(lang), lang);
+      updateMiniPreviews('o_');
+
+      if (cfg.pendingUpdate && cfg.pendingUpdate.hasUpdate) {
+        showUpdateModal(cfg.pendingUpdate);
+      }
       renderWidgetStatus(await window.api.getWidgetStatus());
 
       window.api.onWidgetStatus(renderWidgetStatus);
