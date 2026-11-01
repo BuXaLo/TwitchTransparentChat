@@ -14,7 +14,7 @@ const ANIMATIONS = ['slide-left', 'slide-down', 'fade', 'zoom'];
 const DIRECTIONS = ['top', 'bottom'];
 const LAYOUTS = ['inline', 'block'];
 
-// Константы движка стилей v1.3.4
+// Константы движка стилей v1.3.1
 const BG_MODES = ['solid', 'grad-mono', 'grad-dual'];
 const BG_MONO_MODES = ['tone', 'fade'];
 const BG_DIRECTIONS = ['to right', 'to left', 'to bottom', 'to top', '45deg', '135deg', 'radial'];
@@ -55,6 +55,7 @@ const OVERLAY_APPEARANCE_DEFAULTS = {
   plateShape: 'rounded', // 'rounded' (6px) | 'strict' (0px)
   borderWidth: 0, // 0..5 px
   borderColor: '#9146FF',
+  borderColor2: '#FFFFFF', // второй цвет (блик) для эффекта бегущего контура (cyber)
   borderEffect: 'static', // 'static' | 'neon' | 'pulse' | 'rgb' | 'cyber' | 'breathing'
   borderEffectSpeed: 5, // 1..10 (скорость анимации эффекта границы, 5 = стандартная 1x)
   borderEffectSync: false, // синхронизация фазы динамического эффекта между всеми сообщениями
@@ -73,7 +74,7 @@ const OVERLAY_APPEARANCE_DEFAULTS = {
 
 const APPEARANCE_KEYS = Object.keys(OVERLAY_APPEARANCE_DEFAULTS);
 
-// Общее для оверлея и виджета: подключение, фильтры и пропущенная версия обновления
+// Общее для оверлея и виджета: подключение, фильтры, пропущенная версия обновления и сохраненные стили
 const GENERAL_DEFAULTS = {
   channel: '',
   useProxy: false,
@@ -86,7 +87,8 @@ const GENERAL_DEFAULTS = {
   autoStart: false,
   widgetEnabled: false,
   widgetPort: DEFAULT_WIDGET_PORT,
-  ignoredUpdateVersion: ''
+  ignoredUpdateVersion: '',
+  customPresets: []
 };
 
 const DEFAULT_CONFIG = Object.assign({}, GENERAL_DEFAULTS, OVERLAY_APPEARANCE_DEFAULTS);
@@ -160,6 +162,7 @@ function sanitizeAppearance(src, defaults = OVERLAY_APPEARANCE_DEFAULTS, maxFont
     plateShape: oneOf(s.plateShape, PLATE_SHAPES, d.plateShape),
     borderWidth: clampInt(s.borderWidth, 0, 5, d.borderWidth),
     borderColor: hexColor(s.borderColor, d.borderColor),
+    borderColor2: hexColor(s.borderColor2, d.borderColor2),
     borderEffect: oneOf(s.borderEffect, BORDER_EFFECTS, d.borderEffect),
     borderEffectSpeed: clampInt(s.borderEffectSpeed, 1, 10, d.borderEffectSpeed),
     borderEffectSync: bool(s.borderEffectSync, d.borderEffectSync),
@@ -203,7 +206,15 @@ function normalizeConfig(src) {
     autoStart: bool(s.autoStart, g.autoStart),
     widgetEnabled: bool(s.widgetEnabled, g.widgetEnabled),
     widgetPort: normalizePort(s.widgetPort),
-    ignoredUpdateVersion: text(s.ignoredUpdateVersion, g.ignoredUpdateVersion)
+    ignoredUpdateVersion: text(s.ignoredUpdateVersion, g.ignoredUpdateVersion),
+    customPresets: Array.isArray(s.customPresets)
+      ? s.customPresets
+          .filter((p) => p && typeof p === 'object')
+          .map((p) => ({
+            name: text(p.name, 'Style').slice(0, 40) || 'Style',
+            appearance: sanitizeAppearance(p.appearance, OVERLAY_APPEARANCE_DEFAULTS, MAX_FONT_SIZE_WIDGET)
+          }))
+      : []
   };
 
   Object.assign(out, sanitizeAppearance(s, OVERLAY_APPEARANCE_DEFAULTS));

@@ -83,7 +83,10 @@ const STRINGS = {
     'ui.cardTextDesc': 'Font color, outline color & thickness (message text only)',
     'ui.cardNick': '👤 Nickname Styling',
     'ui.cardNickDesc': 'Custom nickname color & outline override',
+    'ui.cardStyles': '🎭 Styles & Presets',
+    'ui.cardStylesDesc': 'Built-in themes and saving your own custom styles',
     'ui.btnConfigure': 'Configure…',
+    'ui.btnOpenStyles': 'Open…',
     'ui.modalSave': 'Save',
     'ui.modalCancel': 'Cancel',
     'ui.modalReset': 'Reset to defaults',
@@ -115,6 +118,7 @@ const STRINGS = {
     'ui.shapeStrict': 'Strict (rectangular)',
     'ui.borderWidth': 'Border thickness:',
     'ui.borderColor': 'Border color:',
+    'ui.borderColor2': 'Contour highlight color (2nd color):',
     'ui.borderEffect': 'Border effect:',
     'ui.effectStatic': 'Static (default)',
     'ui.effectNeon': 'Neon glow',
@@ -137,6 +141,28 @@ const STRINGS = {
     'ui.customNickColor': 'Unified nickname color:',
     'ui.customNickOutlineWidth': 'Nickname outline thickness:',
     'ui.customNickOutlineColor': 'Nickname outline color:',
+
+    // --- Styles & Presets modal ---
+    'ui.stylesModalTitle': 'Styles & Presets',
+    'ui.stylesSaveLabel': 'Save current look as a new style:',
+    'ui.stylesNamePlaceholder': 'e.g. My Neon Stream',
+    'ui.btnSavePreset': '💾 Save style',
+    'ui.btnDeletePreset': 'Delete',
+    'ui.stylesBuiltInLabel': 'Built-in styles (click to preview):',
+    'ui.stylesCustomLabel': 'My saved styles (shared across Overlay & OBS widget):',
+    'ui.stylesEmptyCustom': 'No saved custom styles yet.',
+    'ui.presetCurrent': '↩ Current look (before opening)',
+    'ui.presetCurrentDesc': 'Restore the settings you had right before opening this window',
+    'ui.presetDefault': 'Standard (Default)',
+    'ui.presetDefaultDesc': 'Semi-transparent black plate (50%), 6px rounded corners, native Twitch nicks',
+    'ui.presetFade': 'Shadow Fade',
+    'ui.presetFadeDesc': 'Monochrome fade-to-transparent gradient, strict corners & soft cyan neon border',
+    'ui.presetVelvet': 'Velvet Tone',
+    'ui.presetVelvetDesc': 'Monochrome tone gradient (Lighter ↔ Darker 135°), rounded plate & energy pulse',
+    'ui.presetCyber': 'Cyber Synth',
+    'ui.presetCyberDesc': '2-color synthwave gradient, dual-color running contour & golden nicknames',
+    'ui.presetRgb': 'RGB Storm',
+    'ui.presetRgbDesc': '2-color radial dark emerald gradient, strict corners & synchronized RGB shift',
 
     // --- Updates ---
     'ui.checkUpdates': 'Check for updates',
@@ -291,7 +317,10 @@ const STRINGS = {
     'ui.cardTextDesc': 'Цвет текста сообщений, цвет и толщина окантовки (только текст)',
     'ui.cardNick': '👤 Кастомизация никнеймов',
     'ui.cardNickDesc': 'Свой цвет и обводка ников (вместо цветов Twitch)',
+    'ui.cardStyles': '🎭 Стили и пресеты',
+    'ui.cardStylesDesc': 'Готовые темы оформления и сохранение собственных стилей',
     'ui.btnConfigure': 'Настроить…',
+    'ui.btnOpenStyles': 'Открыть…',
     'ui.modalSave': 'Сохранить',
     'ui.modalCancel': 'Отмена',
     'ui.modalReset': 'Сбросить по умолчанию',
@@ -323,6 +352,7 @@ const STRINGS = {
     'ui.shapeStrict': 'Строгая (прямые углы)',
     'ui.borderWidth': 'Толщина границы (рамки):',
     'ui.borderColor': 'Цвет границы:',
+    'ui.borderColor2': 'Второй цвет контура (блик):',
     'ui.borderEffect': 'Эффект границы:',
     'ui.effectStatic': 'Статичный (обычная рамка)',
     'ui.effectNeon': 'Неоновое свечение',
@@ -345,6 +375,28 @@ const STRINGS = {
     'ui.customNickColor': 'Единый цвет никнеймов:',
     'ui.customNickOutlineWidth': 'Толщина окантовки ника:',
     'ui.customNickOutlineColor': 'Цвет окантовки ника:',
+
+    // --- Модальное окно Стилей и пресетов ---
+    'ui.stylesModalTitle': 'Стили и пресеты оформления',
+    'ui.stylesSaveLabel': 'Сохранить текущий внешний вид как новый стиль:',
+    'ui.stylesNamePlaceholder': 'например, Мой Неоновый Стрим',
+    'ui.btnSavePreset': '💾 Сохранить стиль',
+    'ui.btnDeletePreset': 'Удалить',
+    'ui.stylesBuiltInLabel': 'Встроенные стили (нажмите для предпросмотра):',
+    'ui.stylesCustomLabel': 'Мои сохраненные стили (общие для Оверлея и Виджета OBS):',
+    'ui.stylesEmptyCustom': 'У вас пока нет сохраненных пользовательских стилей.',
+    'ui.presetCurrent': '↩ Текущий вид (до открытия списка)',
+    'ui.presetCurrentDesc': 'Вернуть настройки, которые были у вас перед открытием этого окна',
+    'ui.presetDefault': 'Стандартный (По умолчанию)',
+    'ui.presetDefaultDesc': 'Полупрозрачная черная плашка (50%), скругление 6px, цвета ников с Twitch',
+    'ui.presetFade': 'Мягкое затухание (Shadow Fade)',
+    'ui.presetFadeDesc': 'Монохромный градиент в прозрачность, строгая форма и мягкий циановый неон',
+    'ui.presetVelvet': 'Глубокий тон (Velvet Tone)',
+    'ui.presetVelvetDesc': 'Монохромный градиент по тону (Светлее ↔ Темнее 135°), скругление и пульсация',
+    'ui.presetCyber': 'Киберпанк (Cyber Synth)',
+    'ui.presetCyberDesc': 'Двухцветный градиент, двухцветный бегущий контур и золотые никнеймы',
+    'ui.presetRgb': 'Хроматический шторм (RGB Storm)',
+    'ui.presetRgbDesc': 'Радиальный двухцветный изумрудный градиент, строгие углы и синхронный RGB-сдвиг',
 
     // --- Обновления ---
     'ui.checkUpdates': 'Проверить обновления',
@@ -449,4 +501,4 @@ function t(key, params) {
   return s;
 }
 
-module.exports = { t, setLang, getLang, getStrings, SUPPORTED };
+module.exports = { t, setLang, getLang, getStrings, SUPPORTED, STRINGS };

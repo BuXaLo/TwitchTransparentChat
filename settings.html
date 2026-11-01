@@ -218,7 +218,7 @@
       color: #aaa;
     }
 
-    /* Модальные окна (Плашка, Текст, Никнеймы и Обновление) */
+    /* Модальные окна (Плашка, Текст, Никнеймы, Стили и Обновление) */
     .modal-backdrop {
       position: fixed;
       inset: 0;
@@ -228,33 +228,43 @@
       align-items: center;
       justify-content: center;
       z-index: 500;
-      padding: 18px;
+      padding: 16px;
     }
     .modal-window {
       background: #16161d;
       border: 1px solid #383846;
       border-radius: 8px;
       width: 100%;
-      max-width: 480px;
-      max-height: 90vh;
+      max-width: 490px;
+      max-height: 92vh;
       display: flex;
       flex-direction: column;
       box-shadow: 0 14px 36px rgba(0, 0, 0, 0.65);
       overflow: hidden;
     }
     .modal-header {
-      padding: 12px 16px;
+      padding: 11px 16px;
       border-bottom: 1px solid #2a2a34;
       font-size: 14px;
       font-weight: 700;
       color: #fff;
+      flex-shrink: 0;
+    }
+    /* Закрепленный блок мини-превью над зоной прокрутки */
+    .modal-preview-pinned {
+      padding: 10px 16px 12px;
+      border-bottom: 1px solid #2a2a34;
+      background: #131319;
+      flex-shrink: 0;
     }
     .modal-body {
-      padding: 14px 16px;
+      padding: 12px 16px;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
-      gap: 11px;
+      gap: 9px;
+      flex: 1;
+      min-height: 0;
     }
     .modal-footer {
       padding: 10px 16px;
@@ -264,6 +274,7 @@
       align-items: center;
       gap: 8px;
       background: #121218;
+      flex-shrink: 0;
     }
     .modal-footer-right {
       display: flex;
@@ -275,7 +286,6 @@
       display: flex;
       flex-direction: column;
       gap: 5px;
-      margin-bottom: 2px;
     }
     .modal-preview-label {
       font-size: 11px;
@@ -283,7 +293,7 @@
       color: #9696a6;
     }
     .modal-preview-stage {
-      padding: 14px 16px;
+      padding: 12px 14px;
       border-radius: 6px;
       border: 1px solid #2b2b36;
       background-color: #14141a;
@@ -301,6 +311,7 @@
       --plate-radius: 6px;
       --plate-border-width: 0px;
       --plate-border-color: #9146FF;
+      --plate-border-color-2: #FFFFFF;
       --effect-speed-mult: 1;
       --msg-text-color: #FFFFFF;
       --msg-text-shadow: none;
@@ -346,7 +357,10 @@
       font-weight: 800;
       text-shadow: var(--nick-text-shadow);
     }
-    .mini-preview-plate .mini-colon,
+    .mini-preview-plate .mini-colon {
+      color: #ffffff;
+      text-shadow: var(--nick-text-shadow);
+    }
     .mini-preview-plate .mini-text {
       color: var(--msg-text-color);
       text-shadow: var(--msg-text-shadow);
@@ -407,7 +421,7 @@
       inset: calc(-1 * max(var(--plate-border-width), 1px));
       border-radius: inherit;
       padding: max(var(--plate-border-width), 2px);
-      background: conic-gradient(from var(--cyber-angle), transparent 25%, var(--plate-border-color), #ffffff, var(--plate-border-color), transparent 75%);
+      background: conic-gradient(from var(--cyber-angle), transparent 25%, var(--plate-border-color), var(--plate-border-color-2, #ffffff), var(--plate-border-color), transparent 75%);
       -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
       -webkit-mask-composite: xor;
       mask-composite: exclude;
@@ -416,6 +430,70 @@
     }
     @keyframes cyberSpin {
       to { --cyber-angle: 360deg; }
+    }
+
+    /* Список пресетов в модальном окне Стилей */
+    .presets-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .preset-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 8px 11px;
+      border-radius: 6px;
+      border: 1px solid #2d2d38;
+      background: rgba(255, 255, 255, 0.025);
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .preset-item:hover {
+      background: rgba(145, 70, 255, 0.08);
+      border-color: #5b3b9c;
+    }
+    .preset-item.active {
+      background: rgba(145, 70, 255, 0.16);
+      border-color: #9146FF;
+    }
+    .preset-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+      flex: 1;
+    }
+    .preset-title {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #f2f2f7;
+    }
+    .preset-desc {
+      font-size: 11px;
+      color: #8c8c99;
+    }
+    .preset-delete-btn {
+      background: rgba(255, 82, 82, 0.12);
+      color: #ff8585;
+      border: 1px solid rgba(255, 82, 82, 0.4);
+      border-radius: 4px;
+      padding: 4px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .preset-delete-btn:hover {
+      background: #ff5252;
+      color: #fff;
+    }
+    .preset-empty {
+      font-size: 11.5px;
+      color: #777;
+      font-style: italic;
+      padding: 4px 2px;
     }
 
     .release-notes-box {
@@ -576,7 +654,7 @@
   <div class="modal-backdrop hidden" id="modal-plate">
     <div class="modal-window">
       <div class="modal-header" data-i18n="ui.plateModalTitle"></div>
-      <div class="modal-body">
+      <div class="modal-preview-pinned">
         <div class="modal-preview-wrap">
           <span class="modal-preview-label" data-i18n="ui.previewLabel"></span>
           <div class="modal-preview-stage">
@@ -585,15 +663,25 @@
             </div>
           </div>
         </div>
-
-        <label>
-          <span data-i18n="ui.bgMode"></span>
-          <select id="m_bgMode">
-            <option value="solid" data-i18n="ui.bgModeSolid"></option>
-            <option value="grad-mono" data-i18n="ui.bgModeMono"></option>
-            <option value="grad-dual" data-i18n="ui.bgModeDual"></option>
-          </select>
-        </label>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <label>
+            <span data-i18n="ui.bgMode"></span>
+            <select id="m_bgMode">
+              <option value="solid" data-i18n="ui.bgModeSolid"></option>
+              <option value="grad-mono" data-i18n="ui.bgModeMono"></option>
+              <option value="grad-dual" data-i18n="ui.bgModeDual"></option>
+            </select>
+          </label>
+          <label>
+            <span data-i18n="ui.bg"></span>
+            <div class="slider-row" style="height: 32px;">
+              <input type="range" id="m_bgOpacity" min="0" max="100" step="5" value="50">
+              <span id="m_bgOpacityVal">50%</span>
+            </div>
+          </label>
+        </div>
 
         <div class="row">
           <label>
@@ -604,15 +692,14 @@
             <span data-i18n="ui.bgColor2"></span>
             <input type="color" id="m_bgColor2" value="#251640">
           </label>
+          <label id="m_bgMonoModeWrap">
+            <span data-i18n="ui.bgMonoMode"></span>
+            <select id="m_bgMonoMode">
+              <option value="tone" data-i18n="ui.bgMonoTone"></option>
+              <option value="fade" data-i18n="ui.bgMonoFade"></option>
+            </select>
+          </label>
         </div>
-
-        <label id="m_bgMonoModeWrap">
-          <span data-i18n="ui.bgMonoMode"></span>
-          <select id="m_bgMonoMode">
-            <option value="tone" data-i18n="ui.bgMonoTone"></option>
-            <option value="fade" data-i18n="ui.bgMonoFade"></option>
-          </select>
-        </label>
 
         <label id="m_bgDirectionWrap">
           <span data-i18n="ui.bgDirection"></span>
@@ -627,49 +714,46 @@
           </select>
         </label>
 
-        <label>
-          <span data-i18n="ui.bg"></span>
-          <div class="slider-row">
-            <input type="range" id="m_bgOpacity" min="0" max="100" step="5" value="50">
-            <span id="m_bgOpacityVal">50%</span>
-          </div>
-        </label>
-
         <hr>
-
-        <label>
-          <span data-i18n="ui.plateShape"></span>
-          <select id="m_plateShape">
-            <option value="rounded" data-i18n="ui.shapeRounded"></option>
-            <option value="strict" data-i18n="ui.shapeStrict"></option>
-          </select>
-        </label>
 
         <div class="row">
           <label>
+            <span data-i18n="ui.plateShape"></span>
+            <select id="m_plateShape">
+              <option value="rounded" data-i18n="ui.shapeRounded"></option>
+              <option value="strict" data-i18n="ui.shapeStrict"></option>
+            </select>
+          </label>
+          <label>
             <span data-i18n="ui.borderWidth"></span>
-            <div class="slider-row">
+            <div class="slider-row" style="height: 32px;">
               <input type="range" id="m_borderWidth" min="0" max="5" step="1" value="0">
               <span id="m_borderWidthVal">0px</span>
             </div>
+          </label>
+        </div>
+
+        <div class="row">
+          <label>
+            <span data-i18n="ui.borderEffect"></span>
+            <select id="m_borderEffect">
+              <option value="static" data-i18n="ui.effectStatic"></option>
+              <option value="neon" data-i18n="ui.effectNeon"></option>
+              <option value="pulse" data-i18n="ui.effectPulse"></option>
+              <option value="rgb" data-i18n="ui.effectRgb"></option>
+              <option value="cyber" data-i18n="ui.effectCyber"></option>
+              <option value="breathing" data-i18n="ui.effectBreathing"></option>
+            </select>
           </label>
           <label>
             <span data-i18n="ui.borderColor"></span>
             <input type="color" id="m_borderColor" value="#9146FF">
           </label>
+          <label id="m_borderColor2Wrap" class="hidden">
+            <span data-i18n="ui.borderColor2"></span>
+            <input type="color" id="m_borderColor2" value="#FFFFFF">
+          </label>
         </div>
-
-        <label>
-          <span data-i18n="ui.borderEffect"></span>
-          <select id="m_borderEffect">
-            <option value="static" data-i18n="ui.effectStatic"></option>
-            <option value="neon" data-i18n="ui.effectNeon"></option>
-            <option value="pulse" data-i18n="ui.effectPulse"></option>
-            <option value="rgb" data-i18n="ui.effectRgb"></option>
-            <option value="cyber" data-i18n="ui.effectCyber"></option>
-            <option value="breathing" data-i18n="ui.effectBreathing"></option>
-          </select>
-        </label>
 
         <label id="m_borderEffectSpeedWrap">
           <span data-i18n="ui.borderEffectSpeed"></span>
@@ -698,7 +782,7 @@
   <div class="modal-backdrop hidden" id="modal-text">
     <div class="modal-window">
       <div class="modal-header" data-i18n="ui.textModalTitle"></div>
-      <div class="modal-body">
+      <div class="modal-preview-pinned">
         <div class="modal-preview-wrap">
           <span class="modal-preview-label" data-i18n="ui.previewLabel"></span>
           <div class="modal-preview-stage">
@@ -707,7 +791,8 @@
             </div>
           </div>
         </div>
-
+      </div>
+      <div class="modal-body">
         <label>
           <span data-i18n="ui.textColor"></span>
           <input type="color" id="m_textColor" value="#FFFFFF">
@@ -740,7 +825,7 @@
   <div class="modal-backdrop hidden" id="modal-nick">
     <div class="modal-window">
       <div class="modal-header" data-i18n="ui.nickModalTitle"></div>
-      <div class="modal-body">
+      <div class="modal-preview-pinned">
         <div class="modal-preview-wrap">
           <span class="modal-preview-label" data-i18n="ui.previewLabel"></span>
           <div class="modal-preview-stage">
@@ -749,7 +834,8 @@
             </div>
           </div>
         </div>
-
+      </div>
+      <div class="modal-body">
         <label class="checkbox-label">
           <input type="checkbox" id="m_customNickEnabled">
           <span data-i18n="ui.customNickEnabled"></span>
@@ -785,7 +871,47 @@
     </div>
   </div>
 
-  <!-- МОДАЛЬНОЕ ОКНО 4: Доступно обновление -->
+  <!-- МОДАЛЬНОЕ ОКНО 4: Стили и пресеты -->
+  <div class="modal-backdrop hidden" id="modal-styles">
+    <div class="modal-window">
+      <div class="modal-header" data-i18n="ui.stylesModalTitle"></div>
+      <div class="modal-preview-pinned">
+        <div class="modal-preview-wrap">
+          <span class="modal-preview-label" data-i18n="ui.previewLabel"></span>
+          <div class="modal-preview-stage">
+            <div class="mini-preview-plate" data-mini-preview>
+              <span class="mini-author-wrap"><span class="mini-badge">★</span><span class="mini-nick" data-mini-nick>TestViewer</span><span class="mini-colon">: </span></span><span class="mini-text" data-i18n="ui.previewSampleText"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-body">
+        <label>
+          <span data-i18n="ui.stylesSaveLabel"></span>
+          <div class="row">
+            <input type="text" id="m_presetNameInput" maxlength="40" data-i18n-placeholder="ui.stylesNamePlaceholder">
+            <button type="button" class="accent" id="btn-save-custom-preset" data-i18n="ui.btnSavePreset"></button>
+          </div>
+        </label>
+
+        <hr>
+
+        <span class="section-title" data-i18n="ui.stylesBuiltInLabel"></span>
+        <div class="presets-list" id="builtin-presets-list"></div>
+
+        <span class="section-title" data-i18n="ui.stylesCustomLabel"></span>
+        <div class="presets-list" id="custom-presets-list"></div>
+      </div>
+      <div class="modal-footer" style="justify-content: flex-end;">
+        <div class="modal-footer-right">
+          <button class="secondary" data-modal-cancel="styles" data-i18n="ui.modalCancel"></button>
+          <button class="primary" data-modal-apply="styles" data-i18n="ui.modalSave"></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- МОДАЛЬНОЕ ОКНО 5: Доступно обновление -->
   <div class="modal-backdrop hidden" id="modal-update">
     <div class="modal-window">
       <div class="modal-header" id="update-modal-title"></div>
@@ -816,7 +942,7 @@
     const ANIMATED_EFFECTS = ['pulse', 'rgb', 'cyber', 'breathing'];
     const STYLE_KEYS = [
       'bgOpacity', 'bgMode', 'bgColor1', 'bgColor2', 'bgMonoMode', 'bgDirection',
-      'plateShape', 'borderWidth', 'borderColor', 'borderEffect', 'borderEffectSpeed', 'borderEffectSync',
+      'plateShape', 'borderWidth', 'borderColor', 'borderColor2', 'borderEffect', 'borderEffectSpeed', 'borderEffectSync',
       'textColor', 'textOutlineWidth', 'textOutlineColor',
       'customNickEnabled', 'customNickColor', 'customNickOutlineWidth', 'customNickOutlineColor'
     ];
@@ -845,6 +971,7 @@
       plateShape: 'rounded',
       borderWidth: 0,
       borderColor: '#9146FF',
+      borderColor2: '#FFFFFF',
       borderEffect: 'static',
       borderEffectSpeed: 5,
       borderEffectSync: false,
@@ -856,6 +983,146 @@
       customNickOutlineWidth: 2,
       customNickOutlineColor: '#000000'
     };
+
+    /* ---------------- Встроенные пресеты (5 демонстрационных стилей) ---------------- */
+
+    const BUILTIN_PRESETS = [
+      {
+        id: 'default',
+        titleKey: 'ui.presetDefault',
+        descKey: 'ui.presetDefaultDesc',
+        style: {
+          bgMode: 'solid',
+          bgColor1: '#000000',
+          bgColor2: '#251640',
+          bgMonoMode: 'tone',
+          bgDirection: 'to right',
+          bgOpacity: 50,
+          plateShape: 'rounded',
+          borderWidth: 0,
+          borderColor: '#9146FF',
+          borderColor2: '#FFFFFF',
+          borderEffect: 'static',
+          borderEffectSpeed: 5,
+          borderEffectSync: false,
+          textColor: '#FFFFFF',
+          textOutlineWidth: 2,
+          textOutlineColor: '#000000',
+          customNickEnabled: false,
+          customNickColor: '#9146FF',
+          customNickOutlineWidth: 2,
+          customNickOutlineColor: '#000000'
+        }
+      },
+      {
+        id: 'fade',
+        titleKey: 'ui.presetFade',
+        descKey: 'ui.presetFadeDesc',
+        style: {
+          bgMode: 'grad-mono',
+          bgColor1: '#0F1E36',
+          bgColor2: '#000000',
+          bgMonoMode: 'fade',
+          bgDirection: 'to right',
+          bgOpacity: 85,
+          plateShape: 'strict',
+          borderWidth: 1,
+          borderColor: '#00E5FF',
+          borderColor2: '#FFFFFF',
+          borderEffect: 'neon',
+          borderEffectSpeed: 5,
+          borderEffectSync: false,
+          textColor: '#EAFBFF',
+          textOutlineWidth: 2,
+          textOutlineColor: '#04101E',
+          customNickEnabled: false,
+          customNickColor: '#00E5FF',
+          customNickOutlineWidth: 2,
+          customNickOutlineColor: '#000000'
+        }
+      },
+      {
+        id: 'velvet',
+        titleKey: 'ui.presetVelvet',
+        descKey: 'ui.presetVelvetDesc',
+        style: {
+          bgMode: 'grad-mono',
+          bgColor1: '#281545',
+          bgColor2: '#120824',
+          bgMonoMode: 'tone',
+          bgDirection: '135deg',
+          bgOpacity: 75,
+          plateShape: 'rounded',
+          borderWidth: 2,
+          borderColor: '#B56BFF',
+          borderColor2: '#FFFFFF',
+          borderEffect: 'pulse',
+          borderEffectSpeed: 4,
+          borderEffectSync: true,
+          textColor: '#F6EEFF',
+          textOutlineWidth: 2,
+          textOutlineColor: '#120624',
+          customNickEnabled: false,
+          customNickColor: '#D6A8FF',
+          customNickOutlineWidth: 2,
+          customNickOutlineColor: '#000000'
+        }
+      },
+      {
+        id: 'cyber',
+        titleKey: 'ui.presetCyber',
+        descKey: 'ui.presetCyberDesc',
+        style: {
+          bgMode: 'grad-dual',
+          bgColor1: '#240B36',
+          bgColor2: '#09203F',
+          bgMonoMode: 'tone',
+          bgDirection: '45deg',
+          bgOpacity: 80,
+          plateShape: 'rounded',
+          borderWidth: 2,
+          borderColor: '#FF007F',
+          borderColor2: '#00F0FF',
+          borderEffect: 'cyber',
+          borderEffectSpeed: 6,
+          borderEffectSync: true,
+          textColor: '#FFFFFF',
+          textOutlineWidth: 2,
+          textOutlineColor: '#080412',
+          customNickEnabled: true,
+          customNickColor: '#FFE600',
+          customNickOutlineWidth: 2,
+          customNickOutlineColor: '#1A0526'
+        }
+      },
+      {
+        id: 'rgb',
+        titleKey: 'ui.presetRgb',
+        descKey: 'ui.presetRgbDesc',
+        style: {
+          bgMode: 'grad-dual',
+          bgColor1: '#142824',
+          bgColor2: '#0A0C12',
+          bgMonoMode: 'tone',
+          bgDirection: 'radial',
+          bgOpacity: 75,
+          plateShape: 'strict',
+          borderWidth: 2,
+          borderColor: '#00FF88',
+          borderColor2: '#FFFFFF',
+          borderEffect: 'rgb',
+          borderEffectSpeed: 5,
+          borderEffectSync: true,
+          textColor: '#F0FFF8',
+          textOutlineWidth: 2,
+          textOutlineColor: '#000000',
+          customNickEnabled: false,
+          customNickColor: '#00FF88',
+          customNickOutlineWidth: 2,
+          customNickOutlineColor: '#000000'
+        }
+      }
+    ];
 
     /* ---------------- Вспомогательные функции генерации стилей для мини-превью ---------------- */
 
@@ -953,11 +1220,13 @@
       w_: {}
     };
 
+    let customPresets = [];
+    let selectedPresetKey = 'current';
     let activeModalTarget = 'o_'; // 'o_' | 'w_'
     let modalSnapshot = null;
     let currentUpdateData = null;
     let stringsLoaded = false;
-    let appVersion = '1.3.4';
+    let appVersion = '1.3.1';
     let isPortableBuild = false;
 
     /* ---------------- Локализация ---------------- */
@@ -1050,6 +1319,7 @@
         $('update-check-status').textContent = `v${appVersion}`;
       }
       renderWidgetStatus(widgetStatus);
+      renderPresetsLists();
 
       if (currentUpdateData && currentUpdateData.hasUpdate) {
         renderUpdateModalContent(currentUpdateData);
@@ -1069,6 +1339,7 @@
       const radius = cfg.plateShape === 'strict' ? '0px' : '6px';
       const bw = Math.max(0, Math.min(5, parseInt(cfg.borderWidth, 10) || 0));
       const bc = cfg.borderColor || '#9146FF';
+      const bc2 = cfg.borderColor2 || '#FFFFFF';
       const effect = cfg.borderEffect || 'static';
       const effectiveBw = bw === 0 && effect !== 'static' && effect !== 'cyber' ? 1 : bw;
       const speedMult = String(speedToDurationMultiplier(cfg.borderEffectSpeed));
@@ -1091,6 +1362,7 @@
         el.style.setProperty('--plate-radius', radius);
         el.style.setProperty('--plate-border-width', `${effectiveBw}px`);
         el.style.setProperty('--plate-border-color', bc);
+        el.style.setProperty('--plate-border-color-2', bc2);
         el.style.setProperty('--effect-speed-mult', speedMult);
         el.style.setProperty('--msg-text-color', textCol);
         el.style.setProperty('--msg-text-shadow', msgShadow);
@@ -1197,6 +1469,13 @@
             </div>
             <button type="button" class="accent" data-open-modal="nick" data-prefix="${p}" data-i18n="ui.btnConfigure"></button>
           </div>
+          <div class="style-card">
+            <div class="style-card-info">
+              <span class="style-card-title" data-i18n="ui.cardStyles"></span>
+              <span class="style-card-desc" data-i18n="ui.cardStylesDesc"></span>
+            </div>
+            <button type="button" class="accent" data-open-modal="styles" data-prefix="${p}" data-i18n="ui.btnOpenStyles"></button>
+          </div>
         </div>
 
         <hr>
@@ -1237,17 +1516,21 @@
       STYLE_KEYS.forEach((k) => {
         if (a[k] !== undefined) appearanceState[p][k] = a[k];
       });
-      $(p + 'messageLifetime').value = a.messageLifetime;
-      $(p + 'fontSize').value = a.fontSize;
-      $(p + 'fontSizeVal').textContent = `${a.fontSize}px`;
-      $(p + 'fontFamily').value = a.fontFamily;
-      $(p + 'textAlign').value = a.textAlign;
-      $(p + 'animation').value = a.animation;
-      $(p + 'chatDirection').value = a.chatDirection;
-      $(p + 'layoutMode').value = a.layoutMode;
-      $(p + 'highlightMentions').checked = !!a.highlightMentions;
-      $(p + 'mentionLonger').checked = !!a.mentionLonger;
-      NOTICE_IDS.forEach((id) => { $(p + id).checked = !!a[id]; });
+      if (a.messageLifetime !== undefined) $(p + 'messageLifetime').value = a.messageLifetime;
+      if (a.fontSize !== undefined) {
+        $(p + 'fontSize').value = a.fontSize;
+        $(p + 'fontSizeVal').textContent = `${a.fontSize}px`;
+      }
+      if (a.fontFamily !== undefined) $(p + 'fontFamily').value = a.fontFamily;
+      if (a.textAlign !== undefined) $(p + 'textAlign').value = a.textAlign;
+      if (a.animation !== undefined) $(p + 'animation').value = a.animation;
+      if (a.chatDirection !== undefined) $(p + 'chatDirection').value = a.chatDirection;
+      if (a.layoutMode !== undefined) $(p + 'layoutMode').value = a.layoutMode;
+      if (a.highlightMentions !== undefined) $(p + 'highlightMentions').checked = !!a.highlightMentions;
+      if (a.mentionLonger !== undefined) $(p + 'mentionLonger').checked = !!a.mentionLonger;
+      NOTICE_IDS.forEach((id) => {
+        if (a[id] !== undefined) $(p + id).checked = !!a[id];
+      });
       syncMentionDependency(p);
     }
 
@@ -1266,6 +1549,135 @@
       }
     }
 
+    /* ---------------- Модальное окно Стилей и пресетов ---------------- */
+
+    function applyStyleObjectToTarget(prefix, styleObj) {
+      if (!styleObj) return;
+      STYLE_KEYS.forEach((k) => {
+        if (styleObj[k] !== undefined) {
+          appearanceState[prefix][k] = styleObj[k];
+        }
+      });
+      if (styleObj.fontFamily !== undefined) $(prefix + 'fontFamily').value = styleObj.fontFamily;
+      if (styleObj.textAlign !== undefined) $(prefix + 'textAlign').value = styleObj.textAlign;
+      if (styleObj.layoutMode !== undefined) $(prefix + 'layoutMode').value = styleObj.layoutMode;
+      if (styleObj.animation !== undefined) $(prefix + 'animation').value = styleObj.animation;
+      triggerTargetPreview(prefix);
+    }
+
+    function renderPresetsLists() {
+      const builtinBox = $('builtin-presets-list');
+      const customBox = $('custom-presets-list');
+      if (!builtinBox || !customBox) return;
+
+      builtinBox.innerHTML = '';
+
+      // Первая строка — возврат к виду, который был у пользователя до открытия окна пресетов
+      const currentRow = document.createElement('div');
+      currentRow.className = 'preset-item' + (selectedPresetKey === 'current' ? ' active' : '');
+      currentRow.innerHTML = `
+        <div class="preset-info">
+          <span class="preset-title">${escapeHtml(tr('ui.presetCurrent'))}</span>
+          <span class="preset-desc">${escapeHtml(tr('ui.presetCurrentDesc'))}</span>
+        </div>
+      `;
+      currentRow.onclick = () => {
+        selectedPresetKey = 'current';
+        if (modalSnapshot) {
+          applyStyleObjectToTarget(activeModalTarget, modalSnapshot);
+        }
+        renderPresetsLists();
+      };
+      builtinBox.appendChild(currentRow);
+
+      // 5 встроенных пресетов
+      BUILTIN_PRESETS.forEach((preset) => {
+        const key = `builtin:${preset.id}`;
+        const item = document.createElement('div');
+        item.className = 'preset-item' + (selectedPresetKey === key ? ' active' : '');
+        item.innerHTML = `
+          <div class="preset-info">
+            <span class="preset-title">${escapeHtml(tr(preset.titleKey))}</span>
+            <span class="preset-desc">${escapeHtml(tr(preset.descKey))}</span>
+          </div>
+        `;
+        item.onclick = () => {
+          selectedPresetKey = key;
+          applyStyleObjectToTarget(activeModalTarget, preset.style);
+          renderPresetsLists();
+        };
+        builtinBox.appendChild(item);
+      });
+
+      // Пользовательские стили
+      customBox.innerHTML = '';
+      if (!Array.isArray(customPresets) || customPresets.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'preset-empty';
+        empty.textContent = tr('ui.stylesEmptyCustom');
+        customBox.appendChild(empty);
+        return;
+      }
+
+      customPresets.forEach((cp, idx) => {
+        const key = `custom:${idx}`;
+        const item = document.createElement('div');
+        item.className = 'preset-item' + (selectedPresetKey === key ? ' active' : '');
+
+        const info = document.createElement('div');
+        info.className = 'preset-info';
+        info.innerHTML = `<span class="preset-title">${escapeHtml(cp.name)}</span>`;
+        item.appendChild(info);
+
+        const delBtn = document.createElement('button');
+        delBtn.type = 'button';
+        delBtn.className = 'preset-delete-btn';
+        delBtn.textContent = tr('ui.btnDeletePreset');
+        delBtn.onclick = async (e) => {
+          e.stopPropagation();
+          customPresets.splice(idx, 1);
+          if (selectedPresetKey === key) selectedPresetKey = 'current';
+          renderPresetsLists();
+          await save({ forceReconnect: false });
+        };
+        item.appendChild(delBtn);
+
+        item.onclick = () => {
+          selectedPresetKey = key;
+          applyStyleObjectToTarget(activeModalTarget, cp.appearance);
+          renderPresetsLists();
+        };
+
+        customBox.appendChild(item);
+      });
+    }
+
+    async function saveCurrentAsCustomPreset() {
+      const nameInput = $('m_presetNameInput');
+      const name = (nameInput.value || '').trim();
+      if (!name) {
+        nameInput.focus();
+        return;
+      }
+
+      const fullCurrent = readAppearance(activeModalTarget);
+      const existingIdx = customPresets.findIndex((p) => p.name.toLowerCase() === name.toLowerCase());
+      if (existingIdx >= 0) {
+        customPresets[existingIdx].appearance = Object.assign({}, fullCurrent);
+        selectedPresetKey = `custom:${existingIdx}`;
+      } else {
+        customPresets.push({
+          name,
+          appearance: Object.assign({}, fullCurrent)
+        });
+        selectedPresetKey = `custom:${customPresets.length - 1}`;
+      }
+
+      nameInput.value = '';
+      renderPresetsLists();
+      await save({ forceReconnect: false });
+    }
+
     /* ---------------- Модальные окна кастомизации стилей ---------------- */
 
     function syncPlateModalVisibility() {
@@ -1275,6 +1687,7 @@
       $('m_bgColor2Wrap').classList.toggle('hidden', mode !== 'grad-dual');
       $('m_bgMonoModeWrap').classList.toggle('hidden', mode !== 'grad-mono');
       $('m_bgDirectionWrap').classList.toggle('hidden', mode === 'solid');
+      $('m_borderColor2Wrap').classList.toggle('hidden', effect !== 'cyber');
       $('m_borderEffectSpeedWrap').classList.toggle('hidden', !isAnimated);
       $('m_borderEffectSyncWrap').classList.toggle('hidden', !isAnimated);
     }
@@ -1300,6 +1713,7 @@
         $('m_borderWidth').value = st.borderWidth || 0;
         $('m_borderWidthVal').textContent = `${$('m_borderWidth').value}px`;
         $('m_borderColor').value = st.borderColor || '#9146FF';
+        $('m_borderColor2').value = st.borderColor2 || '#FFFFFF';
         $('m_borderEffect').value = st.borderEffect || 'static';
         $('m_borderEffectSpeed').value = st.borderEffectSpeed !== undefined ? st.borderEffectSpeed : 5;
         $('m_borderEffectSpeedVal').textContent = `${$('m_borderEffectSpeed').value}`;
@@ -1317,13 +1731,17 @@
         $('m_customNickOutlineWidthVal').textContent = `${$('m_customNickOutlineWidth').value}px`;
         $('m_customNickOutlineColor').value = st.customNickOutlineColor || '#000000';
         syncNickModalDisabled();
+      } else if (kind === 'styles') {
+        selectedPresetKey = 'current';
+        $('m_presetNameInput').value = '';
+        renderPresetsLists();
       }
       updateMiniPreviews(activeModalTarget);
     }
 
     function openStyleModal(kind, prefix) {
       activeModalTarget = prefix;
-      modalSnapshot = Object.assign({}, appearanceState[prefix]);
+      modalSnapshot = Object.assign({}, readAppearance(prefix));
       populateModalInputsFromState(kind, appearanceState[prefix]);
       $(`modal-${kind}`).classList.remove('hidden');
     }
@@ -1342,6 +1760,7 @@
           plateShape: d.plateShape,
           borderWidth: d.borderWidth,
           borderColor: d.borderColor,
+          borderColor2: d.borderColor2,
           borderEffect: d.borderEffect,
           borderEffectSpeed: d.borderEffectSpeed,
           borderEffectSync: !!d.borderEffectSync
@@ -1376,6 +1795,7 @@
         st.plateShape = $('m_plateShape').value;
         st.borderWidth = parseInt($('m_borderWidth').value, 10) || 0;
         st.borderColor = $('m_borderColor').value;
+        st.borderColor2 = $('m_borderColor2').value;
         st.borderEffect = $('m_borderEffect').value;
         st.borderEffectSpeed = parseInt($('m_borderEffectSpeed').value, 10) || 5;
         st.borderEffectSync = $('m_borderEffectSync').checked;
@@ -1400,7 +1820,7 @@
 
     async function closeStyleModal(kind, applyAndSave) {
       if (!applyAndSave && modalSnapshot) {
-        appearanceState[activeModalTarget] = Object.assign({}, modalSnapshot);
+        writeAppearance(activeModalTarget, modalSnapshot);
         triggerTargetPreview(activeModalTarget);
       }
       modalSnapshot = null;
@@ -1425,10 +1845,21 @@
 
       document.querySelectorAll('[data-modal-apply]').forEach((btn) => {
         btn.addEventListener('click', async () => {
-          readModalIntoState(btn.dataset.modalApply);
+          const kind = btn.dataset.modalApply;
+          if (kind !== 'styles') {
+            readModalIntoState(kind);
+          }
           triggerTargetPreview(activeModalTarget);
-          await closeStyleModal(btn.dataset.modalApply, true);
+          await closeStyleModal(kind, true);
         });
+      });
+
+      $('btn-save-custom-preset').addEventListener('click', saveCurrentAsCustomPreset);
+      $('m_presetNameInput').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          saveCurrentAsCustomPreset();
+        }
       });
 
       // Live-preview при любом изменении внутри модальных окон
@@ -1596,7 +2027,8 @@
         proxyPass: $('proxyPass').value.trim(),
         hideCommands: $('hideCommands').checked,
         ignoredBots: $('ignoredBots').value.trim(),
-        autoStart: $('autoStart').checked
+        autoStart: $('autoStart').checked,
+        customPresets
       };
     }
 
@@ -1707,6 +2139,10 @@
         $('widgetPort').value = result.widgetPort;
         updateLink();
       }
+      if (result && Array.isArray(result.customPresets)) {
+        customPresets = result.customPresets;
+        renderPresetsLists();
+      }
       if (result && result.widget) renderWidgetStatus(result.widget);
 
       const widgetFailed = widgetEnabled && result && result.widget && result.widget.error;
@@ -1752,9 +2188,10 @@
       if (cfg.defaults && typeof cfg.defaults === 'object') {
         defaultAppearance = Object.assign({}, defaultAppearance, cfg.defaults);
       }
+      customPresets = Array.isArray(cfg.customPresets) ? cfg.customPresets : [];
 
       const lang = cfg.language || 'en';
-      appVersion = cfg.currentVersion || '1.3.4';
+      appVersion = cfg.currentVersion || '1.3.1';
       isPortableBuild = !!cfg.isPortable;
       $('language').value = lang;
 

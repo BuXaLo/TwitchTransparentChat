@@ -472,7 +472,8 @@ ipcMain.handle('save-config', async (event, raw) => {
   const prev = getConfig();
   const forceReconnect = !!(raw && raw._forceReconnect);
   const cfg = configLib.normalizeConfig(Object.assign({}, raw, {
-    ignoredUpdateVersion: raw.ignoredUpdateVersion !== undefined ? raw.ignoredUpdateVersion : prev.ignoredUpdateVersion
+    ignoredUpdateVersion: raw.ignoredUpdateVersion !== undefined ? raw.ignoredUpdateVersion : prev.ignoredUpdateVersion,
+    customPresets: Array.isArray(raw.customPresets) ? raw.customPresets : prev.customPresets
   }));
   store.set('twitch_config', cfg);
   applyAutoStart(cfg.autoStart);
@@ -489,7 +490,7 @@ ipcMain.handle('save-config', async (event, raw) => {
   await applyWidgetSettings(cfg);
   widgetServer.broadcast('state', widgetState());
 
-  return { ok: true, widget: widgetStatus(), widgetPort: cfg.widgetPort };
+  return { ok: true, widget: widgetStatus(), widgetPort: cfg.widgetPort, customPresets: cfg.customPresets };
 });
 
 ipcMain.handle('get-overlay-state', () => {

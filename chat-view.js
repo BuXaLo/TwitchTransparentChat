@@ -243,6 +243,7 @@
       const effectiveBw = bw === 0 && effect !== 'static' && effect !== 'cyber' ? 1 : bw;
       root.style.setProperty('--plate-border-width', `${effectiveBw}px`);
       root.style.setProperty('--plate-border-color', config.borderColor || '#9146FF');
+      root.style.setProperty('--plate-border-color-2', config.borderColor2 || '#FFFFFF');
       root.style.setProperty('--effect-speed-mult', String(speedToDurationMultiplier(config.borderEffectSpeed)));
 
       // Переменные текста сообщения (применяются ТОЛЬКО к .text-content)
@@ -502,4 +503,4 @@
   }
 
   global.ChatView = { create, escapeHtml, ensureReadableColor };
-})(typeof window !== 'undefined' ? window : globalThis);
+})(typeof window !== 'undefined' ? window : global);

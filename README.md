@@ -26,10 +26,11 @@ In classic **Exclusive Fullscreen** the GPU takes over the game output and bypas
 
 * **Full transparency and click-through mode**: the window stays on the `screen-saver` level above borderless windows. Press `Ctrl+Alt+F9` to enable click-through: the overlay stops catching the mouse, hides its title bar and doesn't get in the way of gameplay.
 * **Readable in any scene**: a customizable multi-direction text outline (`text-shadow` from 0 to 4 px) keeps text crisp and contrasty even on bright game scenes.
-* **Deep visual customization (v1.3.0)**: dedicated modal dialogs with a **live 14 px mini-preview** on a contrast checkerboard stage:
-  * **Message Plate**: solid background, 1-color monochrome gradient (by tone *Lighter ↔ Darker* or *Fade to transparent*) or 2-color custom gradient in 7 directions (`Left to Right`, `Right to Left`, `Top to Bottom`, `Bottom to Top`, `45°`, `135°`, `Radial`), plate shape (*Rounded 6 px* or *Strict rectangular*), border thickness (`0–5 px`), border color and animated border effects (*Static*, *Neon glow*, *Energy pulse*, *RGB / Chromatic shift*, *Running contour / Cyber-border*, *Breathing*) with adjustable animation speed (`1–10`) and an option to **synchronize effect phase across all messages**.
+* **Deep visual customization & presets (v1.3.1)**: dedicated modal dialogs with a **pinned live 14 px mini-preview** on a contrast checkerboard stage (always visible above any scroll):
+  * **Message Plate**: solid background, 1-color monochrome gradient (by tone *Lighter ↔ Darker* or *Fade to transparent*) or 2-color custom gradient in 7 directions (`Left to Right`, `Right to Left`, `Top to Bottom`, `Bottom to Top`, `45°`, `135°`, `Radial`), plate shape (*Rounded 6 px* or *Strict rectangular*), border thickness (`0–5 px`), border color and animated border effects (*Static*, *Neon glow*, *Energy pulse*, *RGB / Chromatic shift*, *Running contour / Cyber-border* with a dedicated **2nd highlight color** sub-option, and *Breathing*) with adjustable animation speed (`1–10`) and an option to **synchronize effect phase across all messages**.
   * **Typography & Text**: custom message text color, outline thickness (`0–4 px`) and outline color.
   * **Nickname Styling**: optional toggle to override native Twitch nickname colors with a unified custom color and a dedicated nickname outline (`0–4 px` thickness and color).
+  * **Styles & Presets**: 5 built-in showcase themes (*Standard*, *Shadow Fade*, *Velvet Tone*, *Cyber Synth*, *RGB Storm*) plus the ability to **save your own named custom styles** (shared across the Overlay and OBS widget) with automatic protection against losing your current unsaved settings while browsing presets.
 * **Native emotes and badges**: official Twitch badges (Broadcaster, Mod, VIP, Sub, etc.) and emotes, positioned by Unicode code points so emojis never shift them.
 * **7TV, BetterTTV and FrankerFaceZ emotes**: global and channel emotes (the channel ID comes from the `room-id` tag), animated and zero-width (overlay) emotes included. With SOCKS5 enabled, emotes and their images are loaded through the proxy; otherwise they load directly.
 * **Mention and reply highlight** (can be switched off): messages that mention `@your_channel` and replies to your messages get a blue background, a blue side line, a short flash and a highlighted `@name`. Your nickname is taken from the channel you entered, so there is nothing extra to configure. A sub-option keeps highlighted mentions on screen twice as long.
@@ -64,7 +65,7 @@ In classic **Exclusive Fullscreen** the GPU takes over the game output and bypas
 | **Bottom-right corner** | Resize handle (visible in settings mode) |
 | **"Click-through" button** | In the window header, left of Settings: switches to click-through mode |
 | **"⚙ Settings" button** | Opens the settings window with the General, Overlay and OBS widget tabs |
-| **"Configure…" style cards** | Open modal windows for **Message Plate**, **Typography & Text** and **Nickname Styling** with live preview |
+| **"Configure…" / "Open…" style cards** | Open modal windows for **Message Plate**, **Typography & Text**, **Nickname Styling** and **Styles & Presets** with pinned live preview |
 | **"Test messages" buttons** | In the settings: one for the overlay (Overlay tab) and one for the widget (OBS widget tab) |
 | **Tray icon** | Left or right click opens the menu: show/hide the overlay, click-through mode, settings, quit |
 
@@ -93,7 +94,7 @@ Besides the overlay on top of the game, the app can show the chat as a **widget 
 3. In OBS add a **Browser** source, paste the link as the URL and set the width and height you need. The widget fills the whole source, so size and proportions are set in OBS.
 4. Press **Test messages (widget only)** to see every scenario in OBS. It sends nothing to the overlay, and the overlay's own test sends nothing to OBS.
 
-The widget has its own appearance settings (font, size, plate gradients, shape, borders, animated effects, text & nickname colors/outlines, animation, direction, lifetime, chat events and mention highlight) and shares the channel, proxy, ignore list and command filter with the overlay. Mention highlight is **on** in the overlay and **off** in the widget by default.
+The widget has its own appearance settings (font, size, plate gradients, shape, borders, animated effects, text & nickname colors/outlines, animation, direction, lifetime, chat events and mention highlight) and shares the channel, proxy, ignore list, command filter and saved custom presets with the overlay. Mention highlight is **on** in the overlay and **off** in the widget by default.
 
 Emotes blocked in your region keep working: with the SOCKS5 proxy enabled, the app downloads the images itself and passes them to OBS, so OBS never contacts those servers directly.
 
@@ -154,8 +155,8 @@ To build standalone executables that don't require Node.js:
 
 2. The results appear in the `dist/` folder:
    ```text
-   dist/TwitchOverlay-Setup-1.3.0.exe
-   dist/TwitchOverlay-Portable-1.3.0.exe
+   dist/TwitchOverlay-Setup-1.3.1.exe
+   dist/TwitchOverlay-Portable-1.3.1.exe
    ```
 
 > **Note**: Without a paid code-signing certificate, Windows SmartScreen may show a blue warning on first launch. Click **"More info"** → **"Run anyway"**. Using the **Setup** installer version is recommended as it integrates cleanly with Windows and supports one-click background updates.
