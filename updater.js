@@ -4,7 +4,7 @@
  * Модуль проверки и установки обновлений.
  * 1) Проверка последнего релиза в GitHub API через сетевой слой с поддержкой SOCKS5 (emotes.fetchJson).
  * 2) Парсинг Release Notes по языку интерфейса (EN / RU), включая заголовки с эмодзи-флагами.
- * 3) Для NSIS-установщика: фоновая скачка и перезапуск через electron-updater (с фоллбеком на браузер при ошибке прокси).
+ * 3) Для NSIS-установщика: фоновая скачка и перезапуск через electron-updater (с фоллбеком на страницу релиза при ошибке).
  * 4) Для Portable-сборки: прямая ссылка на скачивание нового .exe файла.
  */
 
@@ -15,6 +15,7 @@ const GITHUB_OWNER = 'BuXaLo';
 const GITHUB_REPO = 'TwitchTransparentChat';
 const RELEASES_API_URL = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/releases/latest`;
 const RELEASES_HTML_URL = `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/releases/latest`;
+const REPO_URL_PREFIX = `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/`;
 
 function isPortableBuild() {
   return !!process.env.PORTABLE_EXECUTABLE_FILE;
@@ -154,40 +155,82 @@ async function checkForUpdates(options = {}) {
   }
 }
 
+function safeRepoUrl(url) {
+  try {
+    const href = new URL(String(url || '')).href;
+    return href.startsWith(REPO_URL_PREFIX) ? href : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function openRepoUrl(url) {
+  const safe = safeRepoUrl(url) || RELEASES_HTML_URL;
+  shell.openExternal(safe);
+  return safe;
+}
+
+let activeInstall = null;
+
 /**
  * Запускает установку обновления:
- * - В Portable или при активном SOCKS5 с авторизацией открывает ссылку на скачивание.
- * - В NSIS-установщике пытается скачать и установить через electron-updater.
+ * - В Portable (и в незапакованной dev-сборке) открывает в браузере ссылку на скачивание нового .exe.
+ * - В NSIS-установщике скачивает и устанавливает обновление через electron-updater;
+ *   если это невозможно, открывает страницу релиза и возвращает mode: 'browser-fallback'.
+ * Повторный вызов во время работы возвращает тот же Promise, обработчики событий не накапливаются.
  */
 function downloadAndInstallUpdate(updateInfo, callbacks = {}) {
-  const { onProgress, onDownloaded, onError, useProxy } = callbacks;
-  const isPortable = isPortableBuild();
-
-  const fallbackUrl = isPortable
-    ? (updateInfo && updateInfo.portableDownloadUrl) || RELEASES_HTML_URL
-    : (updateInfo && updateInfo.setupDownloadUrl) || RELEASES_HTML_URL;
-
-  if (isPortable || useProxy || !app.isPackaged) {
-    shell.openExternal(fallbackUrl);
-    return Promise.resolve({ mode: 'browser', url: fallbackUrl });
+  if (!activeInstall) {
+    activeInstall = runInstall(updateInfo, callbacks).finally(() => {
+      activeInstall = null;
+    });
   }
+  return activeInstall;
+}
+
+function runInstall(updateInfo, callbacks) {
+  const { onProgress, onDownloaded, onError } = callbacks;
+
+  if (isPortableBuild()) {
+    const url = openRepoUrl(updateInfo && updateInfo.portableDownloadUrl);
+    return Promise.resolve({ mode: 'browser', url });
+  }
+
+  if (!app.isPackaged) {
+    const url = openRepoUrl(updateInfo && updateInfo.setupDownloadUrl);
+    return Promise.resolve({ mode: 'browser', url });
+  }
+
+  const releaseUrl = (updateInfo && updateInfo.releaseUrl) || RELEASES_HTML_URL;
 
   return new Promise((resolve) => {
     let autoUpdater;
     try {
       ({ autoUpdater } = require('electron-updater'));
     } catch (e) {
-      shell.openExternal(fallbackUrl);
-      return resolve({ mode: 'browser', url: fallbackUrl });
+      const url = openRepoUrl(releaseUrl);
+      return resolve({ mode: 'browser-fallback', reason: 'error', error: e && e.message ? e.message : 'electron-updater unavailable', url });
     }
 
     autoUpdater.autoDownload = true;
     autoUpdater.autoInstallOnAppQuit = true;
 
+    let settled = false;
+
     const cleanup = () => {
       autoUpdater.removeListener('download-progress', handleProgress);
       autoUpdater.removeListener('update-downloaded', handleDownloaded);
+      autoUpdater.removeListener('update-not-available', handleNotAvailable);
       autoUpdater.removeListener('error', handleError);
+    };
+
+    const fail = (reason, message) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      if (onError) onError(message);
+      const url = openRepoUrl(releaseUrl);
+      resolve({ mode: 'browser-fallback', reason, error: message, url });
     };
 
     const handleProgress = (prog) => {
@@ -195,6 +238,8 @@ function downloadAndInstallUpdate(updateInfo, callbacks = {}) {
     };
 
     const handleDownloaded = () => {
+      if (settled) return;
+      settled = true;
       cleanup();
       if (onDownloaded) onDownloaded();
       setImmediate(() => {
@@ -203,18 +248,18 @@ function downloadAndInstallUpdate(updateInfo, callbacks = {}) {
       resolve({ mode: 'updater' });
     };
 
-    const handleError = (err) => {
-      cleanup();
-      if (onError) onError(err ? err.message : 'Updater error');
-      shell.openExternal(fallbackUrl);
-      resolve({ mode: 'browser-fallback', url: fallbackUrl });
-    };
+    const handleNotAvailable = () => fail('not-available', 'No installable update found');
+
+    const handleError = (err) => fail('error', err && err.message ? err.message : 'Updater error');
 
     autoUpdater.on('download-progress', handleProgress);
     autoUpdater.on('update-downloaded', handleDownloaded);
+    autoUpdater.on('update-not-available', handleNotAvailable);
     autoUpdater.on('error', handleError);
 
-    autoUpdater.checkForUpdates().catch(handleError);
+    autoUpdater.checkForUpdates().then((result) => {
+      if (!result) fail('error', 'Updater is not active');
+    }, handleError);
   });
 }
 

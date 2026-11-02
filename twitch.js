@@ -3,6 +3,7 @@ const net = require('net');
 const { SocksClient } = require('socks');
 const emotes = require('./emotes');
 const { t } = require('./locales');
+const { normalizeChannel } = require('./config');
 
 let activeSocket = null;
 let keepAliveTimer = null;
@@ -70,10 +71,6 @@ const TAG_ESCAPES = { ':': ';', s: ' ', '\\': '\\', r: '\r', n: '\n' };
 function unescapeTagValue(value) {
   if (value.indexOf('\\') === -1) return value;
   return value.replace(/\\(.?)/g, (m, c) => (c in TAG_ESCAPES ? TAG_ESCAPES[c] : c));
-}
-
-function normalizeChannel(channel) {
-  return (channel || '').toLowerCase().trim().replace(/^#/, '');
 }
 
 function escapeRegExp(str) {

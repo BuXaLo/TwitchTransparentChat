@@ -489,6 +489,32 @@
       background: #ff5252;
       color: #fff;
     }
+    .preset-confirm-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 8px;
+      padding: 7px 10px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 82, 82, 0.4);
+      background: rgba(255, 82, 82, 0.08);
+    }
+    .preset-confirm-text {
+      font-size: 11.5px;
+      color: #ffb3b3;
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+    .preset-confirm-actions {
+      display: flex;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .preset-confirm-actions button {
+      padding: 4px 10px;
+      font-size: 11px;
+    }
     .preset-empty {
       font-size: 11.5px;
       color: #777;
@@ -893,6 +919,13 @@
             <button type="button" class="accent" id="btn-save-custom-preset" data-i18n="ui.btnSavePreset"></button>
           </div>
         </label>
+        <div class="preset-confirm-bar hidden" id="preset-overwrite-confirm">
+          <span class="preset-confirm-text" id="preset-overwrite-text"></span>
+          <div class="preset-confirm-actions">
+            <button type="button" class="secondary" id="btn-preset-overwrite-cancel" data-i18n="ui.modalCancel"></button>
+            <button type="button" class="primary" id="btn-preset-overwrite-ok" data-i18n="ui.btnOverwritePreset"></button>
+          </div>
+        </div>
 
         <hr>
 
@@ -901,6 +934,13 @@
 
         <span class="section-title" data-i18n="ui.stylesCustomLabel"></span>
         <div class="presets-list" id="custom-presets-list"></div>
+        <div class="preset-confirm-bar hidden" id="preset-delete-confirm">
+          <span class="preset-confirm-text" id="preset-delete-text"></span>
+          <div class="preset-confirm-actions">
+            <button type="button" class="secondary" id="btn-preset-delete-cancel" data-i18n="ui.modalCancel"></button>
+            <button type="button" class="primary" id="btn-preset-delete-ok" data-i18n="ui.btnDeletePreset"></button>
+          </div>
+        </div>
       </div>
       <div class="modal-footer" style="justify-content: flex-end;">
         <div class="modal-footer-right">
@@ -1222,6 +1262,8 @@
 
     let customPresets = [];
     let selectedPresetKey = 'current';
+    let pendingPresetOverwrite = null;
+    let pendingPresetDelete = null;
     let activeModalTarget = 'o_'; // 'o_' | 'w_'
     let modalSnapshot = null;
     let currentUpdateData = null;
@@ -1609,6 +1651,8 @@
         builtinBox.appendChild(item);
       });
 
+      renderPresetConfirmBars();
+
       // Пользовательские стили
       customBox.innerHTML = '';
       if (!Array.isArray(customPresets) || customPresets.length === 0) {
@@ -1633,12 +1677,12 @@
         delBtn.type = 'button';
         delBtn.className = 'preset-delete-btn';
         delBtn.textContent = tr('ui.btnDeletePreset');
-        delBtn.onclick = async (e) => {
+        delBtn.onclick = (e) => {
           e.stopPropagation();
-          customPresets.splice(idx, 1);
-          if (selectedPresetKey === key) selectedPresetKey = 'current';
-          renderPresetsLists();
-          await save({ forceReconnect: false });
+          pendingPresetOverwrite = null;
+          pendingPresetDelete = { name: cp.name };
+          renderPresetConfirmBars();
+          $('preset-delete-confirm').scrollIntoView({ block: 'nearest' });
         };
         item.appendChild(delBtn);
 
@@ -1663,17 +1707,69 @@
       const fullCurrent = readAppearance(activeModalTarget);
       const existingIdx = customPresets.findIndex((p) => p.name.toLowerCase() === name.toLowerCase());
       if (existingIdx >= 0) {
-        customPresets[existingIdx].appearance = Object.assign({}, fullCurrent);
-        selectedPresetKey = `custom:${existingIdx}`;
-      } else {
-        customPresets.push({
-          name,
-          appearance: Object.assign({}, fullCurrent)
-        });
-        selectedPresetKey = `custom:${customPresets.length - 1}`;
+        pendingPresetDelete = null;
+        pendingPresetOverwrite = { name: customPresets[existingIdx].name, appearance: Object.assign({}, fullCurrent) };
+        renderPresetConfirmBars();
+        return;
       }
 
+      customPresets.push({
+        name,
+        appearance: Object.assign({}, fullCurrent)
+      });
+      selectedPresetKey = `custom:${customPresets.length - 1}`;
+
+      pendingPresetOverwrite = null;
       nameInput.value = '';
+      renderPresetsLists();
+      await save({ forceReconnect: false });
+    }
+
+    function renderPresetConfirmBars() {
+      $('preset-overwrite-confirm').classList.toggle('hidden', !pendingPresetOverwrite);
+      if (pendingPresetOverwrite) {
+        $('preset-overwrite-text').textContent = trf('ui.stylesOverwriteConfirm', { name: pendingPresetOverwrite.name });
+      }
+      $('preset-delete-confirm').classList.toggle('hidden', !pendingPresetDelete);
+      if (pendingPresetDelete) {
+        $('preset-delete-text').textContent = trf('ui.stylesDeleteConfirm', { name: pendingPresetDelete.name });
+      }
+    }
+
+    function cancelPresetConfirms() {
+      pendingPresetOverwrite = null;
+      pendingPresetDelete = null;
+      renderPresetConfirmBars();
+    }
+
+    async function confirmPresetOverwrite() {
+      const pending = pendingPresetOverwrite;
+      if (!pending) return;
+      pendingPresetOverwrite = null;
+      const idx = customPresets.findIndex((p) => p.name.toLowerCase() === pending.name.toLowerCase());
+      if (idx >= 0) {
+        customPresets[idx].appearance = pending.appearance;
+        selectedPresetKey = `custom:${idx}`;
+      } else {
+        customPresets.push({ name: pending.name, appearance: pending.appearance });
+        selectedPresetKey = `custom:${customPresets.length - 1}`;
+      }
+      $('m_presetNameInput').value = '';
+      renderPresetsLists();
+      await save({ forceReconnect: false });
+    }
+
+    async function confirmPresetDelete() {
+      const pending = pendingPresetDelete;
+      if (!pending) return;
+      pendingPresetDelete = null;
+      const idx = customPresets.findIndex((p) => p.name.toLowerCase() === pending.name.toLowerCase());
+      if (idx < 0) {
+        renderPresetConfirmBars();
+        return;
+      }
+      customPresets.splice(idx, 1);
+      if (selectedPresetKey === `custom:${idx}`) selectedPresetKey = 'current';
       renderPresetsLists();
       await save({ forceReconnect: false });
     }
@@ -1734,6 +1830,8 @@
       } else if (kind === 'styles') {
         selectedPresetKey = 'current';
         $('m_presetNameInput').value = '';
+        pendingPresetOverwrite = null;
+        pendingPresetDelete = null;
         renderPresetsLists();
       }
       updateMiniPreviews(activeModalTarget);
@@ -1824,6 +1922,7 @@
         triggerTargetPreview(activeModalTarget);
       }
       modalSnapshot = null;
+      if (kind === 'styles') cancelPresetConfirms();
       $(`modal-${kind}`).classList.add('hidden');
       if (applyAndSave) {
         await save({ forceReconnect: false });
@@ -1855,6 +1954,10 @@
       });
 
       $('btn-save-custom-preset').addEventListener('click', saveCurrentAsCustomPreset);
+      $('btn-preset-overwrite-ok').addEventListener('click', confirmPresetOverwrite);
+      $('btn-preset-overwrite-cancel').addEventListener('click', cancelPresetConfirms);
+      $('btn-preset-delete-ok').addEventListener('click', confirmPresetDelete);
+      $('btn-preset-delete-cancel').addEventListener('click', cancelPresetConfirms);
       $('m_presetNameInput').addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
           e.preventDefault();
@@ -1994,9 +2097,21 @@
         progEl.classList.remove('hidden');
         progEl.textContent = trf('ui.updateDownloading', { percent: 0 });
 
-        const res = await window.api.installUpdate(currentUpdateData);
-        if (res && (res.mode === 'browser' || res.mode === 'browser-fallback')) {
+        let res = null;
+        try {
+          res = await window.api.installUpdate(currentUpdateData);
+        } catch (e) {
+          res = { mode: 'error', error: e && e.message ? e.message : String(e) };
+        }
+        if (res && res.mode === 'browser') {
           $('modal-update').classList.add('hidden');
+        } else if (res && res.mode === 'browser-fallback') {
+          const msg = res.reason === 'not-available' ? tr('ui.updateNoInstallable') : res.error;
+          progEl.textContent = trf('ui.updateFallbackOpened', { msg });
+          $('btn-update-now').disabled = false;
+        } else if (!res || res.mode !== 'updater') {
+          progEl.textContent = trf('ui.updateError', { msg: (res && res.error) || '?' });
+          $('btn-update-now').disabled = false;
         }
       };
 

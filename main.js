@@ -446,14 +446,14 @@ ipcMain.handle('skip-update-version', (event, version) => {
 });
 
 ipcMain.handle('install-update', async (event, updateInfo) => {
-  const cfg = getConfig();
-  pendingUpdateInfo = null;
-  return updater.downloadAndInstallUpdate(updateInfo || pendingUpdateInfo, {
-    useProxy: !!(cfg.useProxy && cfg.proxyHost && cfg.proxyPort),
+  // URL из данных рендерера проверяются в updater: открываются только ссылки репозитория
+  const res = await updater.downloadAndInstallUpdate(pendingUpdateInfo || updateInfo, {
     onProgress: (prog) => sendToSettings('update-progress', prog),
     onDownloaded: () => sendToSettings('update-progress', { downloaded: true }),
     onError: (msg) => sendToSettings('update-progress', { error: msg })
   });
+  if (res && res.mode !== 'browser-fallback') pendingUpdateInfo = null;
+  return res;
 });
 
 /* ------------------------------------------------------------------ */

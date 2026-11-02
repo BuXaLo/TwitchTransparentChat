@@ -113,6 +113,19 @@ function text(v, def = '') {
   return def;
 }
 
+const CHANNEL_NAME_RE = /^[a-z0-9_]{1,25}$/;
+
+/**
+ * Имя Twitch-канала: принимает "name", "#name", "@name" и ссылки вида twitch.tv/name.
+ * Возвращает '' для всего, что не похоже на логин Twitch.
+ */
+function normalizeChannel(v) {
+  const raw = text(v);
+  const link = raw.match(/^(?:https?:\/\/)?(?:(?:www|m)\.)?twitch\.tv\/([^/?#\s]+)/i);
+  const name = (link ? link[1] : raw).replace(/^[#@]/, '').toLowerCase();
+  return CHANNEL_NAME_RE.test(name) ? name : '';
+}
+
 function hexColor(v, def = '#000000') {
   if (typeof v !== 'string') return def;
   const s = v.trim();
@@ -195,7 +208,7 @@ function normalizeConfig(src) {
   const g = GENERAL_DEFAULTS;
 
   const out = {
-    channel: text(s.channel),
+    channel: normalizeChannel(s.channel),
     useProxy: bool(s.useProxy, g.useProxy),
     proxyHost: text(s.proxyHost),
     proxyPort: text(s.proxyPort),
@@ -270,6 +283,7 @@ module.exports = {
   GENERAL_DEFAULTS,
   DEFAULT_CONFIG,
   normalizeConfig,
+  normalizeChannel,
   normalizePort,
   isValidPort,
   sanitizeAppearance,

@@ -148,6 +148,9 @@ const STRINGS = {
     'ui.stylesNamePlaceholder': 'e.g. My Neon Stream',
     'ui.btnSavePreset': '💾 Save style',
     'ui.btnDeletePreset': 'Delete',
+    'ui.btnOverwritePreset': 'Overwrite',
+    'ui.stylesOverwriteConfirm': 'A style named "{name}" already exists. Overwrite it?',
+    'ui.stylesDeleteConfirm': 'Delete the style "{name}"?',
     'ui.stylesBuiltInLabel': 'Built-in styles (click to preview):',
     'ui.stylesCustomLabel': 'My saved styles (shared across Overlay & OBS widget):',
     'ui.stylesEmptyCustom': 'No saved custom styles yet.',
@@ -177,6 +180,8 @@ const STRINGS = {
     'ui.updateDownloading': 'Downloading update: {percent}%...',
     'ui.updateInstalling': 'Restarting to install update...',
     'ui.updateError': 'Update check failed: {msg}',
+    'ui.updateFallbackOpened': 'Background update failed ({msg}). The release page was opened in your browser.',
+    'ui.updateNoInstallable': 'no installable update found',
 
     // --- Chat events (compact lines) ---
     'notice.sub': '{user} subscribed ({tier})',
@@ -382,6 +387,9 @@ const STRINGS = {
     'ui.stylesNamePlaceholder': 'например, Мой Неоновый Стрим',
     'ui.btnSavePreset': '💾 Сохранить стиль',
     'ui.btnDeletePreset': 'Удалить',
+    'ui.btnOverwritePreset': 'Перезаписать',
+    'ui.stylesOverwriteConfirm': 'Стиль с именем «{name}» уже существует. Перезаписать его?',
+    'ui.stylesDeleteConfirm': 'Удалить стиль «{name}»?',
     'ui.stylesBuiltInLabel': 'Встроенные стили (нажмите для предпросмотра):',
     'ui.stylesCustomLabel': 'Мои сохраненные стили (общие для Оверлея и Виджета OBS):',
     'ui.stylesEmptyCustom': 'У вас пока нет сохраненных пользовательских стилей.',
@@ -411,6 +419,8 @@ const STRINGS = {
     'ui.updateDownloading': 'Скачивание обновления: {percent}%...',
     'ui.updateInstalling': 'Перезапуск для установки обновления...',
     'ui.updateError': 'Ошибка проверки обновлений: {msg}',
+    'ui.updateFallbackOpened': 'Фоновое обновление не удалось ({msg}). Страница релиза открыта в браузере.',
+    'ui.updateNoInstallable': 'обновление для установки не найдено',
 
     // --- Chat events (compact lines) ---
     'notice.sub': '{user}: новая подписка ({tier})',
