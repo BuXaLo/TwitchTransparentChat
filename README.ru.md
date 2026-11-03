@@ -7,10 +7,6 @@
 Минималистичный, легковесный и полностью прозрачный оверлей чата Twitch поверх любых окон и игр. Не требует входа в аккаунт: подключается к чату анонимно и почти не нагружает систему во время стрима. Тот же чат можно вывести на трансляцию как виджет для OBS.
 
 <p align="center">
-  <img src="screenshots/preview_ru.jpg" alt="Chat overlay on top of a game" width="700">
-</p>
-
-<p align="center">
   <img src="screenshots/preview_chat_ru.jpg" alt="Chat overlay on top of a game" width="700">
 </p>
 
