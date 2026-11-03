@@ -572,21 +572,22 @@ function makeTestSequence(channel) {
   const kappa2 = withKappa(t('test.resub'));
   const troll = chat({ user: t('test.user6'), color: '#FF4500', text: t('test.spam') });
 
+  // Порядок: события (подписки, рейд) → упоминания и ответы → награды → обычный текст
   return [
-    { delay: 0, msg: chat({ user: t('test.user1'), color: '#FF69B4', badges: 'subscriber/12', text: kappa1.text, emotes: kappa1.emotes }) },
-    { msg: chat({ user: t('test.user2'), color: '#00FF7F', badges: 'moderator/1,subscriber/3', text: t('test.msg2') + thirdParty }) },
-    { msg: chat({ user: t('test.user3'), color: '#9ACD32', badges: 'vip/1', text: t('test.reward'), reward: true }) },
-    { msg: chat({ user: t('test.user4'), color: '#1E90FF', text: t('test.action') + thirdParty, action: true }) },
-    { msg: chat({ user: t('test.user1'), color: '#FF69B4', text: `@${nick} ${t('test.mention')}`, mention: true }) },
-    // Ответ тебе без «@» в тексте: подсвечивается по тегу reply-parent-user-login
-    { msg: chat({ user: t('test.user2'), color: '#00FF7F', badges: 'moderator/1', text: t('test.reply'), mention: true }) },
-    { msg: chat({ user: t('test.user3'), color: '#9ACD32', badges: 'vip/1', text: `@${nick} ${t('test.rewardMention')}`, reward: true, mention: true }) },
-    { msg: chat({ user: t('test.user5'), color: '#8A2BE2', badges: 'broadcaster/1', text: t('test.long') }) },
-    { msg: notice({ type: 'sub', user: t('test.user3'), tier: '1000' }) },
+    { delay: 0, msg: notice({ type: 'sub', user: t('test.user3'), tier: '1000' }) },
     { msg: notice({ type: 'resub', user: t('test.user1'), tier: '2000', months: 12, text: kappa2.text, emotes: kappa2.emotes }) },
     { msg: notice({ type: 'gift', user: t('test.user5'), tier: '1000', recipient: t('test.recipient') }) },
     { msg: notice({ type: 'gift', user: t('test.user5'), tier: '1000', count: 10, mass: true }) },
     { msg: notice({ type: 'raid', user: t('test.user4'), viewers: 128 }) },
+    { msg: chat({ user: t('test.user1'), color: '#FF69B4', text: `@${nick} ${t('test.mention')}`, mention: true }) },
+    // Ответ тебе без «@» в тексте: подсвечивается по тегу reply-parent-user-login
+    { msg: chat({ user: t('test.user2'), color: '#00FF7F', badges: 'moderator/1', text: t('test.reply'), mention: true }) },
+    { msg: chat({ user: t('test.user3'), color: '#9ACD32', badges: 'vip/1', text: `@${nick} ${t('test.rewardMention')}`, reward: true, mention: true }) },
+    { msg: chat({ user: t('test.user3'), color: '#9ACD32', badges: 'vip/1', text: t('test.reward'), reward: true }) },
+    { msg: chat({ user: t('test.user1'), color: '#FF69B4', badges: 'subscriber/12', text: kappa1.text, emotes: kappa1.emotes }) },
+    { msg: chat({ user: t('test.user2'), color: '#00FF7F', badges: 'moderator/1,subscriber/3', text: t('test.msg2') + thirdParty }) },
+    { msg: chat({ user: t('test.user4'), color: '#1E90FF', text: t('test.action') + thirdParty, action: true }) },
+    { msg: chat({ user: t('test.user5'), color: '#8A2BE2', badges: 'broadcaster/1', text: t('test.long') }) },
     // Сообщение, которое «модератор» удаляет через пару секунд
     { msg: troll },
     { delay: 2200, remove: { id: troll.id } }

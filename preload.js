@@ -32,6 +32,16 @@ contextBridge.exposeInMainWorld('api', {
   getWidgetStatus: () => ipcRenderer.invoke('get-widget-status'),
   copyText: (text) => ipcRenderer.invoke('copy-text', text),
 
+  // --- Свои картинки плашек (именование + библиотека) ---
+  saveCardImage: (webpBuffer, name) => ipcRenderer.invoke('save-card-image', webpBuffer, name),
+  listCardImages: () => ipcRenderer.invoke('list-card-images'),
+  renameCardImage: (sha, name) => ipcRenderer.invoke('rename-card-image', sha, name),
+  deleteCardImage: (sha) => ipcRenderer.invoke('delete-card-image', sha),
+
+  // --- Папка конфига и статистика ---
+  getConfigDirInfo: () => ipcRenderer.invoke('get-config-dir-info'),
+  openConfigDir: () => ipcRenderer.invoke('open-config-dir'),
+
   // --- События от главного процесса ---
   onNewMessage: (cb) => ipcRenderer.on('new-message', (e, msg) => cb(msg)),
   onMessageRemoved: (cb) => ipcRenderer.on('message-removed', (e, info) => cb(info)),

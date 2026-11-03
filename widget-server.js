@@ -9,6 +9,8 @@
  *   /api/state     настройки виджета и строки интерфейса (JSON)
  *   /events        поток событий (SSE): chat, remove, state
  *   /img/<host>/…  картинки смайлов и бейджей: скачивает приложение, поэтому они идут через SOCKS5-прокси
+ *   /fonts/<файл>  комплектные шрифты woff2 из папки fonts/
+ *   /card/<имя>   свои картинки плашек из userData/card-images
  *
  * Слушает только 127.0.0.1 и отвечает только на запросы с «своим» заголовком Host.
  */
@@ -20,14 +22,15 @@ const path = require('path');
 const STATIC_FILES = {
   '/': ['widget.html', 'text/html; charset=utf-8'],
   '/chat.css': ['chat.css', 'text/css; charset=utf-8'],
-  '/chat-view.js': ['chat-view.js', 'application/javascript; charset=utf-8']
+  '/chat-view.js': ['chat-view.js', 'application/javascript; charset=utf-8'],
+  '/fonts.css': ['fonts.css', 'text/css; charset=utf-8']
 };
 
 const HEARTBEAT_MS = 15000;
 const BIND_ADDRESS = '127.0.0.1';
 
 function createWidgetServer(options) {
-  const { rootDir, getState, fetchImage, isHostAllowed, onChange } = options;
+  const { rootDir, getState, fetchImage, isHostAllowed, getCardImage, onChange } = options;
 
   let server = null;
   let port = null;
@@ -99,6 +102,30 @@ function createWidgetServer(options) {
       return;
     }
 
+    const WOFF2_RE = /^\.woff2$/;
+    if (pathname.startsWith('/fonts/')) {
+      const name = path.basename(pathname);
+      if (WOFF2_RE.test(path.extname(name).toLowerCase()) && /^[A-Za-z0-9._-]+$/.test(name)) {
+        try {
+          const body = await fs.promises.readFile(path.join(rootDir, 'fonts', name));
+          return reply(res, 200, { 'Content-Type': 'font/woff2', 'Cache-Control': 'max-age=604800' }, body);
+        } catch (e) {
+          return reply(res, 404, { 'Content-Type': 'text/plain' }, 'Not Found');
+        }
+      }
+      return reply(res, 404, { 'Content-Type': 'text/plain' }, 'Not Found');
+    }
+
+    // Свои картинки плашек: userData/card-images/<имя>.webp, имя в адресе закодировано.
+    // Некорректное имя или отсутствующий файл — 404, и плашка рисуется без картинки.
+    if (pathname.startsWith('/card/')) {
+      let id = '';
+      try { id = decodeURIComponent(pathname.slice('/card/'.length)); } catch (e) { /* битый адрес */ }
+      const data = getCardImage ? getCardImage(id) : null;
+      if (!data) return reply(res, 404, { 'Content-Type': 'text/plain' }, 'Not Found');
+      return reply(res, 200, { 'Content-Type': 'image/webp', 'Cache-Control': 'no-cache' }, data);
+    }
+
     const img = /^\/img\/([^/]+)(\/.*)$/.exec(pathname);
     if (img) {
       const host = img[1].toLowerCase();
@@ -115,9 +142,11 @@ function createWidgetServer(options) {
     return reply(res, 404, { 'Content-Type': 'text/plain' }, 'Not Found');
   }
 
-  // Внутренний адрес emote://host/path становится адресом на этом же сервере
+  // Внутренние адреса card://img/<имя> и emote://host/path становятся адресами на этом же сервере
   function rewriteLocalUrls(json) {
-    return json.replace(/emote:\/\//g, '/img/');
+    return json
+      .replace(/card:\/\/img\//g, '/card/')
+      .replace(/emote:\/\//g, '/img/');
   }
 
   function start(newPort) {

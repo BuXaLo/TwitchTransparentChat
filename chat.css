@@ -43,11 +43,14 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
+#chat::-webkit-scrollbar { display: none; width: 0; height: 0; }
+
 /* Контейнер сообщений с безопасным отступом 8px под свечение и градиентным растворением у краев */
 #chat {
   height: var(--chat-height, 100vh);
-  overflow-y: hidden;
-  overflow-x: hidden;
+  position: relative;
+  overflow: hidden;
+  scrollbar-width: none;
   display: flex;
   padding: 8px 10px;
   gap: 5px;
@@ -68,6 +71,10 @@
   -webkit-mask-image: linear-gradient(to top, black calc(100% - 35px), transparent 100%);
   mask-image: linear-gradient(to top, black calc(100% - 35px), transparent 100%);
 }
+
+/* Сплошная лента: сообщение не вытесняется, пока хоть часть его видна в контейнере.
+   Градиентное растворение у края остаётся (маска #chat), прокрутки нет: overflow всегда hidden */
+#chat.solid-ribbon { overflow: hidden; }
 
 .message {
   position: relative;
@@ -172,7 +179,8 @@
   object-fit: contain;
 }
 
-/* Упоминание или ответ тебе: сохраняет фирменный голубой вид, как согласовано в ТЗ */
+/* Упоминание или ответ тебе: сохраняет фирменный голубой вид, как согласовано в ТЗ.
+   Подсветка — через ::after, потому что ::before занят слоем картинки */
 .message.is-mention {
   position: relative;
   background: rgba(35, 105, 190, max(var(--bg-opacity), 0.28)) !important;
@@ -181,7 +189,7 @@
 .message.is-reward.is-mention {
   box-shadow: inset 3px 0 0 rgba(229, 169, 60, 0.95);
 }
-.message.is-mention::before {
+.message.is-mention::after {
   content: '';
   position: absolute;
   inset: 0;
@@ -190,6 +198,7 @@
   background: rgba(120, 195, 255, 0.45);
   opacity: 0;
   animation: mentionFlash 1.1s ease-out 1;
+  z-index: 2;
 }
 @keyframes mentionFlash {
   0% { opacity: 0.9; }
@@ -273,74 +282,24 @@
   transform: translateY(-4px) !important;
 }
 
-/* Внутренняя обертка под анимацию появления, чтобы не перезаписывать animation динамических эффектов рамки на .message */
-.msg-appear-wrap {
-  display: contents;
+/* Слой фоновой картинки плашки (свой ::before у .message).
+   Подсветка упоминаний (::after), золотая полоса наград и технические строки всегда видны поверх картинки */
+.message::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background-image: var(--card-image, none);
+  background-size: var(--card-image-fit, 100% auto);
+  background-position: var(--card-image-pos-x, 50%) var(--card-image-pos-y, 50%);
+  background-repeat: var(--card-image-repeat, no-repeat);
+  opacity: var(--card-image-opacity, 0.6);
+  pointer-events: none;
+  z-index: 0;
 }
-
-.anim-fade { animation: animFade 0.25s ease-out forwards; }
-@keyframes animFade {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-.anim-slide-left { animation: animSlideLeft 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-@keyframes animSlideLeft {
-  from { opacity: 0; transform: translateX(-16px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-
-.anim-slide-down { animation: animSlideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-@keyframes animSlideDown {
-  from { opacity: 0; transform: translateY(-12px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.anim-zoom { animation: animZoom 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-@keyframes animZoom {
-  from { opacity: 0; transform: scale(0.92); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-/* Комбинирование анимации появления и бесконечного эффекта рамки, чтобы обе анимации работали одновременно */
-.message.anim-fade.effect-pulse {
-  animation: animFade 0.25s ease-out forwards, borderPulse calc(2.2s * var(--effect-speed-mult, 1)) infinite ease-in-out var(--effect-sync-delay, 0s);
-}
-.message.anim-slide-left.effect-pulse {
-  animation: animSlideLeft 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards, borderPulse calc(2.2s * var(--effect-speed-mult, 1)) infinite ease-in-out var(--effect-sync-delay, 0s);
-}
-.message.anim-slide-down.effect-pulse {
-  animation: animSlideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards, borderPulse calc(2.2s * var(--effect-speed-mult, 1)) infinite ease-in-out var(--effect-sync-delay, 0s);
-}
-.message.anim-zoom.effect-pulse {
-  animation: animZoom 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards, borderPulse calc(2.2s * var(--effect-speed-mult, 1)) infinite ease-in-out var(--effect-sync-delay, 0s);
-}
-
-.message.anim-fade.effect-rgb {
-  animation: animFade 0.25s ease-out forwards, borderRgb calc(3s * var(--effect-speed-mult, 1)) infinite linear var(--effect-sync-delay, 0s);
-}
-.message.anim-slide-left.effect-rgb {
-  animation: animSlideLeft 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards, borderRgb calc(3s * var(--effect-speed-mult, 1)) infinite linear var(--effect-sync-delay, 0s);
-}
-.message.anim-slide-down.effect-rgb {
-  animation: animSlideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards, borderRgb calc(3s * var(--effect-speed-mult, 1)) infinite linear var(--effect-sync-delay, 0s);
-}
-.message.anim-zoom.effect-rgb {
-  animation: animZoom 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards, borderRgb calc(3s * var(--effect-speed-mult, 1)) infinite linear var(--effect-sync-delay, 0s);
-}
-
-.message.anim-fade.effect-breathing {
-  animation: animFade 0.25s ease-out forwards, borderBreathing calc(2.8s * var(--effect-speed-mult, 1)) infinite ease-in-out var(--effect-sync-delay, 0s);
-}
-.message.anim-slide-left.effect-breathing {
-  animation: animSlideLeft 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards, borderBreathing calc(2.8s * var(--effect-speed-mult, 1)) infinite ease-in-out var(--effect-sync-delay, 0s);
-}
-.message.anim-slide-down.effect-breathing {
-  animation: animSlideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards, borderBreathing calc(2.8s * var(--effect-speed-mult, 1)) infinite ease-in-out var(--effect-sync-delay, 0s);
-}
-.message.anim-zoom.effect-breathing {
-  animation: animZoom 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards, borderBreathing calc(2.8s * var(--effect-speed-mult, 1)) infinite ease-in-out var(--effect-sync-delay, 0s);
-}
+/* Подсветка упоминаний рисуется своим ::after (см. выше) — слой картинки в ::before не трогаем */
+/* Контент плашки всегда над слоем картинки */
+.message > * { position: relative; z-index: 1; }
 
 /* Смайл + zero-width наложение (7TV/BTTV) */
 .emote-stack {

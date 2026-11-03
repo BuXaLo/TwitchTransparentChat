@@ -8,9 +8,35 @@
  * на верхнем уровне, а внешний вид виджета для OBS лежит в объекте widget.
  */
 
-const FONT_FAMILIES = ['system', "'Inter', sans-serif", "'Montserrat', sans-serif", "'Roboto', sans-serif"];
+const FONT_FAMILIES = [
+  'system',
+  "'Inter', sans-serif",
+  "'Montserrat', sans-serif",
+  "'Roboto', sans-serif",
+  "'Rubik', sans-serif",
+  "'Nunito', sans-serif",
+  "'Exo 2', sans-serif",
+  "'Oswald', sans-serif",
+  "'Play', sans-serif",
+  "'Russo One', sans-serif",
+  "'Comfortaa', sans-serif",
+  "'JetBrains Mono', monospace",
+  "'Unbounded', sans-serif"
+];
 const TEXT_ALIGNS = ['left', 'center', 'right'];
-const ANIMATIONS = ['slide-left', 'slide-down', 'fade', 'zoom'];
+const ANIMATIONS = [
+  'fade', 'slide-left', 'slide-down', 'zoom',
+  'spring-pop', 'bounce-drop', 'slide-spring', 'flip-in', 'rise', 'blur-in', 'glitch'
+];
+const CALM_ANIMATIONS = ['fade', 'slide-left', 'slide-down', 'rise', 'blur-in'];
+// Режимы фоновой картинки плашки: источник (встроенный SVG-узор / своя картинка) и посадка
+const CARD_IMAGE_PRESETS = ['none', 'hearts-tile', 'clouds', 'stars-shape', 'confetti', 'stars', 'carbon', 'sakura', 'pixel', 'synth', 'paper'];
+// 'pizza' и 'pixel-paw' устарели: принимаются, но рисуются как 'none'
+// Идентификаторы 'stars'…'paper' — легасные имена v1.4.0-альфа: они принимаются, но рендерят 'none'
+const CARD_IMAGE_LEGACY = ['stars', 'carbon', 'sakura', 'pixel', 'synth', 'paper', 'pizza', 'pixel-paw'];
+const CARD_IMAGE_FITS = ['width', 'cover', 'tile'];
+// Идентификатор своей картинки — имя файла без .webp: без символов, недопустимых в Windows
+const CARD_IMAGE_ID_RE = /^(?![. ])[^<>:"\/\\|?*\u0000-\u001f]{1,40}(?<![. ])$/;
 const DIRECTIONS = ['top', 'bottom'];
 const LAYOUTS = ['inline', 'block'];
 
@@ -45,6 +71,17 @@ const OVERLAY_APPEARANCE_DEFAULTS = {
   showRaid: false,
   highlightMentions: true,
   mentionLonger: false,
+  smoothShift: true, // плавный FLIP-сдвиг старых сообщений при появлении нового
+  solidRibbon: false, // сплошная лента: плашка не растворяется у краёв контейнера, только мягко затухает на самой границе
+
+  // --- Картинка на плашке (только текстовые сообщения) ---
+  cardImagePreset: 'none', // 'none' | один из CARD_IMAGE_PRESETS (встроенные SVG-узоры)
+  cardImageCustom: '', // имя загруженной картинки (файл userData/card-images/<имя>.webp) или ''
+  cardImageFit: 'width', // 'width' (по ширине) | 'cover' (заполнить) | 'tile' (плитка)
+  cardImagePosX: 50, // 0..100 — позиция по горизонтали
+  cardImagePosY: 50, // 0..100 — позиция по вертикали
+  cardImageOpacity: 60, // 0..100 — прозрачность слоя картинки
+  cardImageScale: 100, // 25..500 — масштаб картинки в процентах (для подгонки больших картинок под маленькую плашку)
 
   // --- Плашка (Контейнер) ---
   bgMode: 'solid', // 'solid' | 'grad-mono' | 'grad-dual'
@@ -165,6 +202,17 @@ function sanitizeAppearance(src, defaults = OVERLAY_APPEARANCE_DEFAULTS, maxFont
     showRaid: bool(s.showRaid, d.showRaid),
     highlightMentions: bool(s.highlightMentions, d.highlightMentions),
     mentionLonger: bool(s.mentionLonger, d.mentionLonger),
+    smoothShift: bool(s.smoothShift, d.smoothShift),
+    solidRibbon: bool(s.solidRibbon, d.solidRibbon),
+
+    // Картинка на плашке: имя файла принимается только корректное, иначе фоллбек без картинки
+    cardImagePreset: (() => { const v = oneOf(s.cardImagePreset, CARD_IMAGE_PRESETS, d.cardImagePreset); return CARD_IMAGE_LEGACY.includes(v) ? 'none' : v; })(),
+    cardImageCustom: CARD_IMAGE_ID_RE.test(String(s.cardImageCustom || '')) ? s.cardImageCustom : '',
+    cardImageFit: oneOf(s.cardImageFit, CARD_IMAGE_FITS, d.cardImageFit),
+    cardImagePosX: clampInt(s.cardImagePosX, 0, 100, d.cardImagePosX),
+    cardImagePosY: clampInt(s.cardImagePosY, 0, 100, d.cardImagePosY),
+    cardImageOpacity: clampInt(s.cardImageOpacity, 0, 100, d.cardImageOpacity),
+    cardImageScale: clampInt(s.cardImageScale, 25, 500, d.cardImageScale),
 
     // Плашка
     bgMode: oneOf(s.bgMode, BG_MODES, d.bgMode),
@@ -232,6 +280,9 @@ function normalizeConfig(src) {
 
   Object.assign(out, sanitizeAppearance(s, OVERLAY_APPEARANCE_DEFAULTS));
   out.widget = sanitizeAppearance(s.widget, widgetSeed(pickAppearance(out)), MAX_FONT_SIZE_WIDGET);
+  // В виджете OBS упоминания и ответы — обычный текст: опций подсветки там нет
+  out.widget.highlightMentions = false;
+  out.widget.mentionLonger = false;
   return out;
 }
 
@@ -252,6 +303,8 @@ function overlayView(cfg) {
 // Что нужно отображению чата в виджете: свой внешний вид и общие фильтры
 function widgetView(cfg) {
   return Object.assign({}, cfg.widget, {
+    highlightMentions: false,
+    mentionLonger: false,
     hideCommands: cfg.hideCommands,
     ignoredBots: cfg.ignoredBots
   });
@@ -268,6 +321,11 @@ function sanitizePreview(src, maxFontSize = MAX_FONT_SIZE_OVERLAY) {
 
 module.exports = {
   FONT_FAMILIES,
+  ANIMATIONS,
+  CALM_ANIMATIONS,
+  CARD_IMAGE_PRESETS,
+  CARD_IMAGE_ID_RE,
+  CARD_IMAGE_FITS,
   BG_MODES,
   BG_MONO_MODES,
   BG_DIRECTIONS,

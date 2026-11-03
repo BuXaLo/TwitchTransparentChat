@@ -27,6 +27,109 @@
     return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 
+  // Описание анимаций появления для Web Animations API.
+  // Параметры: длительность (мс), easing и keyframes. Не зависят от CSS-классов, поэтому
+  // не конфликтуют с бесконечными эффектами рамки на .message.
+  // y-dir учитывает направление потока: при dir-bottom новая плашка физически оказывается снизу,
+  // поэтому вертикальные смещения инвертируются.
+  const APPEAR_ANIMATIONS = {
+    'fade':         { ms: 500, easing: 'ease-out', kf: [{ opacity: 0 }, { opacity: 1 }] },
+    'slide-left':   { ms: 600, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', kf: [
+                        { opacity: 0, transform: 'translateX(-42px)' },
+                        { opacity: 1, transform: 'translateX(0)' }] },
+    'slide-down':   { ms: 600, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', yDir: -1, kf: [
+                        { opacity: 0, transform: 'translateY(-36px)' },
+                        { opacity: 1, transform: 'translateY(0)' }] },
+    'zoom':         { ms: 480, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', kf: [
+                        { opacity: 0, transform: 'scale(0.7)' },
+                        { opacity: 1, transform: 'scale(1)' }] },
+    'spring-pop':   { ms: 620, easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)', kf: [
+                        { opacity: 0, transform: 'scale(0.4)' },
+                        { opacity: 1, transform: 'scale(1.08)', offset: 0.7 },
+                        { opacity: 1, transform: 'scale(1)' }] },
+    'bounce-drop':  { ms: 780, easing: 'cubic-bezier(0.3, 0.9, 0.4, 1)', yDir: -1, kf: [
+                        { opacity: 0, transform: 'translateY(-64px)' },
+                        { opacity: 1, transform: 'translateY(0)', offset: 0.55, easing: 'cubic-bezier(0.55, 0, 1, 0.45)' },
+                        { transform: 'translateY(-13px)', offset: 0.72, easing: 'ease-out' },
+                        { transform: 'translateY(0)', offset: 0.86, easing: 'cubic-bezier(0.55, 0, 1, 0.45)' },
+                        { transform: 'translateY(-4px)', offset: 0.94, easing: 'ease-out' },
+                        { opacity: 1, transform: 'translateY(0)' }] },
+    'slide-spring': { ms: 700, easing: 'cubic-bezier(0.3, 1.35, 0.55, 1)', kf: [
+                        { opacity: 0, transform: 'translateX(-90px) scale(0.92)' },
+                        { opacity: 1, transform: 'translateX(12px)', offset: 0.72 },
+                        { opacity: 1, transform: 'translateX(0)' }] },
+    'flip-in':      { ms: 640, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', kf: [
+                        { opacity: 0, transform: 'perspective(500px) rotateX(-72deg) translateY(14px)', transformOrigin: '50% 100%' },
+                        { opacity: 1, transform: 'perspective(500px) rotateX(8deg)', offset: 0.8, transformOrigin: '50% 100%' },
+                        { opacity: 1, transform: 'perspective(500px) rotateX(0deg) translateY(0)', transformOrigin: '50% 100%' }] },
+    'rise':         { ms: 560, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', yDir: 1, kf: [
+                        { opacity: 0, transform: 'translateY(26px)' },
+                        { opacity: 1, transform: 'translateY(0)' }] },
+    'blur-in':      { ms: 600, easing: 'ease-out', kf: [
+                        { opacity: 0, filter: 'blur(7px)', transform: 'translateY(6px)' },
+                        { opacity: 1, filter: 'blur(0px)', transform: 'translateY(0)' }] },
+    'glitch':       { ms: 700, easing: 'linear', kf: [
+                        { opacity: 0.9, transform: 'translateX(-10px) skewX(16deg)', clipPath: 'inset(8% 0 62% 0)', filter: 'drop-shadow(5px 0 0 rgba(255,0,80,0.9)) drop-shadow(-5px 0 0 rgba(0,240,255,0.9))', offset: 0 },
+                        { opacity: 1, transform: 'translateX(8px) skewX(-12deg)', clipPath: 'inset(55% 0 12% 0)', filter: 'drop-shadow(-6px 0 0 rgba(255,0,80,0.9)) drop-shadow(6px 0 0 rgba(0,240,255,0.9))', offset: 0.14 },
+                        { opacity: 0.55, transform: 'translateX(-6px) skewX(8deg)', clipPath: 'inset(0 0 0 0)', filter: 'drop-shadow(4px 0 0 rgba(255,0,80,0.8)) drop-shadow(-4px 0 0 rgba(0,240,255,0.8))', offset: 0.28 },
+                        { opacity: 1, transform: 'translateX(5px) skewX(-6deg)', clipPath: 'inset(30% 0 35% 0)', filter: 'drop-shadow(-4px 0 0 rgba(255,0,80,0.8)) drop-shadow(4px 0 0 rgba(0,240,255,0.8))', offset: 0.42 },
+                        { opacity: 0.8, transform: 'translateX(-3px) skewX(3deg)', clipPath: 'inset(0 0 0 0)', filter: 'drop-shadow(3px 0 0 rgba(255,0,80,0.7)) drop-shadow(-3px 0 0 rgba(0,240,255,0.7))', offset: 0.58 },
+                        { opacity: 1, transform: 'translateX(2px) skewX(-2deg)', clipPath: 'inset(0 0 0 0)', filter: 'drop-shadow(-2px 0 0 rgba(255,0,80,0.6)) drop-shadow(2px 0 0 rgba(0,240,255,0.6))', offset: 0.74 },
+                        { opacity: 1, transform: 'translateX(0) skewX(0deg)', clipPath: 'inset(0 0 0 0)', filter: 'drop-shadow(0 0 0 rgba(255,0,80,0)) drop-shadow(0 0 0 rgba(0,240,255,0))', offset: 0.9 },
+                        { opacity: 1, transform: 'translateX(0) skewX(0deg)', clipPath: 'inset(0 0 0 0)', filter: 'none', offset: 1 }] }
+  };
+
+  function playAppearAnimation(el, animKey, chatDirection) {
+    const spec = APPEAR_ANIMATIONS[animKey] || APPEAR_ANIMATIONS['slide-left'];
+    // dir-bottom: плашки растут вверх, вертикальные траектории инвертируем,
+    // чтобы движение всегда шло «из потока» к финальной позиции
+    const dirMul = chatDirection === 'bottom' && spec.yDir ? -1 : 1;
+    const keyframes = spec.yDir
+      ? spec.kf.map((f) => {
+          if (f.transform && f.transform.indexOf('translateY(') >= 0) {
+            return Object.assign({}, f, {
+              transform: f.transform.replace(/translateY\((-?[\d.]+)px\)/,
+                (m, v) => `translateY(${(parseFloat(v) * dirMul).toFixed(1)}px)`)
+            });
+          }
+          return f;
+        })
+      : spec.kf;
+    try {
+      el.animate(keyframes, { duration: spec.ms, easing: spec.easing });
+    } catch (e) {
+      // Старый Chromium без поддержки какого-то ключевого кадра: просто показать плашку
+    }
+  }
+
+  // Плавный сдвиг: новая плашка уже вставлена, старые «стартуют» со смещения на её высоту и плавно едут на место.
+  // Читаем только offsetHeight новой плашки и детей #chat (единицы-десятки), поэтому это дёшево.
+  function makeFlipShift(getConfig, chatEl) {
+    return function flipShiftExisting(newEl, chatDirection) {
+      const cfg = getConfig();
+      if (!cfg.smoothShift || typeof newEl.animate !== 'function') return;
+      const gap = parseFloat(getComputedStyle(chatEl).rowGap) || 0;
+      const h = newEl.offsetHeight + gap;
+      if (!h) return;
+      const from = chatDirection === 'bottom' ? h : -h;
+      for (let i = 0; i < chatEl.children.length; i++) {
+        const el = chatEl.children[i];
+        if (el === newEl) continue;
+        el.animate(
+          [{ transform: `translateY(${from}px)` }, { transform: 'translateY(0px)' }],
+          { duration: 420, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }
+        );
+      }
+    };
+  }
+
+  // Адрес своей картинки: в оверлее (file://) — протокол card://, в виджете OBS (http://) — маршрут /card/ того же сервера
+  function cardImageUrl(id) {
+    const enc = encodeURIComponent(id);
+    if (typeof location !== 'undefined' && /^https?:$/.test(location.protocol)) return `${location.origin}/card/${enc}`;
+    return `card://img/${enc}`;
+  }
+
   function escapeHtml(str) {
     if (typeof str !== 'string') return '';
     return str.replace(/[&<>"']/g, (m) => ({
@@ -165,6 +268,7 @@
     let config = {};
     let strings = {};
     let ignoredSet = new Set();
+    const flipShiftExisting = makeFlipShift(() => config, chat);
 
     /* ---------------- Строки ---------------- */
 
@@ -205,6 +309,7 @@
       }
       return classes;
     }
+
 
     function applySyncDelayToElement(el, syncEnabled, sharedSyncDelay) {
       if (syncEnabled) {
@@ -265,7 +370,7 @@
         root.style.setProperty('--nick-text-shadow', DEFAULT_TWITCH_NICK_SHADOW);
       }
 
-      chat.className = `dir-${config.chatDirection || 'top'} layout-${config.layoutMode || 'inline'}`;
+      chat.className = `dir-${config.chatDirection || 'top'} layout-${config.layoutMode || 'inline'}${config.solidRibbon ? ' solid-ribbon' : ''}`;
       updateIgnored(config.ignoredBots);
 
       // Обновляем уже существующие в DOM сообщения для мгновенного живого предпросмотра
@@ -274,13 +379,14 @@
       const sharedSyncDelay = syncEnabled ? computeSyncDelaySeconds() : '0s';
       const needSyncUpdate = prevSync !== syncEnabled || prevEffect !== config.borderEffect || prevSpeed !== config.borderEffectSpeed;
 
-      Array.from(chat.children).forEach((el, idx) => {
+      Array.from(chat.children).forEach((el) => {
         if (el.classList.contains('is-notice')) return;
-        el.classList.remove(
-          'shape-rounded', 'shape-strict',
-          'effect-static', 'effect-neon', 'effect-pulse', 'effect-rgb', 'effect-cyber', 'effect-breathing'
-        );
+        // Снимаем служебные классы по префиксу: эффекты рамки и формы больше не перечисляются вручную
+        Array.from(el.classList).filter((c) => c.startsWith('effect-') || c.startsWith('shape-')).forEach((c) => el.classList.remove(c));
         plateClasses.forEach((c) => el.classList.add(c));
+
+        // Обновляем слой картинки на уже висящих плашках (мгновенный живой предпросмотр)
+        applyCardImageVars(el);
 
         if (needSyncUpdate) {
           if (syncEnabled) {
@@ -304,12 +410,96 @@
       });
     }
 
+    /* ---------------- Картинка на плашке ---------------- */
+
+    const CARD_IMAGE_PRESETS = ['none', 'hearts-tile', 'clouds', 'stars-shape', 'confetti'];
+
+    // Встроенные картинки-фигуры (data-URI SVG, фиксированные цвета, не зависят от рамки):
+    // «наклейки» — сердечки, облачка, звёздочки и т.п. — вместо линий, привязанных к рамке
+    function builtinPatternDataUri(name) {
+      switch (name) {
+        case 'hearts-right':
+          return "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 40'%3E%3Cpath d='M96 8c-3.2-4.4-10-4-12.4.8-1.8 3.6-.4 7.6 3 10.4L96 26l9.4-6.8c3.4-2.8 4.8-6.8 3-10.4C106 4 99.2 3.6 96 8z' fill='%23ff4d6d'/%3E%3C/svg%3E\")";
+        case 'hearts-tile':
+          return "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48'%3E%3Cpath d='M12 6c-1.8-2.4-5.6-2.2-7 .5-1 2-.2 4.2 1.7 5.8L12 16l5.3-3.7c1.9-1.6 2.7-3.8 1.7-5.8-1.4-2.7-5.2-2.9-7-.5z' fill='%23ff4d6d' fill-opacity='0.85'/%3E%3Cpath d='M36 30c-1.8-2.4-5.6-2.2-7 .5-1 2-.2 4.2 1.7 5.8L36 40l5.3-3.7c1.9-1.6 2.7-3.8 1.7-5.8-1.4-2.7-5.2-2.9-7-.5z' fill='%23ff8fab' fill-opacity='0.7'/%3E%3C/svg%3E\")";
+        case 'clouds':
+          return "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='48'%3E%3Cg fill='%23cfe3ff'%3E%3Cpath d='M14 20a6 6 0 0 1 11.6-2A5 5 0 0 1 26 28H14a5.5 5.5 0 0 1 0-11z'/%3E%3Cpath d='M50 34a6 6 0 0 1 11.6-2A5 5 0 0 1 62 42H50a5.5 5.5 0 0 1 0-11z' fill-opacity='0.6'/%3E%3C/g%3E%3C/svg%3E\")";
+        case 'stars-shape':
+          return "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56'%3E%3Cg fill='%23ffd166'%3E%3Cpath d='M14 4l2.7 5.9L23 11l-4.6 4.3L19.5 21 14 17.8 8.5 21l1.1-5.7L5 11l6.3-1.1z'/%3E%3Cpath d='M42 32l2 4.4 4.7.8-3.4 3.2.8 4.6-4.1-2.3-4.1 2.3.8-4.6-3.4-3.2 4.7-.8z' fill-opacity='0.75'/%3E%3C/g%3E%3C/svg%3E\")";
+        case 'confetti':
+          return "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56'%3E%3Cg%3E%3Crect x='6' y='8' width='6' height='6' rx='1' fill='%23ff6b6b' transform='rotate(20 9 11)'/%3E%3Ccircle cx='30' cy='14' r='3' fill='%234ecdc4'/%3E%3Crect x='44' y='6' width='6' height='6' rx='1' fill='%23ffe66d' transform='rotate(35 47 9)'/%3E%3Ccircle cx='16' cy='34' r='3' fill='%23a78bfa'/%3E%3Crect x='34' y='30' width='6' height='6' rx='1' fill='%234ecdc4' transform='rotate(-15 37 33)'/%3E%3Ccircle cx='50' cy='44' r='3' fill='%23ff6b6b'/%3E%3C/g%3E%3C/svg%3E\")";
+        case 'cat':
+          return "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 40'%3E%3Cg fill='%23b8a4ff'%3E%3Cpath d='M96 30l-2-8 4 3h8l4-3-2 8z'/%3E%3Ccircle cx='102' cy='18' r='9'/%3E%3Cpath d='M96 12l-1-6 5 4zM108 12l1-6-5 4z'/%3E%3Ccircle cx='99' cy='17' r='1.3' fill='%232a2040'/%3E%3Ccircle cx='105' cy='17' r='1.3' fill='%232a2040'/%3E%3C/g%3E%3C/svg%3E\")";
+        case 'pizza':
+          return "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56'%3E%3Cpath d='M28 6L46 40H10z' fill='%23ffcf6b' stroke='%23e09b3c' stroke-width='2.5'/%3E%3Ccircle cx='26' cy='22' r='2.4' fill='%23e2543e'/%3E%3Ccircle cx='33' cy='30' r='2.4' fill='%23e2543e'/%3E%3Ccircle cx='24' cy='32' r='2.2' fill='%23e2543e'/%3E%3C/svg%3E\")";
+        case 'pixel-paw':
+          return "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='52' height='52' shape-rendering='crispEdges'%3E%3Cg fill='%23ffb4c6'%3E%3Crect x='18' y='18' width='16' height='12'/%3E%3Crect x='14' y='10' width='6' height='6'/%3E%3Crect x='22' y='8' width='6' height='6'/%3E%3Crect x='30' y='8' width='6' height='6'/%3E%3Crect x='36' y='12' width='6' height='6'/%3E%3C/g%3E%3C/svg%3E\")";
+        default:
+          return 'none';
+      }
+    }
+
+    // Значение CSS-переменной --card-image для текущих настроек.
+    // Своя картинка адресуется протоколом card://img/<имя>; если файл пропал — фоллбек: 'none' (плашка без картинки).
+    function getCardImageValue() {
+      if (config.cardImageCustom) {
+        return `url("${cardImageUrl(config.cardImageCustom)}")`;
+      }
+      if (config.cardImagePreset && config.cardImagePreset !== 'none' && CARD_IMAGE_PRESETS.includes(config.cardImagePreset)) {
+        return builtinPatternDataUri(config.cardImagePreset);
+      }
+      return 'none';
+    }
+
+    function cardFitValue() {
+      const fit = config.cardImageFit || 'width';
+      const scale = Math.max(25, Math.min(500, parseInt(config.cardImageScale, 10) || 100)) / 100;
+      if (fit === 'cover') return `auto ${Math.round(100 * scale)}%`;
+      if (fit === 'tile') {
+        // Плитка с зумом: базовый размер ячейки умножается
+        const base = config.cardImageTileSize || 48;
+        return `${Math.round(base * scale)}px`;
+      }
+      // По ширине с зумом
+      return scale === 1 ? '100% auto' : `${Math.round(100 * scale)}% auto`;
+    }
+
+    function applyCardImageVars(el) {
+      // Картинка распространяется ТОЛЬКО на обычные текстовые сообщения.
+      // Упоминания/ответы (is-mention) получают только свой предустановленный стиль подсветки,
+      // награды (is-reward) и технические события — системную строку без картинок.
+      const isTextMessage = !el.classList.contains('is-notice') && !el.classList.contains('is-reward');
+      const value = isTextMessage ? getCardImageValue() : 'none';
+      el.style.setProperty('--card-image', value);
+      el.style.setProperty('--card-image-fit', cardFitValue());
+      el.style.setProperty('--card-image-repeat', (config.cardImageFit || 'width') === 'tile' ? 'repeat' : 'no-repeat');
+      el.style.setProperty('--card-image-pos-x', `${config.cardImagePosX !== undefined ? config.cardImagePosX : 50}%`);
+      el.style.setProperty('--card-image-pos-y', `${config.cardImagePosY !== undefined ? config.cardImagePosY : 50}%`);
+      el.style.setProperty('--card-image-opacity', String((config.cardImageOpacity !== undefined ? config.cardImageOpacity : 60) / 100));
+    }
+
     /* ---------------- Список сообщений ---------------- */
+
+    // Нижняя (по ходу ленты) плашка полностью за краем контейнера
+    function isFullyOutside(el) {
+      const top = el.offsetTop;
+      return (config.chatDirection || 'top') === 'bottom'
+        ? top + el.offsetHeight <= 0
+        : top >= chat.clientHeight;
+    }
 
     function enforceMessageLimit() {
       while (chat.children.length > MAX_DOM_MESSAGES) {
         chat.removeChild(chat.lastChild);
       }
+      if (config.solidRibbon) {
+        // Сплошная лента: убираем только то, что целиком ушло за границу; частично видимое остаётся и растворяется маской
+        while (chat.children.length > 1 && isFullyOutside(chat.lastChild)) {
+          chat.removeChild(chat.lastChild);
+        }
+        return;
+      }
+      // Обычный режим: выезд больше ~30 px убирает самую старую плашку
       while (chat.scrollHeight > chat.clientHeight + 30 && chat.children.length > 1) {
         chat.removeChild(chat.lastChild);
       }
@@ -328,8 +518,12 @@
     }
 
     function insertMessage(el) {
+      const chatDirection = config.chatDirection || 'top';
       chat.prepend(el);
       enforceMessageLimit();
+      // Сдвиг считаем ПОСЛЕ вставки: только тогда у новой плашки есть высота
+      flipShiftExisting(el, chatDirection);
+      playAppearAnimation(el, config.animation || 'slide-left', chatDirection);
     }
 
     function highlightMentions(rootEl, nick) {
@@ -393,7 +587,7 @@
       });
 
       const el = document.createElement('div');
-      el.className = `message anim-${config.animation || 'slide-left'} is-notice`;
+      el.className = 'message is-notice';
       el.innerHTML =
         `<span class="notice-icon">${NOTICE_ICONS[msg.noticeType]}</span>${line}` +
         (msg.html ? ` <span class="notice-msg">${msg.html}</span>` : '');
@@ -444,11 +638,10 @@
       const highlight = !!msg.isMention && config.highlightMentions !== false;
 
       const el = document.createElement('div');
-      const animClass = `anim-${config.animation || 'slide-left'}`;
       const rewardClass = msg.isReward ? 'is-reward' : '';
       const mentionClass = highlight ? 'is-mention' : '';
       const plateClasses = getPlateClasses().join(' ');
-      el.className = `message ${animClass} ${plateClasses} ${rewardClass} ${mentionClass}`.trim();
+      el.className = `message ${plateClasses} ${rewardClass} ${mentionClass}`.trim();
 
       const nowSec = (typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now()) / 1000;
       el.dataset.createdSec = nowSec.toFixed(3);
@@ -457,6 +650,7 @@
       if (msg.id) el.dataset.msgId = msg.id;
       if (msg.login) el.dataset.login = msg.login;
       if (msg.userId) el.dataset.userId = msg.userId;
+
 
       const rewardIcon = escapeHtml(msg.rewardIconUrl || CHANNEL_POINTS_ICON_URL);
       const rewardBadgeHtml = msg.isReward
@@ -484,6 +678,7 @@
 
       if (highlight) highlightMentions(el.querySelector('.text-content'), msg.mentionNick);
 
+      applyCardImageVars(el);
       insertMessage(el);
       scheduleRemoval(el, highlight && config.mentionLonger ? 2 : 1);
     }

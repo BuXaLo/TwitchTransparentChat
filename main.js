@@ -1,5 +1,7 @@
-const { app, BrowserWindow, ipcMain, globalShortcut, Tray, Menu, nativeImage, protocol, screen, clipboard } = require('electron');
+const { app, BrowserWindow, ipcMain, globalShortcut, Tray, Menu, nativeImage, protocol, screen, clipboard, shell } = require('electron');
 const path = require('path');
+const fs = require('fs');
+const crypto = require('crypto');
 const Store = require('electron-store');
 const { connectTwitch, disconnectTwitch, makeTestSequence } = require('./twitch');
 const emotes = require('./emotes');
@@ -17,7 +19,8 @@ if (!gotSingleInstanceLock) app.quit();
 // Протокол emote:// — через него main-процесс отдаёт картинки смайлов/бейджей
 // (так они идут через SOCKS5-прокси, если он включён). Должен быть объявлен до app.ready.
 protocol.registerSchemesAsPrivileged([
-  { scheme: 'emote', privileges: { standard: true, secure: true, supportFetchAPI: true, bypassCSP: true } }
+  { scheme: 'emote', privileges: { standard: true, secure: true, supportFetchAPI: true, bypassCSP: true } },
+  { scheme: 'card', privileges: { standard: true, secure: true, supportFetchAPI: true, bypassCSP: true } }
 ]);
 
 const store = new Store({
@@ -351,7 +354,169 @@ const widgetServer = createWidgetServer({
   getState: () => widgetState(),
   fetchImage: (url) => emotes.fetchImage(url),
   isHostAllowed: (host) => emotes.ALLOWED_IMAGE_HOSTS.has(host),
+  getCardImage: readCardImage,
   onChange: () => sendToSettings('widget-status', widgetStatus())
+});
+
+/* ------------------------------------------------------------------ */
+/* Свои картинки плашек (userData/card-images/<sha1>.webp)             */
+/* ------------------------------------------------------------------ */
+
+let _cardImageDir = null;
+function cardImageDir() {
+  if (!_cardImageDir) _cardImageDir = path.join(app.getPath('userData'), 'card-images');
+  return _cardImageDir;
+}
+const CARD_IMAGE_MAX_BYTES = 2 * 1024 * 1024; // лимит: 2 МБ
+const CARD_IMAGE_MAX_SIDE = 1600; // лимит: 1600 px по длинной стороне (проверяется в рендерере)
+const CARD_IMAGE_ID_RE = configLib.CARD_IMAGE_ID_RE;
+
+// Файл картинки называется так, как её назвал пользователь: userData/card-images/<имя>.webp.
+// Имя очищается от символов, недопустимых в именах файлов Windows.
+function cardImageSlug(name) {
+  let s = String(name || '').normalize('NFC')
+    .replace(/[<>:"\/\\|?*\u0000-\u001f]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/^\.+/, '')
+    .slice(0, 40)
+    .replace(/[. ]+$/, '');
+  if (!s) s = 'Picture';
+  if (/^(con|prn|aux|nul|com\d|lpt\d)$/i.test(s)) s += '_';
+  return s;
+}
+
+function listCardImages() {
+  try {
+    return fs.readdirSync(cardImageDir())
+      .filter((f) => f.toLowerCase().endsWith('.webp'))
+      .map((f) => f.slice(0, -5))
+      .filter((id) => CARD_IMAGE_ID_RE.test(id))
+      .sort((x, y) => x.localeCompare(y))
+      .map((id) => ({ id, name: id }));
+  } catch (e) {
+    return [];
+  }
+}
+
+// Свободное имя: при совпадении (Windows не различает регистр) добавляется « (2)», « (3)»…
+function uniqueCardId(base, ignoreId) {
+  const taken = new Set(listCardImages().map((e) => e.id.toLowerCase()));
+  if (ignoreId) taken.delete(ignoreId.toLowerCase());
+  if (!taken.has(base.toLowerCase())) return base;
+  for (let i = 2; i < 1000; i++) {
+    const suffix = ` (${i})`;
+    const cand = base.slice(0, 40 - suffix.length).replace(/[. ]+$/, '') + suffix;
+    if (!taken.has(cand.toLowerCase())) return cand;
+  }
+  return base;
+}
+
+function cardImagePath(id) {
+  return path.join(cardImageDir(), `${id}.webp`);
+}
+
+function readCardImage(id) {
+  if (!CARD_IMAGE_ID_RE.test(String(id || ''))) return null;
+  try {
+    return fs.readFileSync(cardImagePath(id));
+  } catch (e) {
+    return null; // файл пропал: фоллбек — виджет/оверлей рисует плашку без картинки
+  }
+}
+
+// Подменяет ссылки на картинку во всех стилях (оверлей, виджет, свои пресеты).
+// newId === '' означает удаление картинки: стиль откатывается на «без картинки».
+function remapCardRefs(map) {
+  let cfg;
+  try { cfg = getConfig(); } catch (e) { return false; }
+  let changed = false;
+  const fix = (a) => {
+    if (a && a.cardImageCustom && Object.prototype.hasOwnProperty.call(map, a.cardImageCustom)) {
+      a.cardImageCustom = map[a.cardImageCustom];
+      changed = true;
+    }
+  };
+  fix(cfg);
+  fix(cfg.widget);
+  (cfg.customPresets || []).forEach((p) => fix(p.appearance));
+  if (changed) {
+    store.set('twitch_config', cfg);
+    try { sendToWindow('config-applied', configLib.overlayView(cfg)); } catch (e) { /* окно закрыто */ }
+    try { applyWidgetSettings(cfg); } catch (e) { /* виджет выключен */ }
+  }
+  return changed;
+}
+
+// Миграция раннего формата (<sha1>.webp + index.json) в файлы с понятными именами
+function migrateCardImages() {
+  const dir = cardImageDir();
+  let files;
+  try { files = fs.readdirSync(dir); } catch (e) { return; }
+  const legacy = files.filter((f) => /^[0-9a-f]{40}\.webp$/.test(f));
+  if (!legacy.length && !files.includes('index.json')) return;
+  let names = {};
+  try {
+    JSON.parse(fs.readFileSync(path.join(dir, 'index.json'), 'utf8')).forEach((e) => { if (e && e.sha) names[e.sha] = e.name; });
+  } catch (e) { /* реестра нет */ }
+  const map = {};
+  legacy.forEach((f) => {
+    const sha = f.slice(0, -5);
+    const id = uniqueCardId(cardImageSlug(names[sha] || 'Picture'));
+    try {
+      fs.renameSync(path.join(dir, f), cardImagePath(id));
+      map[sha] = id;
+    } catch (e) { /* пропускаем */ }
+  });
+  try { fs.unlinkSync(path.join(dir, 'index.json')); } catch (e) { /* уже нет */ }
+  if (Object.keys(map).length) remapCardRefs(map);
+}
+
+// Сохранение своей картинки: рендерер уже конвертировал её в WebP через canvas и передал ArrayBuffer.
+// Файл сохраняется под заданным именем; при совпадении имени добавляется « (2)».
+ipcMain.handle('save-card-image', (event, arrayBuffer, name) => {
+  try {
+    const buf = Buffer.from(arrayBuffer || []);
+    if (!buf.length || buf.length > CARD_IMAGE_MAX_BYTES) return { ok: false, error: 'size' };
+    fs.mkdirSync(cardImageDir(), { recursive: true });
+    const id = uniqueCardId(cardImageSlug(name));
+    fs.writeFileSync(cardImagePath(id), buf);
+    return { ok: true, id, name: id, images: listCardImages() };
+  } catch (e) {
+    return { ok: false, error: e.code || 'error' };
+  }
+});
+
+// Список загруженных картинок для выбора в настройках
+ipcMain.handle('list-card-images', () => listCardImages());
+
+// Переименование = переименование файла
+ipcMain.handle('rename-card-image', (event, oldId, name) => {
+  if (!CARD_IMAGE_ID_RE.test(String(oldId || ''))) return { ok: false };
+  if (!fs.existsSync(cardImagePath(oldId))) return { ok: false };
+  const id = uniqueCardId(cardImageSlug(name), oldId);
+  if (id !== oldId) {
+    try {
+      if (id.toLowerCase() === oldId.toLowerCase()) {
+        const tmp = cardImagePath(`${oldId}.tmp-${Date.now()}`);
+        fs.renameSync(cardImagePath(oldId), tmp);
+        fs.renameSync(tmp, cardImagePath(id));
+      } else {
+        fs.renameSync(cardImagePath(oldId), cardImagePath(id));
+      }
+    } catch (e) {
+      return { ok: false };
+    }
+    remapCardRefs({ [oldId]: id });
+  }
+  return { ok: true, id, name: id, oldId, images: listCardImages() };
+});
+
+ipcMain.handle('delete-card-image', (event, id) => {
+  if (!CARD_IMAGE_ID_RE.test(String(id || ''))) return { ok: false };
+  try { fs.unlinkSync(cardImagePath(id)); } catch (e) { /* уже удалён */ }
+  remapCardRefs({ [id]: '' });
+  return { ok: true, images: listCardImages() };
 });
 
 function widgetStatus() {
@@ -534,7 +699,7 @@ ipcMain.handle('copy-text', (event, text) => {
   return true;
 });
 
-async function runTest(kind, channel, sendMessage, sendRemove) {
+async function runTest(kind, channel, sendMessage, sendRemove, warmupMs = 0) {
   if (testRunning[kind]) return;
   testRunning[kind] = true;
   try {
@@ -544,6 +709,7 @@ async function runTest(kind, channel, sendMessage, sendRemove) {
     }
     await Promise.race([emotes.ensureGlobalEmotes(), new Promise((resolve) => setTimeout(resolve, 2500))]);
 
+    if (warmupMs) await sleep(warmupMs);
     for (const step of makeTestSequence(channel || cfg.channel || '')) {
       await sleep(step.delay !== undefined ? step.delay : TEST_STEP_DELAY);
       if (step.remove) sendRemove(step.remove);
@@ -555,12 +721,15 @@ async function runTest(kind, channel, sendMessage, sendRemove) {
 }
 
 ipcMain.on('send-test-message', (event, channel) => {
+  // Если оверлей был скрыт, даём окну прорисоваться: иначе анимация появления проигрывается «вхолостую» ещё до показа
+  const wasHidden = !!(win && !win.isDestroyed() && !win.isVisible());
   revealOverlay();
   runTest(
     'overlay',
     channel,
     (msg) => sendToWindow('new-message', msg),
-    (info) => sendToWindow('message-removed', info)
+    (info) => sendToWindow('message-removed', info),
+    wasHidden ? 500 : 0
   );
 });
 
@@ -585,8 +754,63 @@ app.on('second-instance', () => {
   refreshTray();
 });
 
+/* ------------------------------------------------------------------ */
+/* Очистка мусора в userData при запуске                                */
+/* ------------------------------------------------------------------ */
+
+// Удаляются ТОЛЬКО перегенерируемые кеши Chromium. Никогда не трогаем:
+// config.json, card-images/, Local Storage, Session Storage, Network (Cookies),
+// Preferences, Local State — там настройки, сессии и библиотека картинок.
+const CLEANABLE_DIRS = ['Cache', 'Code Cache', 'GPUCache', 'DawnCache', 'blob_storage', 'Shared Dictionary'];
+
+function cleanupUserData() {
+  for (const name of CLEANABLE_DIRS) {
+    const dir = path.join(app.getPath('userData'), name);
+    fs.rm(dir, { recursive: true, force: true }, () => {});
+  }
+}
+
+ipcMain.handle('get-config-dir-info', async () => {
+  const dir = app.getPath('userData');
+  const stat = (p) => {
+    try {
+      const s = fs.statSync(p);
+      return s.size;
+    } catch (e) {
+      return 0;
+    }
+  };
+  const dirSize = (d) => {
+    let total = 0;
+    try {
+      for (const f of fs.readdirSync(d, { withFileTypes: true })) {
+        const p = path.join(d, f.name);
+        if (f.isDirectory()) total += dirSize(p);
+        else total += stat(p);
+      }
+    } catch (e) { /* недоступен — пропускаем */ }
+    return total;
+  };
+  const cardIndex = listCardImages();
+  const cardBytes = fs.existsSync(cardImageDir()) ? dirSize(cardImageDir()) : 0;
+  return {
+    dir,
+    configBytes: stat(path.join(dir, 'config.json')),
+    cardImages: { count: cardIndex.length, bytes: cardBytes, index: cardIndex },
+    cacheBytes: CLEANABLE_DIRS.reduce((t, n) => t + dirSize(path.join(dir, n)), 0)
+  };
+});
+
+ipcMain.handle('open-config-dir', () => {
+  shell.openPath(app.getPath('userData'));
+  return true;
+});
+
 app.whenReady().then(() => {
   if (!gotSingleInstanceLock) return;
+
+  cleanupUserData();
+  migrateCardImages();
 
   protocol.handle('emote', async (request) => {
     try {
@@ -602,6 +826,18 @@ app.whenReady().then(() => {
     } catch (e) {
       return new Response('Bad gateway', { status: 502 });
     }
+  });
+
+  // card://img/<имя> — свои картинки плашек из userData/card-images (WebP, уже проверены при сохранении)
+  protocol.handle('card', (request) => {
+    let id = '';
+    try { id = decodeURIComponent(new URL(request.url).pathname.replace(/^\//, '')); } catch (e) { /* битый адрес */ }
+    const data = readCardImage(id);
+    if (!data) return new Response('Not Found', { status: 404 });
+    return new Response(data, {
+      status: 200,
+      headers: { 'content-type': 'image/webp', 'cache-control': 'no-cache' }
+    });
   });
 
   store.delete('skip_taskbar');
