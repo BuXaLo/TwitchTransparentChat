@@ -7,10 +7,6 @@
 A minimalist, lightweight and fully transparent Twitch chat overlay that sits on top of any window or game. No login needed: it connects to chat anonymously and barely touches your system resources while you stream. The same chat can also be shown on stream as an OBS widget.
 
 <p align="center">
-  <img src="screenshots/preview.jpg" alt="Chat overlay on top of a game" width="700">
-</p>
-
-<p align="center">
   <img src="screenshots/preview_chat.jpg" alt="Chat overlay on top of a game" width="700">
 </p>
 
