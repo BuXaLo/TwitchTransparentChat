@@ -71,6 +71,7 @@ const OVERLAY_APPEARANCE_DEFAULTS = {
   showRaid: false,
   highlightMentions: true,
   mentionLonger: false,
+  plateGap: 5,
   smoothShift: true, // плавный FLIP-сдвиг старых сообщений при появлении нового
   solidRibbon: false, // сплошная лента: плашка не растворяется у краёв контейнера, только мягко затухает на самой границе
 
@@ -183,6 +184,78 @@ function isValidPort(v) {
   return Number.isInteger(n) && n >= MIN_PORT && n <= MAX_PORT;
 }
 
+// --- Стили по нику и ротация (раздельно для оверлея и виджета) ---
+const MAX_USER_STYLES = 200;
+const MAX_ROTATION_POOL = 5;       // ручной выбор
+const MAX_ROTATION_ALL = 200;       // «все мои стили»
+const LOGIN_RE = /^[a-z0-9_]{1,25}$/;
+
+function normalizeLogin(v) {
+  const name = text(v).replace(/^[#@]/, '').toLowerCase();
+  return LOGIN_RE.test(name) ? name : '';
+}
+
+// Список назначений «ник → стиль». Хранится снимок оформления, поэтому встроенные пресеты разворачивает окно настроек.
+function sanitizeUserStyles(list, maxFontSize) {
+  const out = [];
+  const seen = new Set();
+  (Array.isArray(list) ? list : []).forEach((u) => {
+    if (!u || typeof u !== 'object') return;
+    const nick = normalizeLogin(u.nick);
+    if (!nick || seen.has(nick) || out.length >= MAX_USER_STYLES) return;
+    seen.add(nick);
+    out.push({
+      nick,
+      styleKey: text(u.styleKey).slice(0, 80),
+      styleName: text(u.styleName).slice(0, 60),
+      appearance: sanitizeAppearance(u.appearance, OVERLAY_APPEARANCE_DEFAULTS, maxFontSize)
+    });
+  });
+  return out;
+}
+
+// Ротация: до 5 снимков стилей. Меньше двух — ротация выключена, случайный порядок — только от трёх стилей.
+function sanitizeRotation(src, maxFontSize) {
+  const s = src && typeof src === 'object' ? src : {};
+  const source = s.source === 'manual' ? 'manual' : 'all';
+  const pool = (Array.isArray(s.pool) ? s.pool : [])
+    .filter((p) => p && typeof p === 'object')
+    .slice(0, source === 'all' ? MAX_ROTATION_ALL : MAX_ROTATION_POOL)
+    .map((p) => ({
+      name: text(p.name).slice(0, 60),
+      appearance: sanitizeAppearance(p.appearance, OVERLAY_APPEARANCE_DEFAULTS, maxFontSize)
+    }));
+  return {
+    source,
+    enabled: bool(s.enabled, false) && pool.length >= 2,
+    random: bool(s.random, false) && pool.length >= 3,
+    pool
+  };
+}
+
+function sanitizeStyleExtras(src, maxFontSize) {
+  const s = src && typeof src === 'object' ? src : {};
+  return {
+    userStyles: sanitizeUserStyles(s.userStyles, maxFontSize),
+    rotation: sanitizeRotation(s.rotation, maxFontSize)
+  };
+}
+
+// Вид для окна чата: карта ник → оформление и пул ротации
+function styleExtrasView(ex) {
+  const map = {};
+  (ex.userStyles || []).forEach((u) => { map[u.nick] = u.appearance; });
+  const rot = ex.rotation || {};
+  return {
+    userStyles: map,
+    rotation: {
+      enabled: !!rot.enabled,
+      random: !!rot.random,
+      pool: (rot.pool || []).map((p) => p.appearance)
+    }
+  };
+}
+
 // Приводит внешний вид к допустимым значениям. Отсутствующие или испорченные поля берутся из defaults.
 function sanitizeAppearance(src, defaults = OVERLAY_APPEARANCE_DEFAULTS, maxFontSize = MAX_FONT_SIZE_OVERLAY) {
   const s = src && typeof src === 'object' ? src : {};
@@ -190,6 +263,7 @@ function sanitizeAppearance(src, defaults = OVERLAY_APPEARANCE_DEFAULTS, maxFont
   return {
     messageLifetime: clampInt(s.messageLifetime, 0, 300, d.messageLifetime),
     fontSize: clampInt(s.fontSize, 10, maxFontSize, d.fontSize),
+    plateGap: clampInt(s.plateGap, 5, 40, d.plateGap),
     fontFamily: oneOf(s.fontFamily, FONT_FAMILIES, d.fontFamily),
     textAlign: oneOf(s.textAlign, TEXT_ALIGNS, d.textAlign),
     bgOpacity: clampInt(s.bgOpacity, 0, 100, d.bgOpacity),
@@ -279,7 +353,9 @@ function normalizeConfig(src) {
   };
 
   Object.assign(out, sanitizeAppearance(s, OVERLAY_APPEARANCE_DEFAULTS));
+  Object.assign(out, sanitizeStyleExtras(s, MAX_FONT_SIZE_OVERLAY));
   out.widget = sanitizeAppearance(s.widget, widgetSeed(pickAppearance(out)), MAX_FONT_SIZE_WIDGET);
+  Object.assign(out.widget, sanitizeStyleExtras(s.widget, MAX_FONT_SIZE_WIDGET));
   // В виджете OBS упоминания и ответы — обычный текст: опций подсветки там нет
   out.widget.highlightMentions = false;
   out.widget.mentionLonger = false;
@@ -294,7 +370,7 @@ function pickAppearance(cfg) {
 
 // Что нужно отображению чата в оверлее
 function overlayView(cfg) {
-  return Object.assign(pickAppearance(cfg), {
+  return Object.assign(pickAppearance(cfg), styleExtrasView(cfg), {
     hideCommands: cfg.hideCommands,
     ignoredBots: cfg.ignoredBots
   });
@@ -302,7 +378,7 @@ function overlayView(cfg) {
 
 // Что нужно отображению чата в виджете: свой внешний вид и общие фильтры
 function widgetView(cfg) {
-  return Object.assign({}, cfg.widget, {
+  return Object.assign({}, cfg.widget, styleExtrasView(cfg.widget), {
     highlightMentions: false,
     mentionLonger: false,
     hideCommands: cfg.hideCommands,
@@ -313,7 +389,7 @@ function widgetView(cfg) {
 // Живой предпросмотр из окна настроек: те же поля, что в overlayView / widgetView, но проверенные
 function sanitizePreview(src, maxFontSize = MAX_FONT_SIZE_OVERLAY) {
   const s = src && typeof src === 'object' ? src : {};
-  return Object.assign(sanitizeAppearance(s, OVERLAY_APPEARANCE_DEFAULTS, maxFontSize), {
+  return Object.assign(sanitizeAppearance(s, OVERLAY_APPEARANCE_DEFAULTS, maxFontSize), styleExtrasView(sanitizeStyleExtras(s, maxFontSize)), {
     hideCommands: bool(s.hideCommands, GENERAL_DEFAULTS.hideCommands),
     ignoredBots: typeof s.ignoredBots === 'string' ? s.ignoredBots.trim() : GENERAL_DEFAULTS.ignoredBots
   });
@@ -341,6 +417,7 @@ module.exports = {
   GENERAL_DEFAULTS,
   DEFAULT_CONFIG,
   normalizeConfig,
+  normalizeLogin,
   normalizeChannel,
   normalizePort,
   isValidPort,

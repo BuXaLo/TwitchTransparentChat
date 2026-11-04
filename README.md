@@ -33,14 +33,19 @@ A minimalist, lightweight and fully transparent Twitch chat overlay that sits on
 * **Card image**: a picture layer on the plate. Choose a built-in sticker or upload your own (PNG, JPEG or WebP, up to 2 MB). Uploaded pictures are stored as `card-images/<name>.webp` under the name you give them.
 * **Appear animations** with a preview, smooth shifting of older messages and an optional **solid ribbon** mode where plates fade only at the very edge.
 * **Text and nicknames**: colors, outlines, size, alignment, and 13 fonts (bundled in `fonts/`, no internet needed).
-* **Styles & presets**: 9 built-in themes and your own saved styles, shared between the overlay and the OBS widget.
-* A live preview in every settings dialog, and **Reset to defaults** buttons.
+* **Styles & presets**: 9 built-in themes and your own saved styles, shared between the overlay and the OBS widget. Each saved style has an **Overwrite** button that stores the current look of the tab under the same name (with a confirmation).
+* **Styles for users**: give chosen Twitch users their own plate style (built-in or saved). Set separately for the overlay and the widget; it has priority over rotation. Replacing or deleting a user asks for confirmation.
+* **Style rotation**: messages take turns using your saved styles. The **Rotation** button shows a status dot (green when rotation is on). With 2 saved styles they alternate automatically; with 3 or more you choose **All my saved styles** (new styles join automatically) or **Choose manually** (3 to 5 styles with a pinned live preview), in turn or in random order (never the same style twice in a row). Channel point rewards are never restyled. Mentions and replies are restyled in the widget always, and in the overlay only when **Highlight mentions and replies** is off.
+* A live preview in every settings dialog (including the preview under **Play animation**, which always shows the current style, border and layout), and **Reset to defaults** buttons.
 
 **Convenience**
 * Settings in a separate window: **General**, **Overlay**, **OBS widget**.
 * Test buttons play every message type without connecting to a chat.
 * Built-in update checker with release notes in your language. Setup updates in one click, Portable opens the download page.
+* **Spacing between plates** slider under the nickname layout setting.
+* **Hide overlay / Show overlay** button on the Overlay tab, in sync with the tray menu.
 * Start with Windows, tray menu, English and Русский interface.
+* A discreet **Support the author** link at the bottom of the General tab.
 
 ---
 
@@ -49,10 +54,12 @@ A minimalist, lightweight and fully transparent Twitch chat overlay that sits on
 | Element | Action |
 | :--- | :--- |
 | **`Ctrl+Alt+F9`** | Toggle click-through mode |
+| **`Ctrl+Alt+F10`** | Open settings |
 | **Click-through button** | In the window header, left of Settings |
 | **⚙ Settings** | Opens General, Overlay and OBS widget tabs |
 | **Bottom-right corner** | Resize handle (settings mode) |
 | **Tray icon** | Show/hide overlay, click-through, settings, quit |
+| **Hide overlay button** | Overlay tab, above Reset. Works like the tray item and stays in sync with it |
 
 > If `Ctrl+Alt+F9` is taken by another program, a yellow ⚠ appears next to the connection indicator.
 
@@ -79,7 +86,7 @@ The widget shares the channel, proxy, filters and saved styles with the overlay.
 * **Channel field** accepts `name`, `#name`, `@name` or a channel link.
 * **Events come from the regular chat connection.** Rewards without text, follows and AutoMod-held messages aren't available without logging in.
 * **The widget works only while the app is running** and only on this computer (`127.0.0.1`).
-* **Settings folder.** The General tab shows it and opens it in one click. Junk and caches are cleaned automatically at every launch. Settings, pictures and sessions are never touched.
+* **Settings folder.** The General tab shows it and opens it in one click. Junk and caches are cleaned automatically at every launch, including leftover installer files after a Setup update. Settings, pictures and sessions are never touched.
 
 Settings are stored in `%APPDATA%\TwitchOverlay\config.json` (Windows), `~/.config/TwitchOverlay/config.json` (Linux) or `~/Library/Application Support/TwitchOverlay/config.json` (macOS). When running from source the folder is named `twitch-overlay`.
 

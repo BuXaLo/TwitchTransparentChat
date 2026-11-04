@@ -23,6 +23,10 @@ contextBridge.exposeInMainWorld('api', {
   // --- Окна и режимы ---
   openSettings: () => ipcRenderer.send('open-settings-window'),
   enableClickThrough: () => ipcRenderer.send('enable-click-through'),
+  getOverlayVisible: () => ipcRenderer.invoke('get-overlay-visible'),
+  toggleOverlayVisibility: () => ipcRenderer.invoke('toggle-overlay-visibility'),
+  onOverlayVisibility: (cb) => ipcRenderer.on('overlay-visibility', (e, visible) => cb(visible)),
+  openSupportLink: () => ipcRenderer.invoke('open-support-link'),
 
   // --- Тесты: в оверлей и в виджет по отдельности ---
   sendTestMessage: (channel) => ipcRenderer.send('send-test-message', channel),

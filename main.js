@@ -11,6 +11,7 @@ const { createWidgetServer } = require('./widget-server');
 const updater = require('./updater');
 
 const HOTKEY = 'CommandOrControl+Alt+F9';
+const SETTINGS_HOTKEY = 'CommandOrControl+Alt+F10'; // открыть окно настроек
 
 // Только один экземпляр: повторный запуск возвращает окно уже работающего оверлея (см. 'second-instance')
 const gotSingleInstanceLock = app.requestSingleInstanceLock();
@@ -179,6 +180,10 @@ function applyAutoStart(enabled) {
 /* Иконка в трее */
 /* ------------------------------------------------------------------ */
 
+function isOverlayVisible() {
+  return !!(win && !win.isDestroyed() && win.isVisible());
+}
+
 function buildTrayMenu() {
   const visible = !!(win && !win.isDestroyed() && win.isVisible());
   return Menu.buildFromTemplate([
@@ -191,6 +196,8 @@ function buildTrayMenu() {
 }
 
 function refreshTray() {
+  // Кнопка в настройках всегда синхронна с реальной видимостью окна (трей, кнопка и т.п.)
+  sendToSettings('overlay-visibility', isOverlayVisible());
   if (!tray) return;
   tray.setToolTip(t('tray.tooltip'));
   tray.setContextMenu(buildTrayMenu());
@@ -325,6 +332,7 @@ function createWindow() {
 
   win.webContents.once('did-finish-load', () => {
     const ok = globalShortcut.register(HOTKEY, toggleClickThrough);
+    globalShortcut.register(SETTINGS_HOTKEY, openSettingsWindow); // занят другой программой — просто остаётся недоступным
     win.webContents.send('hotkey-status', { ok });
     startInitialChat();
     runStartupUpdateCheck();
@@ -675,6 +683,20 @@ ipcMain.on('preview-widget', (event, view) => {
 });
 
 ipcMain.on('open-settings-window', openSettingsWindow);
+
+// Скрыть / показать оверлей из настроек: ровно то же действие, что пункт в трее
+ipcMain.handle('get-overlay-visible', () => isOverlayVisible());
+ipcMain.handle('toggle-overlay-visibility', () => {
+  toggleVisibility();
+  return isOverlayVisible();
+});
+
+// Ссылка «Поддержать автора»: адрес зашит в коде, из окна настроек его подменить нельзя
+const SUPPORT_URL = 'https://www.donationalerts.com/r/buxalo';
+ipcMain.handle('open-support-link', () => {
+  shell.openExternal(SUPPORT_URL);
+  return true;
+});
 ipcMain.on('enable-click-through', () => setClickThrough(true));
 
 ipcMain.handle('get-strings', (event, lang) => getStrings(lang || currentLanguage()));
@@ -810,6 +832,7 @@ app.whenReady().then(() => {
   if (!gotSingleInstanceLock) return;
 
   cleanupUserData();
+  updater.cleanupInstallerLeftovers();
   migrateCardImages();
 
   protocol.handle('emote', async (request) => {

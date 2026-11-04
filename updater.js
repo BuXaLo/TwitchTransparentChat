@@ -9,6 +9,8 @@
  */
 
 const { app, shell } = require('electron');
+const fs = require('fs');
+const path = require('path');
 const emotes = require('./emotes');
 
 const GITHUB_OWNER = 'BuXaLo';
@@ -170,6 +172,49 @@ function openRepoUrl(url) {
   return safe;
 }
 
+/**
+ * Очистка остатков установщика после обновления (только NSIS-версия, Portable не трогаем).
+ * electron-updater складывает скачанный Setup в %LOCALAPPDATA%\<имя>-updater\pending и не удаляет его после установки.
+ * Удаляем установщики версии не новее текущей и временные папки temp-*; более новый (ещё не установленный) оставляем.
+ */
+function cleanupInstallerLeftovers() {
+  try {
+    if (process.platform !== 'win32' || !app.isPackaged || isPortableBuild()) return;
+    const base = process.env.LOCALAPPDATA;
+    if (!base || !fs.existsSync(base)) return;
+
+    const names = new Set([`${app.getName()}-updater`, 'twitchoverlay-updater', 'TwitchOverlay-updater']);
+    try {
+      const yml = fs.readFileSync(path.join(process.resourcesPath, 'app-update.yml'), 'utf8');
+      const m = yml.match(/^updaterCacheDirName:\s*(\S+)/m);
+      if (m) names.add(m[1]);
+    } catch (e) { /* нет app-update.yml — используем имена по умолчанию */ }
+
+    const lower = new Set(Array.from(names, (n) => n.toLowerCase()));
+    const current = app.getVersion();
+    for (const entry of fs.readdirSync(base, { withFileTypes: true })) {
+      if (!entry.isDirectory() || !lower.has(entry.name.toLowerCase())) continue;
+      const root = path.join(base, entry.name);
+      const rm = (p) => fs.rm(p, { recursive: true, force: true }, () => {});
+
+      for (const sub of fs.readdirSync(root, { withFileTypes: true })) {
+        if (sub.isDirectory() && /^temp-/i.test(sub.name)) rm(path.join(root, sub.name));
+      }
+
+      const pending = path.join(root, 'pending');
+      if (!fs.existsSync(pending)) continue;
+      let removedAll = true;
+      for (const f of fs.readdirSync(pending)) {
+        if (!/\.(exe|blockmap)$/i.test(f)) continue;
+        const ver = (f.match(/(\d+\.\d+\.\d+)/) || [])[1];
+        if (ver && isNewerVersion(current, ver)) { removedAll = false; continue; } // ждёт установки
+        rm(path.join(pending, f));
+      }
+      if (removedAll) rm(path.join(pending, 'update-info.json'));
+    }
+  } catch (e) { /* очистка не критична */ }
+}
+
 let activeInstall = null;
 
 /**
@@ -269,5 +314,6 @@ module.exports = {
   isNewerVersion,
   extractLocalizedNotes,
   checkForUpdates,
-  downloadAndInstallUpdate
+  downloadAndInstallUpdate,
+  cleanupInstallerLeftovers
 };

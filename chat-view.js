@@ -299,10 +299,10 @@
       return (login && ignoredSet.has(login)) || ignoredSet.has(name);
     }
 
-    function getPlateClasses() {
-      const shape = config.plateShape === 'strict' ? 'strict' : 'rounded';
-      const effect = config.borderEffect || 'static';
-      const bw = parseInt(config.borderWidth, 10) || 0;
+    function getPlateClasses(c = config) {
+      const shape = c.plateShape === 'strict' ? 'strict' : 'rounded';
+      const effect = c.borderEffect || 'static';
+      const bw = parseInt(c.borderWidth, 10) || 0;
       const classes = [`shape-${shape}`];
       if (bw > 0 || effect !== 'static') {
         classes.push(`effect-${effect}`);
@@ -320,56 +320,65 @@
       }
     }
 
+    // Переменные оформления плашки: для всего чата (root) или для отдельного сообщения (свой стиль)
+    function applyStyleVars(node, c) {
+      const fontSize = c.fontSize || 14;
+      node.style.setProperty('--font-size', `${fontSize}px`);
+
+      const bg = c.bgOpacity !== undefined ? c.bgOpacity : 50;
+      node.style.setProperty('--bg-opacity', (bg / 100).toFixed(2));
+
+      const family = !c.fontFamily || c.fontFamily === 'system' ? SYSTEM_FONT : c.fontFamily;
+      node.style.setProperty('--font-family', family);
+      node.style.setProperty('--text-align', c.textAlign || 'left');
+
+      // Переменные плашки и рамки
+      node.style.setProperty('--plate-bg', buildPlateBackground(c));
+
+      const shape = c.plateShape === 'strict' ? 'strict' : 'rounded';
+      const radius = shape === 'strict' ? '0px' : '6px';
+      node.style.setProperty('--plate-radius', radius);
+
+      const bw = parseInt(c.borderWidth, 10) || 0;
+      const effect = c.borderEffect || 'static';
+      const effectiveBw = bw === 0 && effect !== 'static' && effect !== 'cyber' ? 1 : bw;
+      node.style.setProperty('--plate-border-width', `${effectiveBw}px`);
+      node.style.setProperty('--plate-border-color', c.borderColor || '#9146FF');
+      node.style.setProperty('--plate-border-color-2', c.borderColor2 || '#FFFFFF');
+      node.style.setProperty('--effect-speed-mult', String(speedToDurationMultiplier(c.borderEffectSpeed)));
+
+      // Переменные текста сообщения (применяются ТОЛЬКО к .text-content)
+      node.style.setProperty('--msg-text-color', c.textColor || '#FFFFFF');
+      const textShadow = buildOutlineShadow(
+        c.textOutlineWidth !== undefined ? c.textOutlineWidth : 2,
+        c.textOutlineColor || '#000000'
+      );
+      node.style.setProperty('--msg-text-shadow', textShadow);
+
+      // Переменные никнеймов: если кастомизация выключена, остаётся базовый стиль Twitch (DEFAULT_TWITCH_NICK_SHADOW)
+      if (c.customNickEnabled) {
+        const nickShadow = buildOutlineShadow(
+          c.customNickOutlineWidth !== undefined ? c.customNickOutlineWidth : 2,
+          c.customNickOutlineColor || '#000000'
+        );
+        node.style.setProperty('--nick-text-shadow', nickShadow);
+      } else {
+        node.style.setProperty('--nick-text-shadow', DEFAULT_TWITCH_NICK_SHADOW);
+      }
+
+    }
+
     function applyConfig(cfg) {
+      const prevPoolSig = rotationSig(config);
       const prevSync = !!config.borderEffectSync;
       const prevEffect = config.borderEffect;
       const prevSpeed = config.borderEffectSpeed;
       config = Object.assign({}, cfg);
 
-      const fontSize = config.fontSize || 14;
-      root.style.setProperty('--font-size', `${fontSize}px`);
+      applyStyleVars(root, config);
+      if (rotationSig(config) !== prevPoolSig) rotationLast = -1;
 
-      const bg = config.bgOpacity !== undefined ? config.bgOpacity : 50;
-      root.style.setProperty('--bg-opacity', (bg / 100).toFixed(2));
-
-      const family = !config.fontFamily || config.fontFamily === 'system' ? SYSTEM_FONT : config.fontFamily;
-      root.style.setProperty('--font-family', family);
-      root.style.setProperty('--text-align', config.textAlign || 'left');
-
-      // Переменные плашки и рамки
-      root.style.setProperty('--plate-bg', buildPlateBackground(config));
-
-      const shape = config.plateShape === 'strict' ? 'strict' : 'rounded';
-      const radius = shape === 'strict' ? '0px' : '6px';
-      root.style.setProperty('--plate-radius', radius);
-
-      const bw = parseInt(config.borderWidth, 10) || 0;
-      const effect = config.borderEffect || 'static';
-      const effectiveBw = bw === 0 && effect !== 'static' && effect !== 'cyber' ? 1 : bw;
-      root.style.setProperty('--plate-border-width', `${effectiveBw}px`);
-      root.style.setProperty('--plate-border-color', config.borderColor || '#9146FF');
-      root.style.setProperty('--plate-border-color-2', config.borderColor2 || '#FFFFFF');
-      root.style.setProperty('--effect-speed-mult', String(speedToDurationMultiplier(config.borderEffectSpeed)));
-
-      // Переменные текста сообщения (применяются ТОЛЬКО к .text-content)
-      root.style.setProperty('--msg-text-color', config.textColor || '#FFFFFF');
-      const textShadow = buildOutlineShadow(
-        config.textOutlineWidth !== undefined ? config.textOutlineWidth : 2,
-        config.textOutlineColor || '#000000'
-      );
-      root.style.setProperty('--msg-text-shadow', textShadow);
-
-      // Переменные никнеймов: если кастомизация выключена, остаётся базовый стиль Twitch (DEFAULT_TWITCH_NICK_SHADOW)
-      if (config.customNickEnabled) {
-        const nickShadow = buildOutlineShadow(
-          config.customNickOutlineWidth !== undefined ? config.customNickOutlineWidth : 2,
-          config.customNickOutlineColor || '#000000'
-        );
-        root.style.setProperty('--nick-text-shadow', nickShadow);
-      } else {
-        root.style.setProperty('--nick-text-shadow', DEFAULT_TWITCH_NICK_SHADOW);
-      }
-
+      chat.style.gap = `${Math.max(5, Math.min(40, parseInt(config.plateGap, 10) || 5))}px`; // расстояние между плашками (5px — прежнее базовое)
       chat.className = `dir-${config.chatDirection || 'top'} layout-${config.layoutMode || 'inline'}${config.solidRibbon ? ' solid-ribbon' : ''}`;
       updateIgnored(config.ignoredBots);
 
@@ -381,6 +390,7 @@
 
       Array.from(chat.children).forEach((el) => {
         if (el.classList.contains('is-notice')) return;
+        if (el._ownCfg) return; // сообщение со своим стилем (по нику / ротация) не перекрашивается общими настройками
         // Снимаем служебные классы по префиксу: эффекты рамки и формы больше не перечисляются вручную
         Array.from(el.classList).filter((c) => c.startsWith('effect-') || c.startsWith('shape-')).forEach((c) => el.classList.remove(c));
         plateClasses.forEach((c) => el.classList.add(c));
@@ -441,23 +451,23 @@
 
     // Значение CSS-переменной --card-image для текущих настроек.
     // Своя картинка адресуется протоколом card://img/<имя>; если файл пропал — фоллбек: 'none' (плашка без картинки).
-    function getCardImageValue() {
-      if (config.cardImageCustom) {
-        return `url("${cardImageUrl(config.cardImageCustom)}")`;
+    function getCardImageValue(c) {
+      if (c.cardImageCustom) {
+        return `url("${cardImageUrl(c.cardImageCustom)}")`;
       }
-      if (config.cardImagePreset && config.cardImagePreset !== 'none' && CARD_IMAGE_PRESETS.includes(config.cardImagePreset)) {
-        return builtinPatternDataUri(config.cardImagePreset);
+      if (c.cardImagePreset && c.cardImagePreset !== 'none' && CARD_IMAGE_PRESETS.includes(c.cardImagePreset)) {
+        return builtinPatternDataUri(c.cardImagePreset);
       }
       return 'none';
     }
 
-    function cardFitValue() {
-      const fit = config.cardImageFit || 'width';
-      const scale = Math.max(25, Math.min(500, parseInt(config.cardImageScale, 10) || 100)) / 100;
+    function cardFitValue(c) {
+      const fit = c.cardImageFit || 'width';
+      const scale = Math.max(25, Math.min(500, parseInt(c.cardImageScale, 10) || 100)) / 100;
       if (fit === 'cover') return `auto ${Math.round(100 * scale)}%`;
       if (fit === 'tile') {
         // Плитка с зумом: базовый размер ячейки умножается
-        const base = config.cardImageTileSize || 48;
+        const base = c.cardImageTileSize || 48;
         return `${Math.round(base * scale)}px`;
       }
       // По ширине с зумом
@@ -465,17 +475,18 @@
     }
 
     function applyCardImageVars(el) {
+      const c = el._ownCfg || config;
       // Картинка распространяется ТОЛЬКО на обычные текстовые сообщения.
       // Упоминания/ответы (is-mention) получают только свой предустановленный стиль подсветки,
       // награды (is-reward) и технические события — системную строку без картинок.
       const isTextMessage = !el.classList.contains('is-notice') && !el.classList.contains('is-reward');
-      const value = isTextMessage ? getCardImageValue() : 'none';
+      const value = isTextMessage ? getCardImageValue(c) : 'none';
       el.style.setProperty('--card-image', value);
-      el.style.setProperty('--card-image-fit', cardFitValue());
-      el.style.setProperty('--card-image-repeat', (config.cardImageFit || 'width') === 'tile' ? 'repeat' : 'no-repeat');
-      el.style.setProperty('--card-image-pos-x', `${config.cardImagePosX !== undefined ? config.cardImagePosX : 50}%`);
-      el.style.setProperty('--card-image-pos-y', `${config.cardImagePosY !== undefined ? config.cardImagePosY : 50}%`);
-      el.style.setProperty('--card-image-opacity', String((config.cardImageOpacity !== undefined ? config.cardImageOpacity : 60) / 100));
+      el.style.setProperty('--card-image-fit', cardFitValue(c));
+      el.style.setProperty('--card-image-repeat', (c.cardImageFit || 'width') === 'tile' ? 'repeat' : 'no-repeat');
+      el.style.setProperty('--card-image-pos-x', `${c.cardImagePosX !== undefined ? c.cardImagePosX : 50}%`);
+      el.style.setProperty('--card-image-pos-y', `${c.cardImagePosY !== undefined ? c.cardImagePosY : 50}%`);
+      el.style.setProperty('--card-image-opacity', String((c.cardImageOpacity !== undefined ? c.cardImageOpacity : 60) / 100));
     }
 
     /* ---------------- Список сообщений ---------------- */
@@ -523,7 +534,7 @@
       enforceMessageLimit();
       // Сдвиг считаем ПОСЛЕ вставки: только тогда у новой плашки есть высота
       flipShiftExisting(el, chatDirection);
-      playAppearAnimation(el, config.animation || 'slide-left', chatDirection);
+      playAppearAnimation(el, (el._ownCfg || config).animation || 'slide-left', chatDirection);
     }
 
     function highlightMentions(rootEl, nick) {
@@ -624,6 +635,50 @@
       });
     }
 
+    /* ---------------- Стили по нику и ротация стилей ---------------- */
+
+    // Ключи, которыми «свой» стиль перекрывает общий вид (как у пресета; размер шрифта и раскладка остаются общими)
+    const OWN_STYLE_KEYS = [
+      'bgOpacity', 'bgMode', 'bgColor1', 'bgColor2', 'bgMonoMode', 'bgDirection',
+      'plateShape', 'borderWidth', 'borderColor', 'borderColor2', 'borderEffect', 'borderEffectSpeed', 'borderEffectSync',
+      'textColor', 'textOutlineWidth', 'textOutlineColor',
+      'customNickEnabled', 'customNickColor', 'customNickOutlineWidth', 'customNickOutlineColor',
+      'cardImagePreset', 'cardImageCustom', 'cardImageFit', 'cardImagePosX', 'cardImagePosY', 'cardImageOpacity', 'cardImageScale',
+      'fontFamily', 'textAlign', 'animation'
+    ];
+    let rotationLast = -1;
+
+    function rotationSig(c) {
+      const r = c && c.rotation;
+      return r && r.enabled && Array.isArray(r.pool) ? `${r.random ? 'r' : 's'}${r.pool.length}:${JSON.stringify(r.pool)}` : '';
+    }
+
+    function mergeOwnStyle(style) {
+      const out = Object.assign({}, config);
+      OWN_STYLE_KEYS.forEach((k) => { if (style[k] !== undefined) out[k] = style[k]; });
+      return out;
+    }
+
+    // Выбор своего стиля для сообщения: стиль по нику важнее ротации и не сдвигает её очередь.
+    // Награды и подсвеченные упоминания (только оверлей) остаются со стандартным видом.
+    function pickOwnStyle(msg, highlight) {
+      if (msg.isReward || highlight) return null;
+      const login = String(msg.login || msg.user || '').toLowerCase();
+      const byNick = config.userStyles && config.userStyles[login];
+      if (byNick) return mergeOwnStyle(byNick);
+      const rot = config.rotation;
+      if (!rot || !rot.enabled || !Array.isArray(rot.pool) || rot.pool.length < 2) return null;
+      const n = rot.pool.length;
+      let idx;
+      if (rot.random && n >= 3) {
+        do { idx = Math.floor(Math.random() * n); } while (idx === rotationLast);
+      } else {
+        idx = (rotationLast + 1) % n;
+      }
+      rotationLast = idx;
+      return mergeOwnStyle(rot.pool[idx]);
+    }
+
     /* ---------------- Обычные сообщения ---------------- */
 
     function addMessage(msg) {
@@ -636,16 +691,22 @@
       if (config.hideCommands && msg.rawText && msg.rawText.trim().startsWith('!')) return;
 
       const highlight = !!msg.isMention && config.highlightMentions !== false;
+      const own = pickOwnStyle(msg, highlight);
+      const st = own || config;
 
       const el = document.createElement('div');
       const rewardClass = msg.isReward ? 'is-reward' : '';
       const mentionClass = highlight ? 'is-mention' : '';
-      const plateClasses = getPlateClasses().join(' ');
+      const plateClasses = getPlateClasses(st).join(' ');
       el.className = `message ${plateClasses} ${rewardClass} ${mentionClass}`.trim();
+      if (own) {
+        el._ownCfg = own;
+        applyStyleVars(el, own);
+      }
 
       const nowSec = (typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now()) / 1000;
       el.dataset.createdSec = nowSec.toFixed(3);
-      applySyncDelayToElement(el, !!config.borderEffectSync);
+      applySyncDelayToElement(el, !!st.borderEffectSync);
 
       if (msg.id) el.dataset.msgId = msg.id;
       if (msg.login) el.dataset.login = msg.login;
@@ -659,8 +720,8 @@
 
       const safeUser = escapeHtml(msg.user);
       const twitchReadableColor = ensureReadableColor(msg.color);
-      const nickColor = config.customNickEnabled
-        ? (config.customNickColor || '#9146FF')
+      const nickColor = st.customNickEnabled
+        ? (st.customNickColor || '#9146FF')
         : twitchReadableColor;
 
       const safeBadges = msg.badgesHtml || '';

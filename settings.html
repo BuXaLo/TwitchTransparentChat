@@ -303,6 +303,13 @@
       background-size: 16px 16px;
       background-position: 0 0, 0 8px, 8px -8px, -8px 0;
       overflow: hidden;
+      /* Фиксированная высота с запасом под ник отдельной строкой и толстую рамку:
+         разные стили при наведении не меняют размер шахматного фона */
+      box-sizing: border-box;
+      height: 108px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
     }
     .mini-preview-plate {
       --plate-bg: rgba(0, 0, 0, 0.5);
@@ -518,6 +525,47 @@
       font-size: 11px;
       color: #8c8c99;
     }
+    .preset-overwrite-btn {
+      background: rgba(145, 70, 255, 0.14);
+      color: #c9a8ff;
+      border: 1px solid rgba(145, 70, 255, 0.45);
+      border-radius: 4px;
+      padding: 4px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .preset-overwrite-btn:hover { background: #9146FF; color: #fff; }
+    .style-card-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+    .reset-col { display: flex; flex-direction: column; align-items: stretch; gap: 6px; }
+    .support-wrap { display: flex; justify-content: center; margin: 14px 0 4px; }
+    .support-link {
+      color: #8c8c99;
+      font-size: 12px;
+      text-decoration: none;
+      padding: 4px 10px;
+      border-radius: 12px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: color 0.15s, background 0.15s, border-color 0.15s;
+    }
+    .support-link:hover { color: #fff; background: rgba(145, 70, 255, 0.18); border-color: #9146FF; }
+    .us-error { color: #ff8585; font-size: 11.5px; }
+    .rot-sticky { position: sticky; top: 0; z-index: 3; background: #16161d; padding-bottom: 8px; display: flex; flex-direction: column; gap: 8px; }
+    .rot-chips { display: flex; flex-wrap: wrap; gap: 6px; min-height: 26px; }
+    .rot-chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 4px 3px 10px; border-radius: 12px; background: rgba(145,70,255,0.18); border: 1px solid rgba(145,70,255,0.5); font-size: 12px; }
+    .rot-chip button { background: none; border: none; color: #c9a8ff; cursor: pointer; font-size: 14px; line-height: 1; padding: 0 4px; }
+    .rot-chip button:hover { color: #fff; }
+    .rot-scroll { max-height: 180px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; padding-right: 2px; }
+    .rot-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 10px; border-radius: 6px; background: #1d1d26; border: 1px solid #2b2b36; font-size: 12.5px; }
+    .rot-row:hover { border-color: #9146FF; }
+    .rot-row button { font-size: 11px; padding: 3px 10px; flex-shrink: 0; }
+    .rot-seg { display: inline-flex; border: 1px solid #3a3a46; border-radius: 6px; overflow: hidden; }
+    .rot-seg button { border: none; border-radius: 0; background: #1d1d26; color: #bbb; padding: 6px 12px; font-size: 12px; cursor: pointer; }
+    .rot-seg button.active { background: #9146FF; color: #fff; }
+    .rot-seg button:disabled { opacity: 0.4; cursor: not-allowed; }
+    .style-card-actions button.with-dot { display: inline-flex; align-items: center; gap: 6px; }
     .preset-delete-btn {
       background: rgba(255, 82, 82, 0.12);
       color: #ff8585;
@@ -696,6 +744,10 @@
       </div>
 
       <p class="note" data-i18n="ui.sharedNote"></p>
+
+      <div class="support-wrap">
+        <a class="support-link" id="btn-support" href="#" role="button" data-i18n="ui.supportAuthor" data-i18n-title="ui.supportAuthorTitle"></a>
+      </div>
     </section>
 
     <!-- Оверлей -->
@@ -703,7 +755,10 @@
       <div id="overlay-form" style="display: flex; flex-direction: column; gap: 10px;"></div>
       <div class="tab-actions">
         <button class="accent" id="btn-test" data-i18n="ui.test"></button>
-        <button class="secondary" id="btn-reset-overlay" data-i18n="ui.resetTabDefaults"></button>
+        <div class="reset-col">
+          <button class="secondary" id="btn-toggle-overlay" data-i18n="ui.btnHideOverlay"></button>
+          <button class="secondary" id="btn-reset-overlay" data-i18n="ui.resetTabDefaults"></button>
+        </div>
       </div>
     </section>
 
@@ -1122,6 +1177,92 @@
     </div>
   </div>
 
+  <!-- МОДАЛЬНОЕ ОКНО: Стили для пользователей -->
+  <div class="modal-backdrop hidden" id="modal-userstyles">
+    <div class="modal-window">
+      <div class="modal-header" id="us-title"></div>
+      <div class="modal-body">
+        <p class="note" data-i18n="ui.userStylesIntro"></p>
+        <label>
+          <span data-i18n="ui.userStylesNickLabel"></span>
+          <input type="text" id="us-nick" maxlength="26" data-i18n-placeholder="ui.userStylesNickPlaceholder">
+        </label>
+        <label>
+          <span data-i18n="ui.userStylesStyleLabel"></span>
+          <select id="us-style"></select>
+        </label>
+        <div class="us-error hidden" id="us-error"></div>
+        <div class="row">
+          <button type="button" class="accent" id="us-assign" data-i18n="ui.userStylesAssign"></button>
+          <button type="button" class="secondary hidden" id="us-cancel-edit" data-i18n="ui.userStylesCancelEdit"></button>
+        </div>
+        <div class="preset-confirm-bar hidden" id="us-confirm">
+          <span class="preset-confirm-text" id="us-confirm-text"></span>
+          <div class="preset-confirm-actions">
+            <button type="button" class="secondary" id="us-confirm-cancel" data-i18n="ui.modalCancel"></button>
+            <button type="button" class="primary" id="us-confirm-ok"></button>
+          </div>
+        </div>
+        <hr>
+        <span class="section-title" data-i18n="ui.userStylesListLabel"></span>
+        <div class="presets-list" id="us-list"></div>
+      </div>
+      <div class="modal-footer" style="justify-content: flex-end;">
+        <div class="modal-footer-right">
+          <button class="primary" data-extra-close="userstyles" data-i18n="ui.modalClose"></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- МОДАЛЬНОЕ ОКНО: Ротация стилей -->
+  <div class="modal-backdrop hidden" id="modal-rotation">
+    <div class="modal-window">
+      <div class="modal-header" id="rot-title"></div>
+      <div class="modal-body">
+        <p class="note" data-i18n="ui.rotationIntro"></p>
+        <p class="note" id="rot-mention-note"></p>
+        <p class="note hidden" id="rot-need-two" data-i18n="ui.rotationNeedTwo"></p>
+        <label class="checkbox-label" id="rot-enable-label"><input type="checkbox" id="rot-enable"><span data-i18n="ui.rotationEnable"></span></label>
+        <div id="rot-controls">
+          <span class="section-title" data-i18n="ui.rotationSource"></span>
+          <label class="checkbox-label"><input type="radio" name="rot-source" value="all" id="rot-src-all"><span id="rot-src-all-text"></span></label>
+          <label class="checkbox-label" id="rot-src-manual-label"><input type="radio" name="rot-source" value="manual" id="rot-src-manual"><span data-i18n="ui.rotationSourceManual"></span></label>
+          <span class="section-title" data-i18n="ui.rotationOrder"></span>
+          <div class="rot-seg">
+            <button type="button" id="rot-ord-seq" data-i18n="ui.rotationOrderSeq"></button>
+            <button type="button" id="rot-ord-random" data-i18n="ui.rotationOrderRandom"></button>
+          </div>
+          <p class="note hidden" id="rot-two-note" data-i18n="ui.rotationTwoNote"></p>
+          <p class="note hidden" id="rot-all-info"></p>
+          <div id="rot-manual" class="hidden">
+            <div class="rot-sticky">
+              <div class="modal-preview-wrap">
+                <span class="modal-preview-label" data-i18n="ui.previewLabel"></span>
+                <div class="modal-preview-stage">
+                  <div class="mini-preview-plate" id="rot-plate">
+                    <span class="mini-author-wrap"><span class="mini-badge">★</span><span class="mini-nick" data-mini-nick>TestViewer</span><span class="mini-colon">: </span></span><span class="mini-text" data-i18n="ui.previewSampleText"></span>
+                  </div>
+                </div>
+              </div>
+              <span class="section-title" id="rot-queue-title"></span>
+              <div class="rot-chips" id="rot-chips"></div>
+            </div>
+            <p class="us-error" id="rot-manual-warn"></p>
+            <div class="rot-scroll" id="rot-list"></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <span id="rot-status" class="note"></span>
+        <div class="modal-footer-right">
+          <button class="secondary" id="rot-cancel" data-i18n="ui.modalCancel"></button>
+          <button class="primary" id="rot-save" data-i18n="ui.modalSave"></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- МОДАЛЬНОЕ ОКНО 5: Доступно обновление -->
   <div class="modal-backdrop hidden" id="modal-update">
     <div class="modal-window">
@@ -1196,6 +1337,7 @@
     let defaultAppearance = {
       messageLifetime: 15,
       fontSize: 14,
+      plateGap: 5,
       fontFamily: 'system',
       textAlign: 'left',
       bgOpacity: 50,
@@ -1639,6 +1781,18 @@
     };
 
     let customPresets = [];
+    // Стили по нику и ротация: отдельно для вкладок Оверлей ('o_') и Виджет ('w_')
+    const extras = {
+      o_: { userStyles: [], rotation: { enabled: false, random: false, source: 'all', names: [] } },
+      w_: { userStyles: [], rotation: { enabled: false, random: false, source: 'all', names: [] } }
+    };
+    let extraTarget = 'o_';
+    let usEditing = null;
+    let usPendingDup = null;
+    let usPendingDelete = null;
+    let overlayVisible = true;
+    let rotDraft = null;
+    let rotPreviewCfg = null;
     let selectedPresetKey = 'current';
     let pendingPresetOverwrite = null;
     let pendingPresetDelete = null;
@@ -1734,7 +1888,7 @@
       document.querySelectorAll('[data-i18n-label]').forEach((el) => { el.label = tr(el.dataset.i18nLabel); });
       document.querySelectorAll('[data-i18n-placeholder]').forEach((el) => { el.placeholder = tr(el.dataset.i18nPlaceholder); });
       document.querySelectorAll('[data-i18n-title]').forEach((el) => { el.title = tr(el.dataset.i18nTitle); });
-      document.querySelectorAll('[data-mini-nick]').forEach((el) => { el.textContent = tr('test.user1'); });
+      document.querySelectorAll('[data-mini-nick], [data-anim-nick]').forEach((el) => { el.textContent = tr('test.user1'); });
 
       if (!$('update-check-status').dataset.custom) {
         $('update-check-status').textContent = `v${appVersion}`;
@@ -1742,6 +1896,10 @@
       renderWidgetStatus(widgetStatus);
       if (typeof refreshConfigDirInfo === 'function' && $('configDir')) refreshConfigDirInfo();
       renderPresetsLists();
+      renderOverlayToggle(overlayVisible);
+      updateRotationDots();
+      renderUserStyles();
+      renderRotation();
 
       if (currentUpdateData && currentUpdateData.hasUpdate) {
         renderUpdateModalContent(currentUpdateData);
@@ -1750,65 +1908,59 @@
 
     /* ---------------- Отрисовка мини-превью внутри модальных окон ---------------- */
 
-    function updateMiniPreviews(prefix) {
-      const p = prefix || activeModalTarget || 'o_';
-      const cfg = readAppearance(p);
-
+    // Красит мини-плашку по настройкам cfg: общий код для превью в модалках и превью под кнопкой «Проиграть анимацию».
+    // Размер шрифта задаётся только CSS (14px) и не зависит от ползунка размера сообщений.
+    function paintMiniPlate(el, cfg, baseClasses) {
       const family = !cfg.fontFamily || cfg.fontFamily === 'system' ? SYSTEM_FONT : cfg.fontFamily;
-      const align = cfg.textAlign || 'left';
       const layout = cfg.layoutMode || 'inline';
-      const plateBg = buildPlateBackground(cfg);
-      const radius = cfg.plateShape === 'strict' ? '0px' : '6px';
       const bw = Math.max(0, Math.min(5, parseInt(cfg.borderWidth, 10) || 0));
-      const bc = cfg.borderColor || '#9146FF';
-      const bc2 = cfg.borderColor2 || '#FFFFFF';
       const effect = cfg.borderEffect || 'static';
       const effectiveBw = bw === 0 && effect !== 'static' && effect !== 'cyber' ? 1 : bw;
-      const speedMult = String(speedToDurationMultiplier(cfg.borderEffectSpeed));
-
-      const textCol = cfg.textColor || '#FFFFFF';
-      const textTw = cfg.textOutlineWidth !== undefined ? cfg.textOutlineWidth : 2;
-      const textTc = cfg.textOutlineColor || '#000000';
-      const msgShadow = buildOutlineShadow(textTw, textTc);
-
       const nickCustom = !!cfg.customNickEnabled;
-      const nickColor = nickCustom ? (cfg.customNickColor || '#9146FF') : DEFAULT_TWITCH_SAMPLE_COLOR;
-      const nickShadow = nickCustom
+
+      el.style.fontFamily = family;
+      el.style.textAlign = cfg.textAlign || 'left';
+      el.style.setProperty('--plate-bg', buildPlateBackground(cfg));
+      el.style.setProperty('--plate-radius', cfg.plateShape === 'strict' ? '0px' : '6px');
+      el.style.setProperty('--plate-border-width', `${effectiveBw}px`);
+      el.style.setProperty('--plate-border-color', cfg.borderColor || '#9146FF');
+      el.style.setProperty('--plate-border-color-2', cfg.borderColor2 || '#FFFFFF');
+      el.style.setProperty('--effect-speed-mult', String(speedToDurationMultiplier(cfg.borderEffectSpeed)));
+      el.style.setProperty('--msg-text-color', cfg.textColor || '#FFFFFF');
+      el.style.setProperty('--msg-text-shadow', buildOutlineShadow(cfg.textOutlineWidth !== undefined ? cfg.textOutlineWidth : 2, cfg.textOutlineColor || '#000000'));
+      el.style.setProperty('--nick-text-shadow', nickCustom
         ? buildOutlineShadow(cfg.customNickOutlineWidth !== undefined ? cfg.customNickOutlineWidth : 2, cfg.customNickOutlineColor || '#000000')
-        : DEFAULT_TWITCH_NICK_SHADOW;
+        : DEFAULT_TWITCH_NICK_SHADOW);
 
-      document.querySelectorAll('[data-mini-preview]').forEach((el) => {
-        el.style.fontFamily = family;
-        el.style.textAlign = align;
-        el.style.setProperty('--plate-bg', plateBg);
-        el.style.setProperty('--plate-radius', radius);
-        el.style.setProperty('--plate-border-width', `${effectiveBw}px`);
-        el.style.setProperty('--plate-border-color', bc);
-        el.style.setProperty('--plate-border-color-2', bc2);
-        el.style.setProperty('--effect-speed-mult', speedMult);
-        el.style.setProperty('--msg-text-color', textCol);
-        el.style.setProperty('--msg-text-shadow', msgShadow);
-        el.style.setProperty('--nick-text-shadow', nickShadow);
+      // Слой картинки на превью: как на реальной плашке
+      el.style.setProperty('--card-image', cardImageCssValue(cfg));
+      el.style.setProperty('--card-image-fit', cardImageCssSize(cfg));
+      el.style.setProperty('--card-image-repeat', cardImageCssRepeat(cfg));
+      el.style.setProperty('--card-image-pos-x', `${cfg.cardImagePosX !== undefined ? cfg.cardImagePosX : 50}%`);
+      el.style.setProperty('--card-image-pos-y', `${cfg.cardImagePosY !== undefined ? cfg.cardImagePosY : 50}%`);
+      el.style.setProperty('--card-image-opacity', String((cfg.cardImageOpacity !== undefined ? cfg.cardImageOpacity : 60) / 100));
 
-        // Слой картинки на превью: как на реальной плашке
-        el.style.setProperty('--card-image', cardImageCssValue(cfg));
-        el.style.setProperty('--card-image-fit', cardImageCssSize(cfg));
-        el.style.setProperty('--card-image-repeat', cardImageCssRepeat(cfg));
-        el.style.setProperty('--card-image-pos-x', `${cfg.cardImagePosX !== undefined ? cfg.cardImagePosX : 50}%`);
-        el.style.setProperty('--card-image-pos-y', `${cfg.cardImagePosY !== undefined ? cfg.cardImagePosY : 50}%`);
-        el.style.setProperty('--card-image-opacity', String((cfg.cardImageOpacity !== undefined ? cfg.cardImageOpacity : 60) / 100));
+      const classes = baseClasses.concat([`layout-${layout}`]);
+      if (bw > 0 || effect !== 'static') classes.push(`effect-${effect}`);
+      el.className = classes.join(' ');
 
-        const classes = ['mini-preview-plate', `layout-${layout}`];
-        if (bw > 0 || effect !== 'static') {
-          classes.push(`effect-${effect}`);
-        }
-        el.className = classes.join(' ');
+      const nickEl = el.querySelector('[data-mini-nick], [data-anim-nick]');
+      if (nickEl) nickEl.style.color = nickCustom ? (cfg.customNickColor || '#9146FF') : DEFAULT_TWITCH_SAMPLE_COLOR;
+    }
 
-        const nickEl = el.querySelector('[data-mini-nick]');
-        if (nickEl) {
-          nickEl.style.color = nickColor;
-        }
+    // Превью под кнопкой «Проиграть анимацию» (вкладки Оверлей и Виджет): живое, не зависит от нажатия кнопки
+    function refreshAnimPreviews() {
+      ['o_', 'w_'].forEach((p) => {
+        const btn = document.querySelector(`[data-anim-preview="${p}"]`);
+        const plate = btn && btn.parentElement ? btn.parentElement.querySelector('[data-anim-plate]') : null;
+        if (plate && $(p + 'fontSize')) paintMiniPlate(plate, readAppearance(p), ['anim-preview-plate', 'mini-preview-plate']);
       });
+    }
+
+    function updateMiniPreviews(prefix) {
+      const cfg = readAppearance(prefix || activeModalTarget || 'o_');
+      document.querySelectorAll('[data-mini-preview]').forEach((el) => paintMiniPlate(el, cfg, ['mini-preview-plate']));
+      refreshAnimPreviews();
     }
 
     /* ---------------- Форма базовых настроек внешнего вида ---------------- */
@@ -1913,6 +2065,14 @@
           </select>
         </label>
 
+        <label>
+          <span data-i18n="ui.plateGap"></span>
+          <div class="slider-row">
+            <input type="range" id="${p}plateGap" min="5" max="40" step="1" value="5">
+            <span id="${p}plateGapVal">5px</span>
+          </div>
+        </label>
+
         <div class="section-title" data-i18n="ui.customizeSection"></div>
         <div class="style-cards">
           <div class="style-card">
@@ -1941,7 +2101,11 @@
               <span class="style-card-title" data-i18n="ui.cardStyles"></span>
               <span class="style-card-desc" data-i18n="ui.cardStylesDesc"></span>
             </div>
-            <button type="button" class="accent" data-open-modal="styles" data-prefix="${p}" data-i18n="ui.btnOpenStyles"></button>
+            <div class="style-card-actions">
+              <button type="button" class="accent" data-open-extra="userstyles" data-prefix="${p}" data-i18n="ui.btnUserStyles"></button>
+              <button type="button" class="accent with-dot" data-open-extra="rotation" data-prefix="${p}"><span class="dot" data-rot-dot="${p}"></span><span data-i18n="ui.btnRotation"></span></button>
+              <button type="button" class="accent" data-open-modal="styles" data-prefix="${p}" data-i18n="ui.btnOpenStyles"></button>
+            </div>
           </div>
           <div class="style-card">
             <div class="style-card-info">
@@ -1974,6 +2138,7 @@
       const a = Object.assign({}, appearanceState[p], {
         messageLifetime: parseInt($(p + 'messageLifetime').value, 10) || 0,
         fontSize: parseInt($(p + 'fontSize').value, 10) || 14,
+        plateGap: parseInt($(p + 'plateGap').value, 10) || 5,
         fontFamily: $(p + 'fontFamily').value,
         textAlign: $(p + 'textAlign').value,
         animation: $(p + 'animation').value,
@@ -1993,6 +2158,10 @@
         if (a[k] !== undefined) appearanceState[p][k] = a[k];
       });
       if (a.messageLifetime !== undefined) $(p + 'messageLifetime').value = a.messageLifetime;
+      if (a.plateGap !== undefined) {
+        $(p + 'plateGap').value = a.plateGap;
+        $(p + 'plateGapVal').textContent = `${a.plateGap}px`;
+      }
       if (a.fontSize !== undefined) {
         $(p + 'fontSize').value = a.fontSize;
         $(p + 'fontSizeVal').textContent = `${a.fontSize}px`;
@@ -2019,36 +2188,22 @@
     }
 
     function wireAppearance(p, onChange) {
+      $(p + 'plateGap').addEventListener('input', () => { $(p + 'plateGapVal').textContent = `${$(p + 'plateGap').value}px`; });
       $(p + 'fontSize').addEventListener('input', () => { $(p + 'fontSizeVal').textContent = `${$(p + 'fontSize').value}px`; });
       $(p + 'highlightMentions').addEventListener('change', () => syncMentionDependency(p));
       // ▶ Проигрывает выбранную анимацию на мини-превью, которое цепляет весь текущий стиль плашки
       const previewBtn = document.querySelector(`[data-anim-preview="${p}"]`);
       const stage = previewBtn ? previewBtn.parentElement.querySelector('[data-anim-stage]') : null;
-      // Живое обновление превью: стиль плашки подтягивается при любом изменении формы,
-      // без нажатия кнопки (кнопка только проигрывает анимацию)
+      // Живое обновление превью: стиль подтягивается при любом изменении формы и после модалок,
+      // кнопка только проигрывает анимацию
       if (previewBtn && stage) {
-        const syncAnimPreview = () => {
-          const plate = stage.querySelector('[data-anim-plate]');
-          const cfg = readAppearance(p);
-          applyThumbStyle(plate, cfg);
-          plate.style.fontFamily = cfg.fontFamily === 'system' ? SYSTEM_FONT : cfg.fontFamily;
-          // Эффект границы (бегущий контур, неон и т.д.) — как на живой плашке
-          const effect = cfg.borderEffect || 'static';
-          const bw = Math.max(0, Math.min(5, parseInt(cfg.borderWidth, 10) || 0));
-          Array.from(plate.classList).filter((c) => c.startsWith('effect-')).forEach((c) => plate.classList.remove(c));
-          if (bw > 0 || effect !== 'static') plate.classList.add(`effect-${effect}`);
-          plate.style.setProperty('--effect-speed-mult', String(speedToDurationMultiplier(cfg.borderEffectSpeed)));
-        };
         previewBtn.addEventListener('click', () => {
-          const plate = stage.querySelector('[data-anim-plate]');
-          syncAnimPreview();
-          playPreviewAnimation(plate, $(p + 'animation').value);
+          refreshAnimPreviews();
+          playPreviewAnimation(stage.querySelector('[data-anim-plate]'), $(p + 'animation').value);
         });
-        // Синхронизация при загрузке и живое обновление вместе с остальной формой
-        setTimeout(syncAnimPreview, 0);
         const form = $(p === 'o_' ? 'overlay-form' : 'widget-form');
-        form.addEventListener('input', syncAnimPreview);
-        form.addEventListener('change', syncAnimPreview);
+        form.addEventListener('input', refreshAnimPreviews);
+        form.addEventListener('change', refreshAnimPreviews);
       }
       if (onChange) {
         $(p === 'o_' ? 'overlay-form' : 'widget-form').addEventListener('input', onChange);
@@ -2268,7 +2423,31 @@
       cardImagePosX: 50, cardImagePosY: 50, cardImageOpacity: 60, cardImageScale: 100
     };
 
+    // Примерка стиля при наведении: меняет ТОЛЬКО превью в модалке, форма, оверлей и виджет не затрагиваются
+    function hoverPreviewStyle(styleObj) {
+      const el = document.querySelector('#modal-styles [data-mini-preview]');
+      if (!el || !styleObj) return;
+      const cfg = Object.assign({}, readAppearance(activeModalTarget));
+      CARD_RESET_KEYS.forEach((k) => { cfg[k] = styleObj[k] !== undefined ? styleObj[k] : CARD_RESET_DEFAULTS[k]; });
+      STYLE_KEYS.concat(['fontFamily', 'textAlign', 'layoutMode']).forEach((k) => {
+        if (styleObj[k] !== undefined) cfg[k] = styleObj[k];
+      });
+      paintMiniPlate(el, cfg, ['mini-preview-plate']);
+    }
+
+    // Курсор ушёл со строки: превью снова показывает реально применённый (нажатый) стиль
+    function restorePreviewStyle() {
+      const el = document.querySelector('#modal-styles [data-mini-preview]');
+      if (el) paintMiniPlate(el, readAppearance(activeModalTarget), ['mini-preview-plate']);
+    }
+
+    function wirePresetHover(item, styleObj) {
+      item.addEventListener('mouseenter', () => hoverPreviewStyle(styleObj));
+      item.addEventListener('mouseleave', restorePreviewStyle);
+    }
+
     function renderPresetsLists() {
+      updateRotationDots();
       const builtinBox = $('builtin-presets-list');
       const customBox = $('custom-presets-list');
       if (!builtinBox || !customBox) return;
@@ -2291,6 +2470,7 @@
         }
         renderPresetsLists();
       };
+      if (modalSnapshot) wirePresetHover(currentRow, modalSnapshot);
       builtinBox.appendChild(currentRow);
 
       // Встроенные пресеты, сгруппированные: «Простые» и «С картинкой».
@@ -2314,6 +2494,7 @@
         `;
         item.appendChild(info);
 
+        wirePresetHover(item, preset.style);
         item.onclick = () => {
           selectedPresetKey = key;
           applyStyleObjectToTarget(activeModalTarget, preset.style);
@@ -2359,6 +2540,21 @@
         info.className = 'preset-info';
         info.innerHTML = `<span class="preset-title">${escapeHtml(cp.name)}</span>`;
         item.appendChild(info);
+        wirePresetHover(item, cp.appearance);
+
+        // «Перезаписать»: текущий вид активной вкладки уходит в этот стиль под его именем (через то же подтверждение)
+        const owBtn = document.createElement('button');
+        owBtn.type = 'button';
+        owBtn.className = 'preset-overwrite-btn';
+        owBtn.textContent = tr('ui.btnOverwritePreset');
+        owBtn.onclick = (e) => {
+          e.stopPropagation();
+          pendingPresetDelete = null;
+          pendingPresetOverwrite = { name: cp.name, appearance: Object.assign({}, readAppearance(activeModalTarget)) };
+          renderPresetConfirmBars();
+          $('preset-overwrite-confirm').scrollIntoView({ block: 'nearest' });
+        };
+        item.appendChild(owBtn);
 
         const delBtn = document.createElement('button');
         delBtn.type = 'button';
@@ -2843,6 +3039,379 @@
       });
     }
 
+    /* ---------------- Стили по нику, ротация стилей, кнопка скрытия оверлея ---------------- */
+
+    function renderOverlayToggle(visible) {
+      overlayVisible = !!visible;
+      const b = $('btn-toggle-overlay');
+      if (b) b.textContent = tr(overlayVisible ? 'ui.btnHideOverlay' : 'ui.btnShowOverlay');
+    }
+
+    // Разворачивает ключ стиля ('builtin:<id>' | 'custom:<имя>') в снимок оформления
+    function resolveStyle(key) {
+      if (typeof key !== 'string') return null;
+      if (key.startsWith('builtin:')) {
+        const bp = BUILTIN_PRESETS.find((x) => `builtin:${x.id}` === key);
+        return bp ? { name: tr(bp.titleKey), appearance: Object.assign({}, defaultAppearance, bp.style) } : null;
+      }
+      if (key.startsWith('custom:')) {
+        const nm = key.slice(7).toLowerCase();
+        const cp = customPresets.find((x) => x.name.toLowerCase() === nm);
+        return cp ? { name: cp.name, appearance: Object.assign({}, cp.appearance) } : null;
+      }
+      return null;
+    }
+
+    // Состав ротации: <2 стилей — пусто, ровно 2 — оба автоматически, от 3 — выбранные (до 5)
+    function effectiveRotationNames(p) {
+      const n = customPresets.length;
+      if (n < 2) return [];
+      const rot = extras[p].rotation;
+      if (n === 2 || rot.source !== 'manual') return customPresets.map((x) => x.name);
+      return (rot.names || []).filter((nm) => customPresets.some((x) => x.name === nm)).slice(0, 5);
+    }
+
+    // Данные вкладки для сохранения и живого предпросмотра (снимки обновляются по актуальным сохранённым стилям)
+    function readExtras(p) {
+      const ex = extras[p];
+      ex.userStyles.forEach((u) => {
+        const r = resolveStyle(u.styleKey);
+        if (r) { u.appearance = r.appearance; u.styleName = r.name; }
+      });
+      const n = customPresets.length;
+      const names = effectiveRotationNames(p);
+      const enabled = !!ex.rotation.enabled && n >= 2 && (n === 2 || ex.rotation.source !== 'manual' || names.length >= 3);
+      ex.rotation.enabled = enabled;
+      const random = !!ex.rotation.random && n >= 3 && names.length >= 3;
+      const pool = names.map((nm) => ({ name: nm, appearance: Object.assign({}, customPresets.find((x) => x.name === nm).appearance) }));
+      return {
+        userStyles: ex.userStyles.map((u) => ({ nick: u.nick, styleKey: u.styleKey, styleName: u.styleName, appearance: u.appearance })),
+        rotation: { source: n === 2 ? 'all' : ex.rotation.source, enabled, random, pool }
+      };
+    }
+
+    function normalizeNick(v) {
+      const name = String(v || '').trim().replace(/^[#@]/, '').toLowerCase();
+      return /^[a-z0-9_]{1,25}$/.test(name) ? name : '';
+    }
+
+    function openExtraModal(kind, p) {
+      extraTarget = p;
+      const tabName = tr(p === 'o_' ? 'ui.tabOverlay' : 'ui.tabWidget');
+      if (kind === 'userstyles') {
+        usEditing = null; usPendingDup = null; usPendingDelete = null;
+        $('us-nick').value = '';
+        $('us-error').classList.add('hidden');
+        $('us-title').textContent = `${tr('ui.userStylesTitle')} — ${tabName}`;
+        renderUserStyles();
+      } else {
+        $('rot-title').textContent = `${tr('ui.rotationTitle')} — ${tabName}`;
+        const rot = extras[p].rotation;
+        const manual = customPresets.length >= 3 && rot.source === 'manual';
+        rotDraft = {
+          enabled: !!rot.enabled && customPresets.length >= 2,
+          source: manual ? 'manual' : 'all',
+          order: rot.random && customPresets.length >= 3 ? 'random' : 'seq',
+          names: manual ? effectiveRotationNames(p).slice() : []
+        };
+        rotPreviewCfg = defaultAppearance;
+        renderRotation();
+      }
+      $(`modal-${kind}`).classList.remove('hidden');
+    }
+
+    function closeExtraModal(kind) {
+      if (kind === 'userstyles') { usEditing = null; usPendingDup = null; usPendingDelete = null; }
+      if (kind === 'rotation') rotDraft = null;
+      $(`modal-${kind}`).classList.add('hidden');
+    }
+
+    function renderUserStyles() {
+      const ex = extras[extraTarget];
+      const sel = $('us-style');
+      if (!sel) return;
+      const prev = sel.value;
+      sel.innerHTML = '';
+      const addGroup = (labelKey, items) => {
+        if (!items.length) return;
+        const g = document.createElement('optgroup');
+        g.label = tr(labelKey);
+        items.forEach(([v, t]) => {
+          const o = document.createElement('option');
+          o.value = v;
+          o.textContent = t;
+          g.appendChild(o);
+        });
+        sel.appendChild(g);
+      };
+      addGroup('ui.userStylesStyleBuiltin', BUILTIN_PRESETS.map((bp) => [`builtin:${bp.id}`, tr(bp.titleKey)]));
+      addGroup('ui.userStylesStyleCustom', customPresets.map((cp) => [`custom:${cp.name}`, cp.name]));
+      if (prev && Array.from(sel.options).some((o) => o.value === prev)) sel.value = prev;
+
+      $('us-assign').textContent = tr(usEditing ? 'ui.userStylesSaveChanges' : 'ui.userStylesAssign');
+      $('us-cancel-edit').classList.toggle('hidden', !usEditing);
+      $('us-nick').disabled = !!usEditing;
+
+      // Защита: замена существующего пользователя и удаление — только после подтверждения
+      const bar = $('us-confirm');
+      bar.classList.toggle('hidden', !usPendingDup && !usPendingDelete);
+      if (usPendingDup) {
+        const old = ex.userStyles.find((u) => u.nick === usPendingDup.nick);
+        const oldRes = old ? resolveStyle(old.styleKey) : null;
+        const nw = resolveStyle(usPendingDup.key);
+        $('us-confirm-text').textContent = trf('ui.userStylesDupConfirm', {
+          nick: usPendingDup.nick,
+          old: oldRes ? oldRes.name : (old ? old.styleName : ''),
+          name: nw ? nw.name : ''
+        });
+        $('us-confirm-ok').textContent = tr('ui.userStylesDupYes');
+      } else if (usPendingDelete) {
+        $('us-confirm-text').textContent = trf('ui.userStylesDeleteConfirm', { nick: usPendingDelete });
+        $('us-confirm-ok').textContent = tr('ui.userStylesDeleteYes');
+      }
+
+      const list = $('us-list');
+      list.innerHTML = '';
+      if (!ex.userStyles.length) {
+        const empty = document.createElement('div');
+        empty.className = 'preset-empty';
+        empty.textContent = tr('ui.userStylesEmpty');
+        list.appendChild(empty);
+        return;
+      }
+      ex.userStyles.forEach((u) => {
+        const res = resolveStyle(u.styleKey);
+        const item = document.createElement('div');
+        item.className = 'preset-item' + (usEditing === u.nick ? ' active' : '');
+        item.style.cursor = 'default';
+        const info = document.createElement('div');
+        info.className = 'preset-info';
+        info.innerHTML = `<span class="preset-title">${escapeHtml(u.nick)}</span>` +
+          `<span class="preset-desc">${escapeHtml(res ? res.name : u.styleName)}${res ? '' : ' ' + escapeHtml(tr('ui.userStylesDeletedStyle'))}</span>`;
+        item.appendChild(info);
+
+        const editBtn = document.createElement('button');
+        editBtn.type = 'button';
+        editBtn.className = 'preset-overwrite-btn';
+        editBtn.textContent = tr('ui.userStylesEdit');
+        editBtn.onclick = () => {
+          usEditing = u.nick; usPendingDup = null; usPendingDelete = null;
+          $('us-error').classList.add('hidden');
+          $('us-nick').value = u.nick;
+          renderUserStyles();
+          if (Array.from($('us-style').options).some((o) => o.value === u.styleKey)) $('us-style').value = u.styleKey;
+        };
+        item.appendChild(editBtn);
+
+        const delBtn = document.createElement('button');
+        delBtn.type = 'button';
+        delBtn.className = 'preset-delete-btn';
+        delBtn.textContent = tr('ui.userStylesDelete');
+        delBtn.onclick = () => {
+          usPendingDup = null; usPendingDelete = u.nick;
+          renderUserStyles();
+          bar.scrollIntoView({ block: 'nearest' });
+        };
+        item.appendChild(delBtn);
+        list.appendChild(item);
+      });
+    }
+
+    async function commitUserStyle(nick, key) {
+      const ex = extras[extraTarget];
+      const r = resolveStyle(key);
+      if (!r) return;
+      const entry = { nick, styleKey: key, styleName: r.name, appearance: r.appearance };
+      const idx = ex.userStyles.findIndex((u) => u.nick === nick);
+      if (idx >= 0) ex.userStyles[idx] = entry; else ex.userStyles.push(entry);
+      usEditing = null; usPendingDup = null;
+      $('us-nick').value = '';
+      renderUserStyles();
+      await save({ forceReconnect: false });
+    }
+
+    async function assignUserStyle() {
+      const ex = extras[extraTarget];
+      const err = $('us-error');
+      err.classList.add('hidden');
+      const nick = usEditing || normalizeNick($('us-nick').value);
+      const key = $('us-style').value;
+      if (!nick || !key) {
+        err.textContent = tr('ui.userStylesBadNick');
+        err.classList.remove('hidden');
+        return;
+      }
+      if (!usEditing && ex.userStyles.some((u) => u.nick === nick)) {
+        usPendingDelete = null;
+        usPendingDup = { nick, key };
+        renderUserStyles();
+        return;
+      }
+      await commitUserStyle(nick, key);
+    }
+
+    async function confirmUserStylesAction() {
+      const ex = extras[extraTarget];
+      if (usPendingDup) {
+        const { nick, key } = usPendingDup;
+        await commitUserStyle(nick, key);
+      } else if (usPendingDelete) {
+        const nick = usPendingDelete;
+        ex.userStyles = ex.userStyles.filter((u) => u.nick !== nick);
+        usPendingDelete = null;
+        if (usEditing === nick) { usEditing = null; $('us-nick').value = ''; }
+        renderUserStyles();
+        await save({ forceReconnect: false });
+      }
+    }
+
+    function cancelUserStylesConfirm() {
+      usPendingDup = null; usPendingDelete = null;
+      renderUserStyles();
+    }
+
+    function cancelUserStylesEdit() {
+      usEditing = null; usPendingDup = null; usPendingDelete = null;
+      $('us-nick').value = '';
+      renderUserStyles();
+    }
+
+    // Окно ротации работает с черновиком rotDraft: в конфиг попадает только после «Сохранить»
+    function renderRotation() {
+      if (!rotDraft) return;
+      const d = rotDraft;
+      const n = customPresets.length;
+      const manual = n >= 3 && d.source === 'manual';
+      $('rot-mention-note').textContent = tr(extraTarget === 'o_' ? 'ui.rotationMentionOverlay' : 'ui.rotationMentionWidget');
+      $('rot-need-two').classList.toggle('hidden', n >= 2);
+      $('rot-enable').disabled = n < 2;
+      $('rot-enable').checked = n >= 2 && d.enabled;
+      $('rot-enable-label').classList.toggle('disabled', n < 2);
+      $('rot-controls').classList.toggle('hidden', n < 2);
+
+      $('rot-src-all').checked = !manual;
+      $('rot-src-all').disabled = n === 2;
+      $('rot-src-manual').checked = manual;
+      $('rot-src-manual-label').classList.toggle('hidden', n < 3);
+      $('rot-src-all-text').textContent = n === 2 ? trf('ui.rotationSourceAllN', { n }) : tr('ui.rotationSourceAll');
+
+      const random = d.order === 'random' && n >= 3;
+      $('rot-ord-seq').classList.toggle('active', !random);
+      $('rot-ord-random').classList.toggle('active', random);
+      $('rot-ord-random').disabled = n < 3;
+      $('rot-two-note').classList.toggle('hidden', n !== 2);
+      $('rot-all-info').classList.toggle('hidden', !(n >= 3 && !manual));
+      $('rot-all-info').textContent = trf('ui.rotationAllInfo', { n });
+      $('rot-manual').classList.toggle('hidden', !manual);
+
+      if (manual) {
+        $('rot-queue-title').textContent = trf('ui.rotationQueue', { n: d.names.length });
+        paintMiniPlate($('rot-plate'), rotPreviewCfg || defaultAppearance, ['mini-preview-plate']);
+        const chips = $('rot-chips');
+        chips.innerHTML = '';
+        d.names.forEach((nm) => {
+          const chip = document.createElement('span');
+          chip.className = 'rot-chip';
+          const t = document.createElement('span');
+          t.textContent = nm;
+          const x = document.createElement('button');
+          x.type = 'button';
+          x.textContent = '×';
+          x.title = tr('ui.rotationRemove');
+          x.onclick = () => { d.names = d.names.filter((v) => v !== nm); renderRotation(); };
+          chip.appendChild(t);
+          chip.appendChild(x);
+          chips.appendChild(chip);
+        });
+        $('rot-manual-warn').textContent = d.names.length < 3 ? tr('ui.rotationManualWarn') : '';
+        const list = $('rot-list');
+        list.innerHTML = '';
+        customPresets.forEach((cp) => {
+          const inPool = d.names.includes(cp.name);
+          const row = document.createElement('div');
+          row.className = 'rot-row';
+          row.onmouseenter = () => { rotPreviewCfg = cp.appearance; paintMiniPlate($('rot-plate'), cp.appearance, ['mini-preview-plate']); };
+          const t = document.createElement('span');
+          t.textContent = cp.name;
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.className = inPool ? 'primary' : 'secondary';
+          b.textContent = tr(inPool ? 'ui.rotationIn' : 'ui.rotationAdd');
+          b.disabled = !inPool && d.names.length >= 5;
+          b.onclick = () => {
+            if (inPool) d.names = d.names.filter((v) => v !== cp.name);
+            else if (d.names.length < 5) d.names.push(cp.name);
+            renderRotation();
+          };
+          row.appendChild(t);
+          row.appendChild(b);
+          list.appendChild(row);
+        });
+      }
+
+      // Подвал: статус валидации и доступность «Сохранить»
+      const need = manual ? Math.max(0, 3 - d.names.length) : 0;
+      const status = $('rot-status');
+      status.style.color = '';
+      if (n < 2) {
+        status.textContent = '';
+      } else if (need > 0) {
+        status.textContent = trf('ui.rotationNeedMore', { n: need });
+        status.style.color = '#ff8585';
+      } else {
+        status.textContent = tr('ui.rotationReady');
+        status.style.color = '#3fcf3f';
+      }
+      $('rot-save').disabled = n < 2 || need > 0;
+    }
+
+    async function saveRotationModal() {
+      if (!rotDraft) return;
+      const p = extraTarget;
+      const d = rotDraft;
+      const n = customPresets.length;
+      const rot = extras[p].rotation;
+      rot.enabled = d.enabled && n >= 2;
+      rot.source = n >= 3 && d.source === 'manual' ? 'manual' : 'all';
+      rot.random = d.order === 'random' && n >= 3;
+      rot.names = d.source === 'manual' ? d.names.slice() : [];
+      closeExtraModal('rotation');
+      updateRotationDots();
+      if (p === 'o_') schedulePreview(); else scheduleWidgetPreview();
+      await save({ forceReconnect: false });
+    }
+
+    // Индикатор на кнопке «Ротация»: зелёный — включена и валидна
+    function updateRotationDots() {
+      ['o_', 'w_'].forEach((p) => {
+        const dot = document.querySelector(`[data-rot-dot="${p}"]`);
+        if (dot) dot.classList.toggle('ok', readExtras(p).rotation.enabled);
+      });
+    }
+
+    function wireExtraModals() {
+      document.querySelectorAll('[data-open-extra]').forEach((btn) => {
+        btn.addEventListener('click', () => openExtraModal(btn.dataset.openExtra, btn.dataset.prefix));
+      });
+      document.querySelectorAll('[data-extra-close]').forEach((btn) => {
+        btn.addEventListener('click', () => closeExtraModal(btn.dataset.extraClose));
+      });
+      $('us-assign').addEventListener('click', assignUserStyle);
+      $('us-cancel-edit').addEventListener('click', cancelUserStylesEdit);
+      $('us-confirm-ok').addEventListener('click', confirmUserStylesAction);
+      $('us-confirm-cancel').addEventListener('click', cancelUserStylesConfirm);
+      $('us-nick').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); assignUserStyle(); }
+      });
+      $('rot-enable').addEventListener('change', () => { rotDraft.enabled = $('rot-enable').checked; renderRotation(); });
+      $('rot-src-all').addEventListener('change', () => { rotDraft.source = 'all'; renderRotation(); });
+      $('rot-src-manual').addEventListener('change', () => { rotDraft.source = 'manual'; renderRotation(); });
+      $('rot-ord-seq').addEventListener('click', () => { rotDraft.order = 'seq'; renderRotation(); });
+      $('rot-ord-random').addEventListener('click', () => { rotDraft.order = 'random'; renderRotation(); });
+      $('rot-cancel').addEventListener('click', () => closeExtraModal('rotation'));
+      $('rot-save').addEventListener('click', saveRotationModal);
+    }
+
     /* ---------------- Полный сброс вкладки Оверлей / Виджет до заводских настроек ---------------- */
 
     async function resetSectionToDefaults(prefix) {
@@ -2980,7 +3549,7 @@
     function schedulePreview() {
       clearTimeout(previewTimer);
       previewTimer = setTimeout(() => {
-        window.api.previewOverlay(Object.assign(readAppearance('o_'), {
+        window.api.previewOverlay(Object.assign(readAppearance('o_'), readExtras('o_'), {
           hideCommands: $('hideCommands').checked,
           ignoredBots: $('ignoredBots').value.trim()
         }));
@@ -2991,7 +3560,7 @@
     function scheduleWidgetPreview() {
       clearTimeout(widgetPreviewTimer);
       widgetPreviewTimer = setTimeout(() => {
-        window.api.previewWidget(Object.assign(readAppearance('w_'), {
+        window.api.previewWidget(Object.assign(readAppearance('w_'), readExtras('w_'), {
           hideCommands: $('hideCommands').checked,
           ignoredBots: $('ignoredBots').value.trim()
         }));
@@ -3069,10 +3638,10 @@
         return;
       }
 
-      const cfg = Object.assign(readGeneral(), readAppearance('o_'), {
+      const cfg = Object.assign(readGeneral(), readAppearance('o_'), readExtras('o_'), {
         widgetEnabled,
         widgetPort: portText,
-        widget: readAppearance('w_'),
+        widget: Object.assign(readAppearance('w_'), readExtras('w_')),
         _forceReconnect: forceReconnect
       });
 
@@ -3113,6 +3682,7 @@
       wireAppearance('o_', schedulePreview);
       wireAppearance('w_', scheduleWidgetPreview);
       wireStyleModals();
+      wireExtraModals();
       wireUpdateControls();
 
       $('useProxy').onchange = () => $('proxyBox').classList.toggle('disabled', !$('useProxy').checked);
@@ -3135,6 +3705,8 @@
       };
 
       $('btn-open-config-dir').onclick = () => window.api.openConfigDir();
+      $('btn-support').onclick = (e) => { e.preventDefault(); window.api.openSupportLink(); };
+      $('btn-toggle-overlay').onclick = async () => renderOverlayToggle(await window.api.toggleOverlayVisibility());
 
       $('btn-test').onclick = () => window.api.sendTestMessage($('channel').value.trim());
       $('btn-widget-test').onclick = () => window.api.sendWidgetTest($('channel').value.trim());
@@ -3166,12 +3738,20 @@
 
       writeAppearance('o_', cfg);
       writeAppearance('w_', cfg.widget);
+      [['o_', cfg], ['w_', cfg.widget]].forEach(([p, src]) => {
+        extras[p].userStyles = (Array.isArray(src.userStyles) ? src.userStyles : []).map((u) => Object.assign({}, u));
+        const r = src.rotation || {};
+        extras[p].rotation = { enabled: !!r.enabled, random: !!r.random, source: r.source === 'manual' ? 'manual' : 'all', names: r.source === 'manual' ? (r.pool || []).map((x) => x.name) : [] };
+        updateRotationDots();
+      });
       $('widgetEnabled').checked = cfg.widgetEnabled;
       $('widgetPort').value = cfg.widgetPort;
       updateLink();
 
       applyStrings(await window.api.getStrings(lang), lang);
       updateMiniPreviews('o_');
+      renderOverlayToggle(await window.api.getOverlayVisible());
+      window.api.onOverlayVisibility(renderOverlayToggle);
 
       if (cfg.pendingUpdate && cfg.pendingUpdate.hasUpdate) {
         showUpdateModal(cfg.pendingUpdate);
