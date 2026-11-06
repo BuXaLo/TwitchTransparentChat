@@ -71,6 +71,7 @@
       "settings.css",
       "settings/settings.js",
       "settings/preview.js",
+      "settings/presets.js",
       "widget.html",
       "chat.css",
       "chat-view.js",
