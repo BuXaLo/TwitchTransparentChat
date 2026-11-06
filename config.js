@@ -30,10 +30,7 @@ const ANIMATIONS = [
 ];
 const CALM_ANIMATIONS = ['fade', 'slide-left', 'slide-down', 'rise', 'blur-in'];
 // Режимы фоновой картинки плашки: источник (встроенный SVG-узор / своя картинка) и посадка
-const CARD_IMAGE_PRESETS = ['none', 'hearts-tile', 'clouds', 'stars-shape', 'confetti', 'stars', 'carbon', 'sakura', 'pixel', 'synth', 'paper'];
-// 'pizza' и 'pixel-paw' устарели: принимаются, но рисуются как 'none'
-// Идентификаторы 'stars'…'paper' — легасные имена v1.4.0-альфа: они принимаются, но рендерят 'none'
-const CARD_IMAGE_LEGACY = ['stars', 'carbon', 'sakura', 'pixel', 'synth', 'paper', 'pizza', 'pixel-paw'];
+const CARD_IMAGE_PRESETS = ['none', 'hearts-tile', 'clouds', 'stars-shape', 'confetti'];
 const CARD_IMAGE_FITS = ['width', 'cover', 'tile'];
 // Идентификатор своей картинки — имя файла без .webp: без символов, недопустимых в Windows
 const CARD_IMAGE_ID_RE = /^(?![. ])[^<>:"\/\\|?*\u0000-\u001f]{1,40}(?<![. ])$/;
@@ -280,7 +277,7 @@ function sanitizeAppearance(src, defaults = OVERLAY_APPEARANCE_DEFAULTS, maxFont
     solidRibbon: bool(s.solidRibbon, d.solidRibbon),
 
     // Картинка на плашке: имя файла принимается только корректное, иначе фоллбек без картинки
-    cardImagePreset: (() => { const v = oneOf(s.cardImagePreset, CARD_IMAGE_PRESETS, d.cardImagePreset); return CARD_IMAGE_LEGACY.includes(v) ? 'none' : v; })(),
+    cardImagePreset: oneOf(s.cardImagePreset, CARD_IMAGE_PRESETS, d.cardImagePreset),
     cardImageCustom: CARD_IMAGE_ID_RE.test(String(s.cardImageCustom || '')) ? s.cardImageCustom : '',
     cardImageFit: oneOf(s.cardImageFit, CARD_IMAGE_FITS, d.cardImageFit),
     cardImagePosX: clampInt(s.cardImagePosX, 0, 100, d.cardImagePosX),
@@ -347,6 +344,7 @@ function normalizeConfig(src) {
           .filter((p) => p && typeof p === 'object')
           .map((p) => ({
             name: text(p.name, 'Style').slice(0, 40) || 'Style',
+            locked: bool(p.locked, false), // замок: стиль не участвует в ротации
             appearance: sanitizeAppearance(p.appearance, OVERLAY_APPEARANCE_DEFAULTS, MAX_FONT_SIZE_WIDGET)
           }))
       : []

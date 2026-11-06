@@ -375,8 +375,8 @@ function cardImageDir() {
   if (!_cardImageDir) _cardImageDir = path.join(app.getPath('userData'), 'card-images');
   return _cardImageDir;
 }
-const CARD_IMAGE_MAX_BYTES = 2 * 1024 * 1024; // лимит: 2 МБ
-const CARD_IMAGE_MAX_SIDE = 1600; // лимит: 1600 px по длинной стороне (проверяется в рендерере)
+// Лимит на готовый WebP (после уменьшения в рендерере). Исходник до 8 МБ и сторона до 1920 px проверяются в настройках.
+const CARD_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
 const CARD_IMAGE_ID_RE = configLib.CARD_IMAGE_ID_RE;
 
 // Файл картинки называется так, как её назвал пользователь: userData/card-images/<имя>.webp.
@@ -445,8 +445,16 @@ function remapCardRefs(map) {
       changed = true;
     }
   };
-  fix(cfg);
-  fix(cfg.widget);
+  // Снимки оформления есть не только у вкладок и сохранённых стилей: стили по нику (в том числе
+  // копии удалённых стилей) и пул ротации хранят собственные копии со ссылкой на картинку.
+  const fixTab = (tab) => {
+    if (!tab) return;
+    fix(tab);
+    (tab.userStyles || []).forEach((u) => fix(u.appearance));
+    if (tab.rotation) (tab.rotation.pool || []).forEach((r) => fix(r.appearance));
+  };
+  fixTab(cfg);
+  fixTab(cfg.widget);
   (cfg.customPresets || []).forEach((p) => fix(p.appearance));
   if (changed) {
     store.set('twitch_config', cfg);
@@ -642,8 +650,9 @@ ipcMain.handle('load-config', () => Object.assign({}, getConfig(), {
 }));
 
 ipcMain.handle('save-config', async (event, raw) => {
+  raw = raw || {};
   const prev = getConfig();
-  const forceReconnect = !!(raw && raw._forceReconnect);
+  const forceReconnect = !!raw._forceReconnect;
   const cfg = configLib.normalizeConfig(Object.assign({}, raw, {
     ignoredUpdateVersion: raw.ignoredUpdateVersion !== undefined ? raw.ignoredUpdateVersion : prev.ignoredUpdateVersion,
     customPresets: Array.isArray(raw.customPresets) ? raw.customPresets : prev.customPresets
@@ -776,52 +785,7 @@ app.on('second-instance', () => {
   refreshTray();
 });
 
-/* ------------------------------------------------------------------ */
-/* Очистка мусора в userData при запуске                                */
-/* ------------------------------------------------------------------ */
-
-// Удаляются ТОЛЬКО перегенерируемые кеши Chromium. Никогда не трогаем:
-// config.json, card-images/, Local Storage, Session Storage, Network (Cookies),
-// Preferences, Local State — там настройки, сессии и библиотека картинок.
-const CLEANABLE_DIRS = ['Cache', 'Code Cache', 'GPUCache', 'DawnCache', 'blob_storage', 'Shared Dictionary'];
-
-function cleanupUserData() {
-  for (const name of CLEANABLE_DIRS) {
-    const dir = path.join(app.getPath('userData'), name);
-    fs.rm(dir, { recursive: true, force: true }, () => {});
-  }
-}
-
-ipcMain.handle('get-config-dir-info', async () => {
-  const dir = app.getPath('userData');
-  const stat = (p) => {
-    try {
-      const s = fs.statSync(p);
-      return s.size;
-    } catch (e) {
-      return 0;
-    }
-  };
-  const dirSize = (d) => {
-    let total = 0;
-    try {
-      for (const f of fs.readdirSync(d, { withFileTypes: true })) {
-        const p = path.join(d, f.name);
-        if (f.isDirectory()) total += dirSize(p);
-        else total += stat(p);
-      }
-    } catch (e) { /* недоступен — пропускаем */ }
-    return total;
-  };
-  const cardIndex = listCardImages();
-  const cardBytes = fs.existsSync(cardImageDir()) ? dirSize(cardImageDir()) : 0;
-  return {
-    dir,
-    configBytes: stat(path.join(dir, 'config.json')),
-    cardImages: { count: cardIndex.length, bytes: cardBytes, index: cardIndex },
-    cacheBytes: CLEANABLE_DIRS.reduce((t, n) => t + dirSize(path.join(dir, n)), 0)
-  };
-});
+ipcMain.handle('get-config-dir-info', () => ({ dir: app.getPath('userData') }));
 
 ipcMain.handle('open-config-dir', () => {
   shell.openPath(app.getPath('userData'));
@@ -831,8 +795,6 @@ ipcMain.handle('open-config-dir', () => {
 app.whenReady().then(() => {
   if (!gotSingleInstanceLock) return;
 
-  cleanupUserData();
-  updater.cleanupInstallerLeftovers();
   migrateCardImages();
 
   protocol.handle('emote', async (request) => {

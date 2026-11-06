@@ -19,12 +19,6 @@ const ALLOWED_IMAGE_HOSTS = new Set([
 
 const network = { proxy: null };
 
-// Только для автотестов (самоподписанный сертификат локального сервера)
-let tlsOverride = {};
-function _setTlsOptionsForTests(opts) {
-  tlsOverride = opts || {};
-}
-
 /**
  * proxy: { host, port, username?, password? } или null (прямое соединение)
  */
@@ -50,8 +44,8 @@ function isProxyActive() {
  * ============================================================ */
 
 class SocksHttpsAgent extends https.Agent {
-  constructor(proxy, extra) {
-    super(Object.assign({ keepAlive: false }, extra || {}));
+  constructor(proxy) {
+    super({ keepAlive: false });
     this._proxy = proxy;
   }
 
@@ -110,7 +104,7 @@ function httpGet(urlStr, opts) {
       return;
     }
 
-    const agent = network.proxy ? new SocksHttpsAgent(network.proxy, tlsOverride) : undefined;
+    const agent = network.proxy ? new SocksHttpsAgent(network.proxy) : undefined;
     let settled = false;
     const done = (fn, val) => {
       if (settled) return;
@@ -120,18 +114,15 @@ function httpGet(urlStr, opts) {
     };
 
     const req = https.request(
-      Object.assign(
-        {
-          protocol: 'https:',
-          hostname: u.hostname,
-          port: u.port || 443,
-          path: u.pathname + u.search,
-          method: 'GET',
-          headers: Object.assign({ 'User-Agent': 'TwitchTransparentChat/1.1', Accept: '*/*' }, o.headers),
-          agent
-        },
-        tlsOverride
-      ),
+      {
+        protocol: 'https:',
+        hostname: u.hostname,
+        port: u.port || 443,
+        path: u.pathname + u.search,
+        method: 'GET',
+        headers: Object.assign({ 'User-Agent': 'TwitchTransparentChat', Accept: '*/*' }, o.headers),
+        agent
+      },
       (res) => {
         const status = res.statusCode || 0;
 
@@ -403,14 +394,6 @@ function ensureChannelEmotes(roomId) {
   return ensure(channelState, () => buildChannelMap(id));
 }
 
-// Только для автотестов: подставить словари без обращения к сети
-function _setEmotesForTests(globalList, channelList) {
-  globalState.map = new Map();
-  mergeInto(globalState.map, globalList || []);
-  channelState = Object.assign(newState(), { roomId: '1' });
-  mergeInto(channelState.map, channelList || []);
-}
-
 function lookupEmote(word) {
   return channelState.map.get(word) || globalState.map.get(word) || null;
 }
@@ -547,11 +530,5 @@ module.exports = {
   lookupEmote,
   getSampleEmoteNames,
   renderTwitchEmotes,
-  escapeHtml,
-  // для тестов
-  parse7tv,
-  parseBttv,
-  parseFfz,
-  _setTlsOptionsForTests,
-  _setEmotesForTests
+  escapeHtml
 };

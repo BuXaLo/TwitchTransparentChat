@@ -3,20 +3,20 @@
 /**
  * Модуль проверки и установки обновлений.
  * 1) Проверка последнего релиза в GitHub API через сетевой слой с поддержкой SOCKS5 (emotes.fetchJson).
+ *    Если API недоступен (лимит 60 запросов в час на IP без токена, общий IP, VPN), версия берётся из latest.yml релиза.
  * 2) Парсинг Release Notes по языку интерфейса (EN / RU), включая заголовки с эмодзи-флагами.
  * 3) Для NSIS-установщика: фоновая скачка и перезапуск через electron-updater (с фоллбеком на страницу релиза при ошибке).
  * 4) Для Portable-сборки: прямая ссылка на скачивание нового .exe файла.
  */
 
 const { app, shell } = require('electron');
-const fs = require('fs');
-const path = require('path');
 const emotes = require('./emotes');
 
 const GITHUB_OWNER = 'BuXaLo';
 const GITHUB_REPO = 'TwitchTransparentChat';
 const RELEASES_API_URL = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/releases/latest`;
 const RELEASES_HTML_URL = `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/releases/latest`;
+const LATEST_YML_URL = `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/releases/latest/download/latest.yml`;
 const REPO_URL_PREFIX = `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/`;
 
 function isPortableBuild() {
@@ -107,6 +107,18 @@ function pickAssets(assets, htmlUrl) {
 }
 
 /**
+ * Запасной источник версии: latest.yml из последнего релиза. Это обычный файл релиза, а не API,
+ * поэтому лимит GitHub API на него не распространяется. Заметок к релизу в нём нет.
+ */
+async function fetchLatestVersionFromYml() {
+  const res = await emotes.httpGet(LATEST_YML_URL, { maxBytes: 256 * 1024 });
+  if (res.status !== 200) throw new Error(`HTTP ${res.status}`);
+  const m = res.body.toString('utf8').match(/^version:\s*['"]?(\d[^\s'"]*)/m);
+  if (!m) throw new Error('latest.yml: version not found');
+  return m[1];
+}
+
+/**
  * Проверяет наличие обновлений на GitHub.
  */
 async function checkForUpdates(options = {}) {
@@ -114,47 +126,57 @@ async function checkForUpdates(options = {}) {
   const currentVersion = app.getVersion();
   const isPortable = isPortableBuild();
 
+  let release = null;
+  let apiError = null;
   try {
-    const release = await emotes.fetchJson(RELEASES_API_URL);
-    if (!release || !release.tag_name) {
-      return { hasUpdate: false, currentVersion, isPortable };
-    }
-
-    const latestVersion = cleanVersion(release.tag_name);
-    const newer = isNewerVersion(currentVersion, latestVersion);
-    if (!newer) {
-      return { hasUpdate: false, currentVersion, latestVersion, isPortable };
-    }
-
-    if (!ignoreSkipped && ignoredVersion && cleanVersion(ignoredVersion) === latestVersion) {
-      return { hasUpdate: false, skipped: true, currentVersion, latestVersion, isPortable };
-    }
-
-    const urls = pickAssets(release.assets, release.html_url);
-    const rawNotes = String(release.body || '');
-    const notes = extractLocalizedNotes(rawNotes, lang);
-
-    return {
-      hasUpdate: true,
-      currentVersion,
-      latestVersion,
-      releaseNotes: notes,
-      rawNotes,
-       notesRu: extractLocalizedNotes(rawNotes, 'ru'),
-      notesEn: extractLocalizedNotes(rawNotes, 'en'),
-      releaseUrl: release.html_url || RELEASES_HTML_URL,
-      setupDownloadUrl: urls.setupDownloadUrl,
-      portableDownloadUrl: urls.portableDownloadUrl,
-      isPortable
-    };
+    release = await emotes.fetchJson(RELEASES_API_URL);
   } catch (err) {
-    return {
-      hasUpdate: false,
-      error: err && err.message ? err.message : 'Update check failed',
-      currentVersion,
-      isPortable
-    };
+    apiError = err;
   }
+
+  let latestVersion;
+  if (release && release.tag_name) {
+    latestVersion = cleanVersion(release.tag_name);
+  } else {
+    try {
+      latestVersion = cleanVersion(await fetchLatestVersionFromYml());
+      release = null;
+    } catch (ymlErr) {
+      const err = apiError || ymlErr;
+      return {
+        hasUpdate: false,
+        error: err && err.message ? err.message : 'Update check failed',
+        currentVersion,
+        isPortable
+      };
+    }
+  }
+
+  if (!isNewerVersion(currentVersion, latestVersion)) {
+    return { hasUpdate: false, currentVersion, latestVersion, isPortable };
+  }
+
+  if (!ignoreSkipped && ignoredVersion && cleanVersion(ignoredVersion) === latestVersion) {
+    return { hasUpdate: false, skipped: true, currentVersion, latestVersion, isPortable };
+  }
+
+  // Без ответа API нет ни ссылок на ассеты, ни заметок: ведём на страницу релиза, Setup скачает electron-updater.
+  const urls = pickAssets(release && release.assets, release && release.html_url);
+  const rawNotes = release ? String(release.body || '') : '';
+
+  return {
+    hasUpdate: true,
+    currentVersion,
+    latestVersion,
+    releaseNotes: extractLocalizedNotes(rawNotes, lang),
+    rawNotes,
+    notesRu: extractLocalizedNotes(rawNotes, 'ru'),
+    notesEn: extractLocalizedNotes(rawNotes, 'en'),
+    releaseUrl: (release && release.html_url) || RELEASES_HTML_URL,
+    setupDownloadUrl: urls.setupDownloadUrl,
+    portableDownloadUrl: urls.portableDownloadUrl,
+    isPortable
+  };
 }
 
 function safeRepoUrl(url) {
@@ -170,49 +192,6 @@ function openRepoUrl(url) {
   const safe = safeRepoUrl(url) || RELEASES_HTML_URL;
   shell.openExternal(safe);
   return safe;
-}
-
-/**
- * Очистка остатков установщика после обновления (только NSIS-версия, Portable не трогаем).
- * electron-updater складывает скачанный Setup в %LOCALAPPDATA%\<имя>-updater\pending и не удаляет его после установки.
- * Удаляем установщики версии не новее текущей и временные папки temp-*; более новый (ещё не установленный) оставляем.
- */
-function cleanupInstallerLeftovers() {
-  try {
-    if (process.platform !== 'win32' || !app.isPackaged || isPortableBuild()) return;
-    const base = process.env.LOCALAPPDATA;
-    if (!base || !fs.existsSync(base)) return;
-
-    const names = new Set([`${app.getName()}-updater`, 'twitchoverlay-updater', 'TwitchOverlay-updater']);
-    try {
-      const yml = fs.readFileSync(path.join(process.resourcesPath, 'app-update.yml'), 'utf8');
-      const m = yml.match(/^updaterCacheDirName:\s*(\S+)/m);
-      if (m) names.add(m[1]);
-    } catch (e) { /* нет app-update.yml — используем имена по умолчанию */ }
-
-    const lower = new Set(Array.from(names, (n) => n.toLowerCase()));
-    const current = app.getVersion();
-    for (const entry of fs.readdirSync(base, { withFileTypes: true })) {
-      if (!entry.isDirectory() || !lower.has(entry.name.toLowerCase())) continue;
-      const root = path.join(base, entry.name);
-      const rm = (p) => fs.rm(p, { recursive: true, force: true }, () => {});
-
-      for (const sub of fs.readdirSync(root, { withFileTypes: true })) {
-        if (sub.isDirectory() && /^temp-/i.test(sub.name)) rm(path.join(root, sub.name));
-      }
-
-      const pending = path.join(root, 'pending');
-      if (!fs.existsSync(pending)) continue;
-      let removedAll = true;
-      for (const f of fs.readdirSync(pending)) {
-        if (!/\.(exe|blockmap)$/i.test(f)) continue;
-        const ver = (f.match(/(\d+\.\d+\.\d+)/) || [])[1];
-        if (ver && isNewerVersion(current, ver)) { removedAll = false; continue; } // ждёт установки
-        rm(path.join(pending, f));
-      }
-      if (removedAll) rm(path.join(pending, 'update-info.json'));
-    }
-  } catch (e) { /* очистка не критична */ }
 }
 
 let activeInstall = null;
@@ -314,6 +293,5 @@ module.exports = {
   isNewerVersion,
   extractLocalizedNotes,
   checkForUpdates,
-  downloadAndInstallUpdate,
-  cleanupInstallerLeftovers
+  downloadAndInstallUpdate
 };

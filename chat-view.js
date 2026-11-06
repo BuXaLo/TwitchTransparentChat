@@ -428,8 +428,6 @@
     // «наклейки» — сердечки, облачка, звёздочки и т.п. — вместо линий, привязанных к рамке
     function builtinPatternDataUri(name) {
       switch (name) {
-        case 'hearts-right':
-          return "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 40'%3E%3Cpath d='M96 8c-3.2-4.4-10-4-12.4.8-1.8 3.6-.4 7.6 3 10.4L96 26l9.4-6.8c3.4-2.8 4.8-6.8 3-10.4C106 4 99.2 3.6 96 8z' fill='%23ff4d6d'/%3E%3C/svg%3E\")";
         case 'hearts-tile':
           return "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48'%3E%3Cpath d='M12 6c-1.8-2.4-5.6-2.2-7 .5-1 2-.2 4.2 1.7 5.8L12 16l5.3-3.7c1.9-1.6 2.7-3.8 1.7-5.8-1.4-2.7-5.2-2.9-7-.5z' fill='%23ff4d6d' fill-opacity='0.85'/%3E%3Cpath d='M36 30c-1.8-2.4-5.6-2.2-7 .5-1 2-.2 4.2 1.7 5.8L36 40l5.3-3.7c1.9-1.6 2.7-3.8 1.7-5.8-1.4-2.7-5.2-2.9-7-.5z' fill='%23ff8fab' fill-opacity='0.7'/%3E%3C/svg%3E\")";
         case 'clouds':
@@ -438,12 +436,6 @@
           return "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56'%3E%3Cg fill='%23ffd166'%3E%3Cpath d='M14 4l2.7 5.9L23 11l-4.6 4.3L19.5 21 14 17.8 8.5 21l1.1-5.7L5 11l6.3-1.1z'/%3E%3Cpath d='M42 32l2 4.4 4.7.8-3.4 3.2.8 4.6-4.1-2.3-4.1 2.3.8-4.6-3.4-3.2 4.7-.8z' fill-opacity='0.75'/%3E%3C/g%3E%3C/svg%3E\")";
         case 'confetti':
           return "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56'%3E%3Cg%3E%3Crect x='6' y='8' width='6' height='6' rx='1' fill='%23ff6b6b' transform='rotate(20 9 11)'/%3E%3Ccircle cx='30' cy='14' r='3' fill='%234ecdc4'/%3E%3Crect x='44' y='6' width='6' height='6' rx='1' fill='%23ffe66d' transform='rotate(35 47 9)'/%3E%3Ccircle cx='16' cy='34' r='3' fill='%23a78bfa'/%3E%3Crect x='34' y='30' width='6' height='6' rx='1' fill='%234ecdc4' transform='rotate(-15 37 33)'/%3E%3Ccircle cx='50' cy='44' r='3' fill='%23ff6b6b'/%3E%3C/g%3E%3C/svg%3E\")";
-        case 'cat':
-          return "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 40'%3E%3Cg fill='%23b8a4ff'%3E%3Cpath d='M96 30l-2-8 4 3h8l4-3-2 8z'/%3E%3Ccircle cx='102' cy='18' r='9'/%3E%3Cpath d='M96 12l-1-6 5 4zM108 12l1-6-5 4z'/%3E%3Ccircle cx='99' cy='17' r='1.3' fill='%232a2040'/%3E%3Ccircle cx='105' cy='17' r='1.3' fill='%232a2040'/%3E%3C/g%3E%3C/svg%3E\")";
-        case 'pizza':
-          return "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56'%3E%3Cpath d='M28 6L46 40H10z' fill='%23ffcf6b' stroke='%23e09b3c' stroke-width='2.5'/%3E%3Ccircle cx='26' cy='22' r='2.4' fill='%23e2543e'/%3E%3Ccircle cx='33' cy='30' r='2.4' fill='%23e2543e'/%3E%3Ccircle cx='24' cy='32' r='2.2' fill='%23e2543e'/%3E%3C/svg%3E\")";
-        case 'pixel-paw':
-          return "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='52' height='52' shape-rendering='crispEdges'%3E%3Cg fill='%23ffb4c6'%3E%3Crect x='18' y='18' width='16' height='12'/%3E%3Crect x='14' y='10' width='6' height='6'/%3E%3Crect x='22' y='8' width='6' height='6'/%3E%3Crect x='30' y='8' width='6' height='6'/%3E%3Crect x='36' y='12' width='6' height='6'/%3E%3C/g%3E%3C/svg%3E\")";
         default:
           return 'none';
       }
