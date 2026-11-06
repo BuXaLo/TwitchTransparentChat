@@ -68,6 +68,8 @@
       "updater.js",
       "index.html",
       "settings.html",
+      "settings.css",
+      "settings/settings.js",
       "widget.html",
       "chat.css",
       "chat-view.js",
