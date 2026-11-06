@@ -1453,8 +1453,8 @@
       SYSTEM_FONT,
       DEFAULT_TWITCH_NICK_SHADOW,
       DEFAULT_TWITCH_SAMPLE_COLOR,
-      CARD_RESET_KEYS,
-      CARD_RESET_DEFAULTS,
+      CARD_RESET_KEYS: window.SettingsPresets.CARD_RESET_KEYS,
+      CARD_RESET_DEFAULTS: window.SettingsPresets.CARD_RESET_DEFAULTS,
       STYLE_KEYS
     });
     const {
