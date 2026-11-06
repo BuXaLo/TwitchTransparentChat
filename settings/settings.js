@@ -20,19 +20,6 @@
       { id: 'stars-shape', key: 'ui.cardImageStarsShape' },
       { id: 'confetti', key: 'ui.cardImageConfetti' }
     ];
-    // Базовые («задуманные») значения посадки для каждой встроенной картинки
-    const CARD_IMAGE_BASE = {
-      'hearts-tile':  { fit: 'tile',  posX: 50, posY: 50, opacity: 45,  scale: 100 },
-      'clouds':       { fit: 'tile',  posX: 50, posY: 50, opacity: 80,  scale: 100 },
-      'stars-shape':  { fit: 'tile',  posX: 50, posY: 50, opacity: 70,  scale: 100 },
-      'confetti':     { fit: 'tile',  posX: 50, posY: 50, opacity: 60,  scale: 100 }
-    };
-    // Исходный файл до 8 МБ. Изображение крупнее 1920 px по длинной стороне уменьшается автоматически,
-    // готовый WebP не больше 5 МБ (то же ограничение проверяет main.js). Сторона исходника до 8000 px: больше — слишком тяжело для декодирования.
-    const CARD_IMAGE_MAX_BYTES = 8 * 1024 * 1024;
-    const CARD_IMAGE_MAX_SIDE = 1920;
-    const CARD_IMAGE_MAX_SOURCE_SIDE = 8000;
-    const CARD_IMAGE_RESULT_MAX_BYTES = 5 * 1024 * 1024;
     // Комплектные шрифты: family — то, что реально в CSS/config.js; stack — фоллбек; key — суффикс ключа локали
     const BUNDLED_FONTS = [
       { family: 'Rubik', stack: 'sans-serif', key: 'Rubik' },
@@ -550,141 +537,6 @@
 
     
 
-    let cardImages = []; // библиотека загруженных картинок [{id, name}]; id совпадает с именем файла
-
-    // Перестраивает группу «Своя картинка» из реестра именованных картинок
-    async function syncImageModalCustomOption() {
-      const st = appearanceState[activeModalTarget];
-      cardImages = await window.api.listCardImages();
-      const group = $('m_cardImageGroupCustom');
-      group.innerHTML = '';
-      if (!cardImages.length) {
-        const empty = document.createElement('option');
-        empty.disabled = true;
-        empty.textContent = tr('ui.cardImageCustomNone');
-        group.appendChild(empty);
-      }
-      cardImages.forEach((img) => {
-        const opt = document.createElement('option');
-        opt.value = `img:${img.id}`;
-        opt.textContent = img.name;
-        group.appendChild(opt);
-      });
-      // Текущее значение: своя картинка по sha или встроенный пресет
-      $('m_cardImageSource').value = st.cardImageCustom ? `img:${st.cardImageCustom}` : (st.cardImagePreset || 'none');
-      $('m_cardImageManageRow').style.display = st.cardImageCustom ? '' : 'none';
-    }
-
-    // После переименования или удаления файла подменяем ссылку во всех стилях окна настроек
-    function remapCardRefsInState(oldId, newId) {
-      Object.keys(appearanceState).forEach((k) => {
-        if (appearanceState[k] && appearanceState[k].cardImageCustom === oldId) appearanceState[k].cardImageCustom = newId;
-      });
-      (customPresets || []).forEach((p) => {
-        if (p.appearance && p.appearance.cardImageCustom === oldId) p.appearance.cardImageCustom = newId;
-      });
-      // Стили по нику хранят собственные копии оформления (в том числе копии удалённых стилей)
-      ['o_', 'w_'].forEach((pfx) => {
-        extras[pfx].userStyles.forEach((u) => {
-          if (u.appearance && u.appearance.cardImageCustom === oldId) u.appearance.cardImageCustom = newId;
-        });
-      });
-    }
-
-    // Где используется своя картинка: вид вкладок, сохранённые стили, стили по нику
-    function findCardImageUsage(id) {
-      const use = { tabs: [], styles: [], nicks: [] };
-      ['o_', 'w_'].forEach((pfx) => {
-        if (appearanceState[pfx] && appearanceState[pfx].cardImageCustom === id) use.tabs.push(pfx);
-        extras[pfx].userStyles.forEach((u) => {
-          if (u.appearance && u.appearance.cardImageCustom === id && !use.nicks.includes(u.nick)) use.nicks.push(u.nick);
-        });
-      });
-      (customPresets || []).forEach((cp) => {
-        if (cp.appearance && cp.appearance.cardImageCustom === id) use.styles.push(cp.name);
-      });
-      return use;
-    }
-
-    function findCardImageByValue(srcVal) {
-      if (!srcVal || !srcVal.startsWith('img:')) return null;
-      const id = srcVal.slice(4);
-      return cardImages.find((i) => i.id === id) || null;
-    }
-
-    // Загрузка своей картинки: PNG/JPEG/WebP → (уменьшение до 1920 px) → canvas → WebP → userData/card-images/<имя>.webp.
-    // Анимация отсекается: у кадра GIF/APNG/WebP берётся только первый кадр при конвертации в canvas.
-    async function handleCardImageUpload(file) {
-      if (!file) return;
-      if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) return;
-      if (file.size > CARD_IMAGE_MAX_BYTES) {
-        alert(tr('ui.cardImageTooBig'));
-        return;
-      }
-
-      const buf = await file.arrayBuffer();
-      const blob = new Blob([buf], { type: file.type });
-      const bitmap = await createImageBitmap(blob).catch(() => null);
-      if (!bitmap) {
-        alert(tr('ui.cardImageAnimated'));
-        return;
-      }
-      const longSide = Math.max(bitmap.width, bitmap.height);
-      if (longSide > CARD_IMAGE_MAX_SOURCE_SIDE) {
-        bitmap.close && bitmap.close();
-        alert(tr('ui.cardImageBadSize'));
-        return;
-      }
-
-      // Крупные изображения уменьшаются, а не отклоняются: плашке не нужно больше 1920 px
-      const k = longSide > CARD_IMAGE_MAX_SIDE ? CARD_IMAGE_MAX_SIDE / longSide : 1;
-      const w = Math.max(1, Math.round(bitmap.width * k));
-      const h = Math.max(1, Math.round(bitmap.height * k));
-      const canvas = document.createElement('canvas');
-      canvas.width = w;
-      canvas.height = h;
-      const ctx = canvas.getContext('2d');
-      ctx.imageSmoothingQuality = 'high';
-      ctx.drawImage(bitmap, 0, 0, w, h);
-      bitmap.close && bitmap.close();
-
-      const toWebp = (quality) => new Promise((resolve) => canvas.toBlob(resolve, 'image/webp', quality));
-      let webpBlob = await toWebp(0.9);
-      if (webpBlob && webpBlob.size > CARD_IMAGE_RESULT_MAX_BYTES) webpBlob = await toWebp(0.75);
-      if (!webpBlob || webpBlob.size > CARD_IMAGE_RESULT_MAX_BYTES) {
-        alert(tr('ui.cardImageResultTooBig'));
-        return;
-      }
-      const webpBuf = await webpBlob.arrayBuffer();
-      const name = ($('m_cardImageName').value || '').trim() || (file.name || 'Picture').replace(/\.[^.]+$/, '');
-      const res = await window.api.saveCardImage(webpBuf, name);
-      if (!res || !res.ok) {
-        alert(tr(res && res.error === 'size' ? 'ui.cardImageResultTooBig' : 'ui.cardImageSaveFailed'));
-        return;
-      }
-
-      const st = appearanceState[activeModalTarget];
-      st.cardImageCustom = res.id;
-      st.cardImagePreset = 'none';
-      // Свежая картинка встаёт с базовыми значениями посадки, не перетирая стиль плашки
-      st.cardImageFit = 'width';
-      st.cardImagePosX = 50;
-      st.cardImagePosY = 50;
-      st.cardImageOpacity = 60;
-      st.cardImageScale = 100;
-      await syncImageModalCustomOption();
-      $('m_cardImageSource').value = `img:${res.id}`;
-      $('m_cardImageName').value = res.name;
-      $('m_cardImageManageRow').style.display = '';
-      $('m_cardImageFit').value = 'width';
-      $('m_cardImagePosX').value = 50; $('m_cardImagePosXVal').textContent = '50%';
-      $('m_cardImagePosY').value = 50; $('m_cardImagePosYVal').textContent = '50%';
-      $('m_cardImageOpacity').value = 60; $('m_cardImageOpacityVal').textContent = '60%';
-      $('m_cardImageScale').value = 100; $('m_cardImageScaleVal').textContent = '100%';
-      updateMiniPreviews(activeModalTarget);
-      triggerTargetPreview(activeModalTarget);
-    }
-
     /* ---------------- Модальное окно Стилей и пресетов ---------------- */
 
     /* ---------------- Модальные окна кастомизации стилей ---------------- */
@@ -741,17 +593,7 @@
         $('m_customNickOutlineColor').value = st.customNickOutlineColor || '#000000';
         syncNickModalDisabled();
       } else if (kind === 'image') {
-        $('img-delete-confirm').classList.add('hidden');
-        syncImageModalCustomOption();
-        $('m_cardImageFit').value = st.cardImageFit || 'width';
-        $('m_cardImageScale').value = st.cardImageScale !== undefined ? st.cardImageScale : 100;
-        $('m_cardImageScaleVal').textContent = `${$('m_cardImageScale').value}%`;
-        $('m_cardImageOpacity').value = st.cardImageOpacity !== undefined ? st.cardImageOpacity : 60;
-        $('m_cardImageOpacityVal').textContent = `${$('m_cardImageOpacity').value}%`;
-        $('m_cardImagePosX').value = st.cardImagePosX !== undefined ? st.cardImagePosX : 50;
-        $('m_cardImagePosXVal').textContent = `${$('m_cardImagePosX').value}%`;
-        $('m_cardImagePosY').value = st.cardImagePosY !== undefined ? st.cardImagePosY : 50;
-        $('m_cardImagePosYVal').textContent = `${$('m_cardImagePosY').value}%`;
+        images.populateModalInputs(st);
       } else if (kind === 'styles') {
         selectedPresetKey = 'current';
         $('m_presetNameInput').value = '';
@@ -805,15 +647,7 @@
           customNickOutlineColor: d.customNickOutlineColor
         });
       } else if (kind === 'image') {
-        Object.assign(st, {
-          cardImagePreset: d.cardImagePreset || 'none',
-          cardImageCustom: '',
-          cardImageFit: d.cardImageFit || 'width',
-          cardImagePosX: d.cardImagePosX !== undefined ? d.cardImagePosX : 50,
-          cardImagePosY: d.cardImagePosY !== undefined ? d.cardImagePosY : 50,
-          cardImageOpacity: d.cardImageOpacity !== undefined ? d.cardImageOpacity : 60,
-          cardImageScale: d.cardImageScale !== undefined ? d.cardImageScale : 100
-        });
+        images.resetToDefaults(st, d);
       }
       populateModalInputsFromState(kind, st);
       triggerTargetPreview(activeModalTarget);
@@ -845,46 +679,7 @@
         st.customNickOutlineWidth = parseInt($('m_customNickOutlineWidth').value, 10) || 0;
         st.customNickOutlineColor = $('m_customNickOutlineColor').value;
       } else if (kind === 'image') {
-        const prevSrc = st.cardImageCustom ? `img:${st.cardImageCustom}` : st.cardImagePreset;
-        const srcVal = $('m_cardImageSource').value;
-        const changed = srcVal !== prevSrc;
-        const isCustom = srcVal.startsWith('img:');
-        st.cardImagePreset = isCustom ? 'none' : srcVal;
-        st.cardImageCustom = isCustom ? srcVal.slice(4) : '';
-        if (changed) {
-          if (isCustom) {
-            // Своя картинка из библиотеки: базовые значения посадки, стиль плашки не трогаем
-            st.cardImageFit = 'width'; st.cardImagePosX = 50; st.cardImagePosY = 50;
-            st.cardImageOpacity = 60; st.cardImageScale = 100;
-            $('m_cardImageFit').value = 'width';
-            $('m_cardImagePosX').value = 50; $('m_cardImagePosXVal').textContent = '50%';
-            $('m_cardImagePosY').value = 50; $('m_cardImagePosYVal').textContent = '50%';
-            $('m_cardImageOpacity').value = 60; $('m_cardImageOpacityVal').textContent = '60%';
-            $('m_cardImageScale').value = 100; $('m_cardImageScaleVal').textContent = '100%';
-          } else {
-            // Смена встроенной картинки: её задуманные базовые значения
-            const base = CARD_IMAGE_BASE[srcVal] || { fit: 'width', posX: 50, posY: 50, opacity: 60, scale: 100 };
-            st.cardImageFit = base.fit; st.cardImagePosX = base.posX; st.cardImagePosY = base.posY;
-            st.cardImageOpacity = base.opacity; st.cardImageScale = base.scale;
-            $('m_cardImageFit').value = base.fit;
-            $('m_cardImagePosX').value = base.posX; $('m_cardImagePosXVal').textContent = base.posX + '%';
-            $('m_cardImagePosY').value = base.posY; $('m_cardImagePosYVal').textContent = base.posY + '%';
-            $('m_cardImageOpacity').value = base.opacity; $('m_cardImageOpacityVal').textContent = base.opacity + '%';
-            $('m_cardImageScale').value = base.scale; $('m_cardImageScaleVal').textContent = base.scale + '%';
-          }
-        } else {
-          st.cardImageFit = $('m_cardImageFit').value;
-          st.cardImageScale = parseInt($('m_cardImageScale').value, 10) || 100;
-          st.cardImageOpacity = parseInt($('m_cardImageOpacity').value, 10) || 0;
-          st.cardImagePosX = parseInt($('m_cardImagePosX').value, 10) || 0;
-          st.cardImagePosY = parseInt($('m_cardImagePosY').value, 10) || 0;
-        }
-        $('m_cardImageManageRow').style.display = st.cardImageCustom ? '' : 'none';
-        // Поле имени обновляется только при смене картинки: иначе оно «залипает» и не даёт печатать
-        if (changed) {
-          const entry = st.cardImageCustom ? findCardImageByValue(srcVal) : null;
-          $('m_cardImageName').value = entry ? entry.name : '';
-        }
+        images.readModalIntoState(st);
       }
       updateMiniPreviews(activeModalTarget);
     }
@@ -1007,86 +802,7 @@
         triggerTargetPreview(activeModalTarget);
       });
 
-      // Модальное окно Картинки плашки
-      $('m_cardImageScale').addEventListener('input', () => {
-        $('m_cardImageScaleVal').textContent = `${$('m_cardImageScale').value}%`;
-      });
-      $('m_cardImageOpacity').addEventListener('input', () => {
-        $('m_cardImageOpacityVal').textContent = `${$('m_cardImageOpacity').value}%`;
-      });
-      $('m_cardImagePosX').addEventListener('input', () => {
-        $('m_cardImagePosXVal').textContent = `${$('m_cardImagePosX').value}%`;
-      });
-      $('m_cardImagePosY').addEventListener('input', () => {
-        $('m_cardImagePosYVal').textContent = `${$('m_cardImagePosY').value}%`;
-      });
-      $('m_cardImageFile').addEventListener('change', (e) => {
-        handleCardImageUpload(e.target.files && e.target.files[0]);
-        e.target.value = ''; // позволяет выбрать тот же файл повторно
-      });
-      // Переименовать выбранную свою картинку
-      $('m_cardImageRename').addEventListener('click', async () => {
-        const st = appearanceState[activeModalTarget];
-        if (!st.cardImageCustom) return;
-        const name = ($('m_cardImageName').value || '').trim();
-        if (!name) return;
-        const res = await window.api.renameCardImage(st.cardImageCustom, name);
-        if (!res || !res.ok) return;
-        remapCardRefsInState(res.oldId, res.id);
-        await syncImageModalCustomOption();
-        $('m_cardImageSource').value = `img:${res.id}`;
-        $('m_cardImageName').value = res.name;
-        updateMiniPreviews(activeModalTarget);
-        triggerTargetPreview(activeModalTarget);
-      });
-      // Удалить выбранную свою картинку из библиотеки. Перед удалением показываем, где она используется
-      // (вид другой вкладки, сохранённые стили, стили по нику), и удаляем только после подтверждения.
-      function hideImageDeleteConfirm() {
-        $('img-delete-confirm').classList.add('hidden');
-      }
-      $('m_cardImageSource').addEventListener('change', hideImageDeleteConfirm);
-      $('m_cardImageDelete').addEventListener('click', () => {
-        const st = appearanceState[activeModalTarget];
-        if (!st.cardImageCustom) return;
-        const id = st.cardImageCustom;
-        const use = findCardImageUsage(id);
-        const otherTabs = use.tabs.filter((pfx) => pfx !== activeModalTarget);
-        const parts = [];
-        if (otherTabs.length) parts.push(trf('ui.cardImageUseTabs', { list: otherTabs.map((pfx) => tr(pfx === 'o_' ? 'ui.tabOverlay' : 'ui.tabWidget')).join(', ') }));
-        if (use.styles.length) parts.push(trf('ui.cardImageUseStyles', { list: use.styles.join(', ') }));
-        if (use.nicks.length) parts.push(trf('ui.cardImageUseNicks', { list: use.nicks.join(', ') }));
-        $('img-delete-text').textContent = parts.length
-          ? trf('ui.cardImageDeleteUsed', { name: id, where: parts.join('; ') })
-          : trf('ui.cardImageDeleteUnused', { name: id });
-        $('img-delete-ok').textContent = tr(parts.length ? 'ui.cardImageDeleteEverywhere' : 'ui.cardImageDeleteOk');
-        $('img-delete-confirm').classList.remove('hidden');
-        $('img-delete-confirm').scrollIntoView({ block: 'nearest' });
-      });
-      $('img-delete-cancel').addEventListener('click', hideImageDeleteConfirm);
-      $('img-delete-ok').addEventListener('click', async () => {
-        hideImageDeleteConfirm();
-        const st = appearanceState[activeModalTarget];
-        const deletedId = st.cardImageCustom;
-        if (!deletedId) return;
-        await window.api.deleteCardImage(deletedId);
-        remapCardRefsInState(deletedId, '');
-        st.cardImageCustom = '';
-        st.cardImagePreset = 'none';
-        await syncImageModalCustomOption();
-        $('m_cardImageSource').value = 'none';
-        $('m_cardImageName').value = '';
-        $('m_cardImageManageRow').style.display = 'none';
-        updateMiniPreviews(activeModalTarget);
-        triggerTargetPreview(activeModalTarget);
-      });
-      $('modal-image').addEventListener('input', () => {
-        readModalIntoState('image');
-        triggerTargetPreview(activeModalTarget);
-      });
-      $('modal-image').addEventListener('change', () => {
-        readModalIntoState('image');
-        triggerTargetPreview(activeModalTarget);
-      });
+      images.wire();
     }
 
     /* ---------------- Стили по нику, ротация стилей, кнопка скрытия оверлея ---------------- */
@@ -1467,6 +1183,10 @@
       $, tr, trf, escapeHtml, state: presetState, STYLE_KEYS,
       readAppearance, save, triggerTargetPreview, schedulePreview,
       scheduleWidgetPreview, preview
+    });
+
+    const images = window.SettingsImages.create({
+      $, tr, trf, state: presetState, updateMiniPreviews, triggerTargetPreview
     });
 
     init();
