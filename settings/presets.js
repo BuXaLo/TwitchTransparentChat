@@ -1,5 +1,13 @@
 (function () {
+  const CARD_RESET_KEYS = ['cardImagePreset', 'cardImageCustom', 'cardImageFit', 'cardImagePosX', 'cardImagePosY', 'cardImageOpacity', 'cardImageScale'];
+  const CARD_RESET_DEFAULTS = {
+    cardImagePreset: 'none', cardImageCustom: '', cardImageFit: 'width',
+    cardImagePosX: 50, cardImagePosY: 50, cardImageOpacity: 60, cardImageScale: 100
+  };
+
   window.SettingsPresets = {
+    CARD_RESET_KEYS,
+    CARD_RESET_DEFAULTS,
     create(deps) {
       const {
         $, tr, trf, escapeHtml, state, STYLE_KEYS, readAppearance,
