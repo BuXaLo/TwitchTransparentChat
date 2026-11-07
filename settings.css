@@ -826,9 +826,9 @@
     .rot-help[data-tip]:focus-visible::after {
       left: auto;
       right: calc(100% + 8px);
-      top: 50%;
+      top: calc(100% + 8px);
       bottom: auto;
-      transform: translateY(-50%);
+      transform: none;
       width: 220px;
       max-width: min(220px, calc(100vw - 72px));
       white-space: pre-line;
