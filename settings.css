@@ -52,44 +52,55 @@
     /* Вкладки */
     .tabs {
       display: flex;
+      flex-wrap: wrap;
       gap: 4px;
       padding: 10px 14px 0;
-      border-bottom: 1px solid #2a2a31;
+      border-bottom: 1px solid var(--ui-border);
+      background: var(--ui-surface);
       flex-shrink: 0;
     }
     .tab-btn {
       background: none;
       border: none;
       border-bottom: 2px solid transparent;
-      color: #aaa;
-      padding: 8px 14px;
+      color: var(--ui-text-muted);
+      padding: 9px 14px 10px;
       font-size: 13px;
       font-weight: 600;
       cursor: pointer;
+      border-radius: var(--ui-radius-sm) var(--ui-radius-sm) 0 0;
+      transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
     }
-    .tab-btn:hover { color: #fff; }
-    .tab-btn.active { color: #fff; border-bottom-color: #9146FF; }
+    .tab-btn:hover { color: var(--ui-text); background: var(--ui-surface-hover); }
+    .tab-btn.active {
+      color: var(--ui-text);
+      background: var(--ui-accent-soft);
+      border-bottom-color: var(--ui-accent);
+    }
 
-    .content { flex: 1; overflow-y: auto; padding: 14px 18px; }
-    .tab { display: flex; flex-direction: column; gap: 10px; max-width: 560px; }
+    .content { flex: 1; overflow-y: auto; padding: 16px 18px; scrollbar-gutter: stable; }
+    .tab { display: flex; flex-direction: column; gap: 12px; max-width: 560px; }
 
     .footer {
       display: flex;
       align-items: center;
       gap: 14px;
       padding: 10px 18px;
-      border-top: 1px solid #2a2a31;
+      border-top: 1px solid var(--ui-border);
+      background: var(--ui-surface);
       flex-shrink: 0;
+      flex-wrap: wrap;
     }
-    #save-status { font-size: 12px; color: #7ddc7d; }
+    #save-status { font-size: 12px; color: var(--ui-success); }
     #save-status.warn { color: #ffaa00; }
 
     label {
       font-size: 12px;
-      color: #aaa;
+      color: var(--ui-text-muted);
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 5px;
+      min-width: 0;
     }
     .checkbox-label {
       flex-direction: row;
@@ -129,7 +140,7 @@
     button { font-family: inherit; transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, opacity 0.15s ease; }
     input[readonly] { color: #cfcfd6; cursor: text; }
 
-    .row { display: flex; gap: 8px; }
+    .row { display: flex; align-items: flex-end; gap: 8px; min-width: 0; }
     .row > * { flex: 1; min-width: 0; }
     .row > button { flex: 0 0 auto; }
 
@@ -138,18 +149,18 @@
     .slider-row span { font-size: 12px; min-width: 38px; color: #fff; }
 
     .proxy-box {
-      border: 1px solid #333;
-      padding: 10px;
-      border-radius: 6px;
-      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--ui-border);
+      padding: 12px;
+      border-radius: var(--ui-radius-md);
+      background: var(--ui-surface);
       display: flex;
       flex-direction: column;
       gap: 8px;
     }
     .proxy-box.disabled { opacity: 0.35; pointer-events: none; }
 
-    .note { font-size: 12px; color: #888; line-height: 1.45; }
-    hr { border: none; border-top: 1px solid #2a2a31; margin: 4px 0; }
+    .note { font-size: 12px; color: var(--ui-text-subtle); line-height: 1.5; overflow-wrap: anywhere; }
+    hr { border: none; border-top: 1px solid var(--ui-border); margin: 6px 0; }
 
     button.primary, button.accent, button.secondary {
       border-radius: var(--ui-radius-sm);
@@ -193,9 +204,10 @@
     /* Карточки кастомизации стилей */
     .section-title {
       font-size: 12px;
-      font-weight: 600;
-      color: #b5b5c0;
-      margin-top: 4px;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      color: var(--ui-text);
+      margin-top: 5px;
     }
     .style-cards {
       display: flex;
@@ -207,10 +219,10 @@
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      padding: 9px 12px;
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid #2d2d36;
-      border-radius: 6px;
+      padding: 10px 12px;
+      background: var(--ui-surface);
+      border: 1px solid var(--ui-border);
+      border-radius: var(--ui-radius-md);
     }
     .style-card-info {
       display: flex;
@@ -240,9 +252,9 @@
       justify-content: space-between;
       gap: 10px;
       padding: 9px 12px;
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid #2d2d36;
-      border-radius: 6px;
+      background: var(--ui-surface);
+      border: 1px solid var(--ui-border);
+      border-radius: var(--ui-radius-md);
     }
     #update-check-status {
       font-size: 12px;
@@ -274,8 +286,8 @@
       overflow: hidden;
     }
     .modal-header {
-      padding: 11px 16px;
-      border-bottom: 1px solid #2a2a34;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--ui-border);
       font-size: 14px;
       font-weight: 700;
       color: #fff;
@@ -284,8 +296,8 @@
     /* Закрепленный блок мини-превью над зоной прокрутки */
     .modal-preview-pinned {
       padding: 10px 16px 12px;
-      border-bottom: 1px solid #2a2a34;
-      background: #131319;
+      border-bottom: 1px solid var(--ui-border);
+      background: var(--ui-bg);
       flex-shrink: 0;
     }
     .modal-body {
@@ -299,12 +311,12 @@
     }
     .modal-footer {
       padding: 10px 16px;
-      border-top: 1px solid #2a2a34;
+      border-top: 1px solid var(--ui-border);
       display: flex;
       justify-content: space-between;
       align-items: center;
       gap: 8px;
-      background: #121218;
+      background: var(--ui-surface);
       flex-shrink: 0;
     }
     .modal-footer-right {
@@ -757,3 +769,51 @@
       font-weight: 600;
     }
   
+
+/* Адаптация настроек к длинным переводам и узкому окну. */
+.tab,
+.modal-body,
+.modal-footer,
+.modal-footer-right,
+.tab-actions,
+.update-bar,
+.style-card,
+.preset-item {
+  min-width: 0;
+}
+
+.tab-actions,
+.update-bar,
+.modal-footer,
+.modal-footer-right {
+  flex-wrap: wrap;
+}
+
+.style-card-title,
+.style-card-desc,
+.preset-title,
+.preset-desc,
+#update-check-status,
+#save-status {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 520px) {
+  .tabs { padding-left: 8px; padding-right: 8px; }
+  .tab-btn { flex: 1 1 auto; padding-left: 8px; padding-right: 8px; }
+  .content { padding: 12px; }
+  .footer { padding: 9px 12px; gap: 8px; }
+  .row { flex-wrap: wrap; }
+  .row > label,
+  .row > input,
+  .row > select { flex: 1 1 140px; }
+  .style-card { align-items: flex-start; flex-wrap: wrap; }
+  .style-card-actions { width: 100%; }
+  .modal-backdrop { padding: 8px; }
+  .modal-header,
+  .modal-preview-pinned,
+  .modal-body,
+  .modal-footer { padding-left: 12px; padding-right: 12px; }
+  .preset-confirm-bar { align-items: stretch; flex-direction: column; }
+  .preset-confirm-actions { justify-content: flex-end; flex-wrap: wrap; }
+}
