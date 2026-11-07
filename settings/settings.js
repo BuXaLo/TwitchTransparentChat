@@ -1113,7 +1113,7 @@
     /* ---------------- Сохранение ---------------- */
 
     async function save(opts = {}) {
-      const forceReconnect = opts.forceReconnect !== undefined ? !!opts.forceReconnect : true;
+      const forceReconnect = opts.forceReconnect !== undefined ? !!opts.forceReconnect : false;
       const widgetEnabled = $('widgetEnabled').checked;
       const portText = $('widgetPort').value.trim();
       const portNumber = Number(portText);
@@ -1280,7 +1280,7 @@
       $('widget-reset-cancel').onclick = () => showResetConfirmation('w_', false);
       $('overlay-reset-ok').onclick = () => confirmResetSection('o_');
       $('widget-reset-ok').onclick = () => confirmResetSection('w_');
-      $('btn-save').onclick = () => save({ forceReconnect: true });
+      $('btn-save').onclick = () => save({ forceReconnect: false });
       const handleSaveRelevantChange = (event) => {
         if (event.target.closest('.modal-backdrop')) return;
         saveChangeRevision++;
