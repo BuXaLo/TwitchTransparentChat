@@ -425,9 +425,7 @@
         </div>
         </section>
 
-        <section class="form-group">
-          <h3 class="section-title" data-i18n="ui.stylesAutomation"></h3>
-          <div class="style-card">
+        <div class="style-card">
             <div class="style-card-info">
               <span class="style-card-title" data-i18n="ui.cardStyles"></span>
               <span class="style-card-desc" data-i18n="ui.cardStylesDesc"></span>
@@ -437,8 +435,7 @@
               <button type="button" class="secondary with-dot" data-open-extra="rotation" data-prefix="${p}"><span class="dot" data-rot-dot="${p}"></span><span data-i18n="ui.btnRotation"></span></button>
               <button type="button" class="accent" data-open-modal="styles" data-prefix="${p}" data-i18n="ui.btnOpenStyles"></button>
             </div>
-          </div>
-        </section>
+        </div>
 
         <section class="form-group">
           <h3 class="section-title" data-i18n="ui.twitchEvents"></h3>
@@ -518,7 +515,8 @@
       $(p + 'highlightMentions').addEventListener('change', () => syncMentionDependency(p));
       // ▶ Проигрывает выбранную анимацию на мини-превью, которое цепляет весь текущий стиль плашки
       const previewBtn = document.querySelector(`[data-anim-preview="${p}"]`);
-      const stage = previewBtn ? previewBtn.parentElement.querySelector('[data-anim-stage]') : null;
+      const form = $(p === 'o_' ? 'overlay-form' : 'widget-form');
+      const stage = form ? form.querySelector('[data-anim-stage]') : null;
       // Живое обновление превью: стиль подтягивается при любом изменении формы и после модалок,
       // кнопка только проигрывает анимацию
       if (previewBtn && stage) {
@@ -526,7 +524,6 @@
           refreshAnimPreviews();
           playPreviewAnimation(stage.querySelector('[data-anim-plate]'), $(p + 'animation').value);
         });
-        const form = $(p === 'o_' ? 'overlay-form' : 'widget-form');
         form.addEventListener('input', refreshAnimPreviews);
         form.addEventListener('change', refreshAnimPreviews);
       }
