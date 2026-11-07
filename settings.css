@@ -194,20 +194,57 @@
       flex-direction: column;
       gap: 8px;
     }
-    .proxy-box.disabled { opacity: 0.35; pointer-events: none; }
 
     .general-group {
       display: flex;
       flex-direction: column;
-      gap: 10px;
-      padding: 12px;
-      border: 1px solid var(--ui-border);
-      border-radius: var(--ui-radius-md);
-      background: var(--ui-surface);
+      gap: 8px;
+      padding: 0 0 10px;
+      border-bottom: 1px solid var(--ui-border);
       min-width: 0;
     }
-    .general-group > .section-title { margin: 0 0 2px; }
-    .general-support { align-items: flex-start; }
+    .general-group:last-child { border-bottom: 0; padding-bottom: 0; }
+    .general-group > .section-title {
+      margin: 0;
+      color: var(--ui-text-muted);
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .general-support { align-items: stretch; }
+    .proxy-switch {
+      display: inline-flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      cursor: pointer;
+      color: var(--ui-text-muted);
+    }
+    .proxy-switch input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+    .proxy-switch-track {
+      position: relative;
+      width: 34px;
+      height: 19px;
+      flex: 0 0 auto;
+      border-radius: 12px;
+      background: var(--ui-border-strong);
+      transition: background 0.15s ease;
+    }
+    .proxy-switch-track::after {
+      content: "";
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      background: #fff;
+      transition: transform 0.15s ease;
+    }
+    .proxy-switch input:checked + .proxy-switch-track { background: var(--ui-accent); }
+    .proxy-switch input:checked + .proxy-switch-track::after { transform: translateX(15px); }
+    .proxy-switch input:focus-visible + .proxy-switch-track { box-shadow: var(--ui-focus-ring); }
+    .proxy-box.hidden { display: none; }
     .proxy-test-row {
       display: flex;
       align-items: center;
@@ -697,7 +734,7 @@
     .checkbox-label[data-tip]:hover::after { left: 0; right: auto; }
     .style-card-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
     .reset-col { display: flex; flex-direction: column; align-items: stretch; gap: 6px; }
-    .support-wrap { display: flex; justify-content: center; margin: 14px 0 4px; }
+    .support-wrap { display: flex; justify-content: center; margin: 4px 0; }
     .support-link {
       color: #8c8c99;
       font-size: 12px;
