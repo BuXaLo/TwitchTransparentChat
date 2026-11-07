@@ -1127,6 +1127,7 @@
             username: $('proxyUser').value,
             password: $('proxyPass').value
           });
+          if (!$('useProxy').checked) return;
           showProxyStatus(
             tr(result && result.ok ? 'ui.proxyTestSuccess' : 'ui.proxyTestError'),
             result && result.ok ? 'success' : 'error',
