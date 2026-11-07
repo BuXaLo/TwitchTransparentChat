@@ -225,7 +225,7 @@ function createWidgetServer(options) {
           port = newPort;
           listening = true;
           heartbeat = setInterval(() => {
-            for (const res of clients) res.write(': ping\\n\\n');
+            for (const res of clients) res.write(': ping\n\n');
           }, HEARTBEAT_MS);
           if (heartbeat.unref) heartbeat.unref();
           notify();
