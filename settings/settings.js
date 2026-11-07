@@ -245,9 +245,7 @@
       document.querySelectorAll('[data-i18n-tip]').forEach((el) => { el.dataset.tip = tr(el.dataset.i18nTip); });
       document.querySelectorAll('[data-mini-nick], [data-anim-nick]').forEach((el) => { el.textContent = tr('test.user1'); });
 
-      if (!$('update-check-status').dataset.custom) {
-        $('update-check-status').textContent = `v${appVersion}`;
-      }
+      $('app-version').textContent = appVersion ? `v${appVersion}` : '';
       renderWidgetStatus(widgetStatus);
       if (typeof refreshConfigDirInfo === 'function' && $('configDir')) refreshConfigDirInfo();
       presets.renderPresetsLists();
@@ -1016,7 +1014,11 @@
     /* ---------------- Вкладки ---------------- */
 
     function showTab(name) {
-      document.querySelectorAll('.tab-btn').forEach((b) => b.classList.toggle('active', b.dataset.tab === name));
+      document.querySelectorAll('.tab-btn').forEach((b) => {
+        const active = b.dataset.tab === name;
+        b.classList.toggle('active', active);
+        b.setAttribute('aria-selected', String(active));
+      });
       document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('hidden', t.id !== `tab-${name}`));
     }
 
