@@ -135,6 +135,10 @@ function httpGet(urlStr, opts) {
             done(reject, e);
             return;
           }
+          if (o.allowedHosts && !o.allowedHosts.has(new URL(next).hostname)) {
+            done(reject, new Error('Redirect host is not allowed'));
+            return;
+          }
           httpGet(next, Object.assign({}, o, { redirects: o.redirects - 1 })).then(
             (r) => done(resolve, r),
             (e) => done(reject, e)
@@ -205,7 +209,7 @@ async function fetchImage(url) {
   if (imageInflight.has(url)) return imageInflight.get(url);
 
   const p = (async () => {
-    const res = await httpGet(url, { maxBytes: 8 * 1024 * 1024 });
+    const res = await httpGet(url, { maxBytes: 8 * 1024 * 1024, allowedHosts: ALLOWED_IMAGE_HOSTS });
     if (res.status !== 200) throw new Error(`HTTP ${res.status}`);
     const contentType = String(res.headers['content-type'] || '');
     if (!/^image\//i.test(contentType)) throw new Error('Not an image');
