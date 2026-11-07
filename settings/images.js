@@ -82,6 +82,8 @@
         return;
       }
 
+      const dismissPending = notify(tr('ui.cardImageProcessing'), 'info', 0);
+      try {
       const buf = await file.arrayBuffer();
       const blob = new Blob([buf], { type: file.type });
       const bitmap = await createImageBitmap(blob).catch(() => null);
@@ -142,6 +144,9 @@
       $('m_cardImageScale').value = 100; $('m_cardImageScaleVal').textContent = '100%';
       updateMiniPreviews(state.activeModalTarget);
       triggerTargetPreview(state.activeModalTarget);
+      } finally {
+        dismissPending();
+      }
     }
 
     function hideImageDeleteConfirm() {
