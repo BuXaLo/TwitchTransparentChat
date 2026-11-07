@@ -476,15 +476,20 @@ function migrateCardImages() {
     JSON.parse(fs.readFileSync(path.join(dir, 'index.json'), 'utf8')).forEach((e) => { if (e && e.sha) names[e.sha] = e.name; });
   } catch (e) { /* реестра нет */ }
   const map = {};
+  let migrationFailed = false;
   legacy.forEach((f) => {
     const sha = f.slice(0, -5);
     const id = uniqueCardId(cardImageSlug(names[sha] || 'Picture'));
     try {
       fs.renameSync(path.join(dir, f), cardImagePath(id));
       map[sha] = id;
-    } catch (e) { /* пропускаем */ }
+    } catch (e) {
+      migrationFailed = true;
+    }
   });
-  try { fs.unlinkSync(path.join(dir, 'index.json')); } catch (e) { /* уже нет */ }
+  if (!migrationFailed) {
+    try { fs.unlinkSync(path.join(dir, 'index.json')); } catch (e) { /* уже нет */ }
+  }
   if (Object.keys(map).length) remapCardRefs(map);
 }
 
