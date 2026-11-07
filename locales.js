@@ -306,8 +306,8 @@ const STRINGS = {
 
     // --- Tray ---
     'tray.tooltip': 'Twitch Transparent Chat',
-    'tray.show': 'Show overlay',
-    'tray.hide': 'Hide overlay',
+    'tray.show': 'Show overlay (Ctrl+Alt+F11)',
+    'tray.hide': 'Hide overlay (Ctrl+Alt+F11)',
     'tray.clickThrough': 'Click-through mode (Ctrl+Alt+F9)',
     'tray.settings': 'Settings… (Ctrl+Alt+F10)',
     'tray.quit': 'Quit',
@@ -713,8 +713,8 @@ const STRINGS = {
 
     // --- Tray ---
     'tray.tooltip': 'Twitch Transparent Chat',
-    'tray.show': 'Показать оверлей',
-    'tray.hide': 'Скрыть оверлей',
+    'tray.show': 'Показать оверлей (Ctrl+Alt+F11)',
+    'tray.hide': 'Скрыть оверлей (Ctrl+Alt+F11)',
     'tray.clickThrough': 'Сквозной режим (Ctrl+Alt+F9)',
     'tray.settings': 'Настройки… (Ctrl+Alt+F10)',
     'tray.quit': 'Выход',
