@@ -196,6 +196,29 @@
     }
     .proxy-box.disabled { opacity: 0.35; pointer-events: none; }
 
+    .general-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 12px;
+      border: 1px solid var(--ui-border);
+      border-radius: var(--ui-radius-md);
+      background: var(--ui-surface);
+      min-width: 0;
+    }
+    .general-group > .section-title { margin: 0 0 2px; }
+    .general-support { align-items: flex-start; }
+    .proxy-test-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .proxy-test-status { font-size: 12px; color: var(--ui-text-muted); overflow-wrap: anywhere; }
+    .proxy-test-status.success { color: var(--ui-success); }
+    .proxy-test-status.error { color: var(--ui-danger); }
+
+
     .note { font-size: 12px; color: var(--ui-text-subtle); line-height: 1.5; overflow-wrap: anywhere; }
     hr { border: none; border-top: 1px solid var(--ui-border); margin: 6px 0; }
 
