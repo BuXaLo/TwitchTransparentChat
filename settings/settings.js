@@ -1088,6 +1088,36 @@
       wireUpdateControls();
 
       $('useProxy').onchange = () => $('proxyBox').classList.toggle('disabled', !$('useProxy').checked);
+      $('btn-test-proxy').onclick = async () => {
+        const host = $('proxyHost').value.trim();
+        const port = Number($('proxyPort').value);
+        const status = $('proxy-test-status');
+        status.className = 'proxy-test-status';
+        if (!host || !Number.isInteger(port) || port < 1 || port > 65535) {
+          status.textContent = tr('ui.proxyTestIncomplete');
+          status.classList.add('error');
+          return;
+        }
+
+        const button = $('btn-test-proxy');
+        button.disabled = true;
+        status.textContent = tr('ui.proxyTestPending');
+        try {
+          const result = await window.api.testProxy({
+            host,
+            port,
+            username: $('proxyUser').value,
+            password: $('proxyPass').value
+          });
+          status.textContent = tr(result && result.ok ? 'ui.proxyTestSuccess' : 'ui.proxyTestError');
+          status.classList.add(result && result.ok ? 'success' : 'error');
+        } catch (_) {
+          status.textContent = tr('ui.proxyTestError');
+          status.classList.add('error');
+        } finally {
+          button.disabled = false;
+        }
+      };
       $('hideCommands').addEventListener('change', () => { schedulePreview(); scheduleWidgetPreview(); });
       $('ignoredBots').addEventListener('input', () => { schedulePreview(); scheduleWidgetPreview(); });
 
