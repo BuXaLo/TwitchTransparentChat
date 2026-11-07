@@ -169,7 +169,10 @@
   <!-- МОДАЛЬНОЕ ОКНО 1: Внешний вид плашки -->
   <div class="modal-backdrop hidden" id="modal-plate">
     <div class="modal-window">
-      <div class="modal-header" data-i18n="ui.plateModalTitle"></div>
+      <div class="modal-header modal-header-actions">
+        <span data-i18n="ui.plateModalTitle"></span>
+        <button class="secondary" data-modal-reset="plate" data-i18n="ui.modalReset"></button>
+      </div>
       <div class="modal-preview-pinned">
         <div class="modal-preview-wrap">
           <span class="modal-preview-label" data-i18n="ui.previewLabel"></span>
@@ -284,8 +287,7 @@
           <span data-i18n="ui.borderEffectSync"></span>
         </label>
       </div>
-      <div class="modal-footer">
-        <button class="secondary" data-modal-reset="plate" data-i18n="ui.modalReset"></button>
+      <div class="modal-footer" style="justify-content: flex-end;">
         <div class="modal-footer-right">
           <button class="secondary" data-modal-cancel="plate" data-i18n="ui.modalCancel"></button>
           <button class="primary" data-modal-apply="plate" data-i18n="ui.modalSave"></button>
