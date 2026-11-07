@@ -310,18 +310,15 @@
       flex-direction: column;
       gap: 7px;
     }
-    .appearance-form { gap: 14px !important; }
+    .appearance-form { gap: 10px !important; }
     .form-group {
       display: flex;
       flex-direction: column;
       gap: 9px;
       min-width: 0;
-      padding-bottom: 10px;
-      border-bottom: 1px solid var(--ui-border);
     }
-    .form-group:last-child { border-bottom: 0; padding-bottom: 0; }
     .form-group > .section-title { margin: 0; color: var(--ui-text-muted); font-size: 11px; }
-    .widget-server-group { gap: 10px; }
+    .widget-server-group { margin-bottom: 10px; }
     .animation-settings-row { align-items: flex-end; flex-wrap: wrap; }
     .animation-settings-row > .animation-select-label { flex: 1 1 260px; min-width: 0; }
     .animation-settings-row > .anim-preview-btn { flex: 0 0 auto; white-space: nowrap; }
