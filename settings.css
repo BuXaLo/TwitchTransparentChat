@@ -129,7 +129,9 @@
       flex-wrap: wrap;
     }
     #save-status { font-size: 12px; color: var(--ui-success); }
-    #save-status.warn { color: #ffaa00; }
+    #save-status.warn { color: var(--ui-warning); }
+    #save-status.error { color: var(--ui-danger); }
+    #save-status:empty { display: none; }
 
     label {
       font-size: 12px;
