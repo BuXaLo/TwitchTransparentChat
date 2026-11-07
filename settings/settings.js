@@ -246,6 +246,9 @@
       document.querySelectorAll('[data-mini-nick], [data-anim-nick]').forEach((el) => { el.textContent = tr('test.user1'); });
 
       $('app-version').textContent = appVersion ? `v${appVersion}` : '';
+      const activeLanguage = lang || document.documentElement.lang || 'en';
+      $('language-en').setAttribute('aria-pressed', String(activeLanguage === 'en'));
+      $('language-ru').setAttribute('aria-pressed', String(activeLanguage === 'ru'));
       renderWidgetStatus(widgetStatus);
       if (typeof refreshConfigDirInfo === 'function' && $('configDir')) refreshConfigDirInfo();
       presets.renderPresetsLists();
@@ -830,7 +833,7 @@
 
     function renderUpdateModalContent(data) {
       if (!data || !data.hasUpdate) return;
-      const lang = document.documentElement.lang || $('language').value || 'en';
+      const lang = document.documentElement.lang || document.documentElement.lang || 'en';
       const localizedNotes = (lang === 'ru' ? data.notesRu : data.notesEn) || data.releaseNotes || '';
 
       $('update-modal-title').textContent = trf('ui.updateAvailableTitle', {
@@ -1090,10 +1093,12 @@
 
       $('widgetPort').addEventListener('input', updateLink);
 
-      $('language').onchange = async () => {
-        const lang = $('language').value;
+      async function changeLanguage(lang) {
+        if (lang !== 'en' && lang !== 'ru') return;
         applyStrings(await window.api.setLanguage(lang), lang);
-      };
+      }
+      $('language-en').onclick = () => changeLanguage('en');
+      $('language-ru').onclick = () => changeLanguage('ru');
 
       $('btn-copy').onclick = async () => {
         if (!$('widgetLink').value) return;
@@ -1122,7 +1127,7 @@
       const lang = cfg.language || 'en';
       appVersion = cfg.currentVersion || '';
       isPortableBuild = !!cfg.isPortable;
-      $('language').value = lang;
+      // Активный язык синхронизируется в applyStrings().
 
       $('channel').value = cfg.channel;
       $('useProxy').checked = cfg.useProxy;
@@ -1159,7 +1164,6 @@
 
       window.api.onWidgetStatus(renderWidgetStatus);
       window.api.onStringsUpdated((data) => {
-        $('language').value = data.language;
         applyStrings(data.strings, data.language);
       });
     }
