@@ -703,6 +703,7 @@
       if (!applyAndSave && modalSnapshot) {
         writeAppearance(activeModalTarget, modalSnapshot);
         triggerTargetPreview(activeModalTarget);
+        updateSaveIndicator();
       }
       modalSnapshot = null;
       if (kind === 'styles') presets.cancelPresetConfirms();
@@ -1276,8 +1277,12 @@
       $('overlay-reset-ok').onclick = () => confirmResetSection('o_');
       $('widget-reset-ok').onclick = () => confirmResetSection('w_');
       $('btn-save').onclick = () => save({ forceReconnect: true });
-      document.addEventListener('input', updateSaveIndicator);
-      document.addEventListener('change', updateSaveIndicator);
+      const handleSaveRelevantChange = (event) => {
+        if (event.target.closest('.modal-backdrop')) return;
+        updateSaveIndicator();
+      };
+      document.addEventListener('input', handleSaveRelevantChange);
+      document.addEventListener('change', handleSaveRelevantChange);
 
       const cfg = await window.api.loadConfig();
       if (cfg.defaults && typeof cfg.defaults === 'object') {
