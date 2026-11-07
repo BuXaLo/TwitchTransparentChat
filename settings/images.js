@@ -236,7 +236,10 @@
         const name = ($('m_cardImageName').value || '').trim();
         if (!name) return;
         const res = await window.api.renameCardImage(st.cardImageCustom, name);
-        if (!res || !res.ok) return;
+        if (!res || !res.ok) {
+          alert(tr('ui.cardImageSaveFailed'));
+          return;
+        }
         remapCardRefsInState(res.oldId, res.id);
         await syncImageModalCustomOption();
         $('m_cardImageSource').value = `img:${res.id}`;
@@ -268,7 +271,11 @@
         const st = activeAppearance();
         const deletedId = st.cardImageCustom;
         if (!deletedId) return;
-        await window.api.deleteCardImage(deletedId);
+        const res = await window.api.deleteCardImage(deletedId);
+        if (!res || !res.ok) {
+          alert(tr('ui.cardImageSaveFailed'));
+          return;
+        }
         remapCardRefsInState(deletedId, '');
         st.cardImageCustom = '';
         st.cardImagePreset = 'none';
