@@ -345,6 +345,7 @@
             </label>
             <button type="button" class="secondary anim-preview-btn" data-anim-preview="${p}" data-i18n-title="ui.animPreviewTitle" data-i18n="ui.animPreview"></button>
             <div class="setting-choice-row">
+              <span id="${p}direction-label" data-i18n="ui.direction"></span>
               <div class="setting-choice rot-seg" role="group" aria-labelledby="${p}direction-label">
                 <button type="button" data-setting-choice="${p}chatDirection" data-value="top" data-i18n="ui.dirTop"></button>
                 <button type="button" data-setting-choice="${p}chatDirection" data-value="bottom" data-i18n="ui.dirBottom"></button>
@@ -353,7 +354,7 @@
                 <option value="top" data-i18n="ui.dirTop"></option>
                 <option value="bottom" data-i18n="ui.dirBottom"></option>
               </select>
-              <span id="${p}direction-label" data-i18n="ui.direction"></span>
+            </div>
             </div>
         </div>
 
@@ -378,6 +379,7 @@
         <section class="form-group">
           <h3 class="section-title" data-i18n="ui.appearanceSettings"></h3>
         <div class="setting-choice-row">
+          <span id="${p}layout-label" data-i18n="ui.layout"></span>
           <div class="setting-choice rot-seg" role="group" aria-labelledby="${p}layout-label">
             <button type="button" data-setting-choice="${p}layoutMode" data-value="inline" data-i18n="ui.layoutInline"></button>
             <button type="button" data-setting-choice="${p}layoutMode" data-value="block" data-i18n="ui.layoutBlock"></button>
@@ -386,7 +388,6 @@
             <option value="inline" data-i18n="ui.layoutInline"></option>
             <option value="block" data-i18n="ui.layoutBlock"></option>
           </select>
-          <span id="${p}layout-label" data-i18n="ui.layout"></span>
         </div>
 
         <label>
