@@ -50,3 +50,80 @@ test('fetchImage блокирует редирект на неразрешённ
     https.request = originalRequest;
   }
 });
+
+
+test('частичное обновление сохраняет только кэш упавшего источника и восстанавливается', async () => {
+  const https = require('https');
+  const { EventEmitter } = require('events');
+  const {
+    ensureGlobalEmotes,
+    lookupEmote
+  } = require('../emotes');
+  const originalRequest = https.request;
+  const originalNow = Date.now;
+  let now = 1_000_000;
+  let mode = 'initial';
+
+  const responses = {
+    ffz: (name) => ({ sets: { 1: { emoticons: [{ name, urls: { 2: 'https://cdn.frankerfacez.com/emoticon/1/2' } }] } }, default_sets: [1] }),
+    bttv: (name) => [{ id: 'test', code: name }],
+    '7tv': (name) => ({ emotes: [{ id: 'test', name, data: { host: { url: 'https://cdn.7tv.app/emote/test' } } }] })
+  };
+
+  https.request = (options, callback) => {
+    const req = new EventEmitter();
+    req.end = () => {
+      const host = options.hostname;
+      let body;
+      let fail = false;
+      if (host === 'api.frankerfacez.com') {
+        fail = mode === 'partial';
+        body = responses.ffz(mode === 'recovered' ? 'FFZ_NEW' : 'FFZ_OLD');
+      } else if (host === 'api.betterttv.net') {
+        body = responses.bttv(mode === 'initial' ? 'BTTV_OLD' : 'BTTV_NEW');
+      } else {
+        body = responses['7tv'](mode === 'initial' ? 'SEVENTV_OLD' : 'SEVENTV_NEW');
+      }
+      process.nextTick(() => {
+        if (fail) {
+          req.emit('error', new Error('temporary FFZ failure'));
+          return;
+        }
+        const res = new EventEmitter();
+        res.statusCode = 200;
+        res.headers = { 'content-type': 'application/json' };
+        callback(res);
+        res.emit('data', Buffer.from(JSON.stringify(body)));
+        res.emit('end');
+      });
+    };
+    req.destroy = (error) => req.emit('error', error);
+    return req;
+  };
+
+  Date.now = () => now;
+  try {
+    await ensureGlobalEmotes();
+    assert.ok(lookupEmote('FFZ_OLD'));
+    assert.ok(lookupEmote('BTTV_OLD'));
+    assert.ok(lookupEmote('SEVENTV_OLD'));
+
+    now += 31 * 60 * 1000;
+    mode = 'partial';
+    await ensureGlobalEmotes();
+    assert.ok(lookupEmote('FFZ_OLD'), 'FFZ cache survives its temporary failure');
+    assert.equal(lookupEmote('BTTV_OLD'), null, 'successful BTTV refresh replaces its old entries');
+    assert.ok(lookupEmote('BTTV_NEW'));
+    assert.equal(lookupEmote('SEVENTV_OLD'), null);
+    assert.ok(lookupEmote('SEVENTV_NEW'));
+
+    now += 31 * 1000;
+    mode = 'recovered';
+    await ensureGlobalEmotes();
+    assert.equal(lookupEmote('FFZ_OLD'), null);
+    assert.ok(lookupEmote('FFZ_NEW'));
+  } finally {
+    https.request = originalRequest;
+    Date.now = originalNow;
+  }
+});
