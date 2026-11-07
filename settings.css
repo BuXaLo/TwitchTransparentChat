@@ -49,6 +49,48 @@
 
     .hidden { display: none !important; }
 
+    /* Верхняя панель настроек */
+    .settings-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 18px;
+      background: var(--ui-bg);
+      border-bottom: 1px solid var(--ui-border);
+      flex-shrink: 0;
+      min-width: 0;
+    }
+    .settings-brand {
+      display: flex;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 8px;
+      min-width: 0;
+    }
+    .settings-brand-name {
+      color: var(--ui-text);
+      font-size: 15px;
+      font-weight: 750;
+      letter-spacing: -0.02em;
+      overflow-wrap: anywhere;
+    }
+    .settings-version {
+      color: var(--ui-text-subtle);
+      font-size: 11px;
+      white-space: nowrap;
+    }
+    .settings-language {
+      flex: 0 1 150px;
+      min-width: 112px;
+      gap: 3px;
+      font-size: 10px;
+    }
+    .settings-language select {
+      width: 100%;
+      padding: 5px 8px;
+    }
+
     /* Вкладки */
     .tabs {
       display: flex;
@@ -799,6 +841,9 @@
 }
 
 @media (max-width: 520px) {
+  .settings-header { padding: 10px 12px; gap: 8px; }
+  .settings-brand-name { font-size: 14px; }
+  .settings-language { flex-basis: 118px; }
   .tabs { padding-left: 8px; padding-right: 8px; }
   .tab-btn { flex: 1 1 auto; padding-left: 8px; padding-right: 8px; }
   .content { padding: 12px; }
