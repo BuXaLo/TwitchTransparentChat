@@ -325,8 +325,9 @@
     .animation-control-row { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; min-width: 0; width: 100%; }
     .animation-control-row select { flex: 1 1 240px; min-width: 0; width: 100%; }
     .animation-control-row button { flex: 0 0 auto; white-space: nowrap; }
-    .animation-settings-row { align-items: flex-end; }
+    .animation-settings-row { align-items: flex-end; flex-wrap: wrap; }
     .animation-settings-row > label:first-child { flex: 1 1 100%; min-width: 0; }
+    .animation-settings-row > label:nth-child(2) { flex: 1 1 160px; min-width: 0; }
     .widget-settings { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 
 
