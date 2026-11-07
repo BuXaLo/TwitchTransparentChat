@@ -123,7 +123,8 @@ function openSettingsWindow() {
   settingsWin = new BrowserWindow({
     width: 620,
     height: 780,
-    minWidth: 520,
+    minWidth: 620,
+    maxWidth: 620,
     minHeight: 540,
     title: t('settings.title'),
     icon: path.join(__dirname, 'icon.ico'),
