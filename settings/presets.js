@@ -866,7 +866,7 @@
       const locked = state.customPresets.length - n;
       const manual = n >= 3 && d.source === 'manual';
       const helpText = tr('ui.rotationIntro') + '\n\n' + tr(state.extraTarget === 'o_' ? 'ui.rotationMentionOverlay' : 'ui.rotationMentionWidget');
-      $('rot-help').title = helpText;
+      $('rot-help').dataset.tip = helpText;
       $('rot-help').setAttribute('aria-label', helpText);
       $('rot-need-two').textContent = locked ? trf('ui.rotationNeedTwoLocked', { k: locked }) : tr('ui.rotationNeedTwo');
       $('rot-need-two').classList.toggle('hidden', n >= 2);
