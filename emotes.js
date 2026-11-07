@@ -39,6 +39,34 @@ function isProxyActive() {
   return !!network.proxy;
 }
 
+/**
+ * Проверяет SOCKS5-подключение без изменения активной сетевой конфигурации.
+ * Успех означает, что прокси установил TCP-туннель до Twitch IRC endpoint.
+ */
+async function testProxy(proxy) {
+  const host = String(proxy && proxy.host || '').trim();
+  const port = Number(proxy && proxy.port);
+  if (!host || !Number.isInteger(port) || port < 1 || port > 65535) {
+    throw new Error('Invalid proxy host or port');
+  }
+
+  const { socket } = await SocksClient.createConnection({
+    proxy: {
+      host,
+      port,
+      type: 5,
+      userId: proxy.username || undefined,
+      password: proxy.password || undefined
+    },
+    command: 'connect',
+    destination: { host: 'irc-ws.chat.twitch.tv', port: 443 },
+    timeout: 10000
+  });
+  socket.destroy();
+  return true;
+}
+
+
 /* ============================================================
  * HTTPS-клиент с поддержкой SOCKS5 (использует уже установленный пакет socks)
  * ============================================================ */
@@ -536,6 +564,7 @@ module.exports = {
   ALLOWED_IMAGE_HOSTS,
   setNetwork,
   isProxyActive,
+  testProxy,
   httpGet,
   fetchJson,
   fetchImage,
