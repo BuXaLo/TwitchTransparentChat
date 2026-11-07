@@ -339,13 +339,11 @@
         <section class="form-group">
           <h3 class="section-title" data-i18n="ui.appearanceBehavior"></h3>
           <div class="row animation-settings-row">
-            <label>
+            <label class="animation-select-label">
               <span data-i18n="ui.animation"></span>
-              <div class="animation-control-row">
-                <select id="${p}animation">${animOptions()}</select>
-                <button type="button" class="secondary anim-preview-btn" data-anim-preview="${p}" data-i18n-title="ui.animPreviewTitle" data-i18n="ui.animPreview"></button>
-              </div>
+              <select id="${p}animation">${animOptions()}</select>
             </label>
+            <button type="button" class="secondary anim-preview-btn" data-anim-preview="${p}" data-i18n-title="ui.animPreviewTitle" data-i18n="ui.animPreview"></button>
             <label>
               <span data-i18n="ui.direction"></span>
               <select id="${p}chatDirection">
