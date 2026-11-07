@@ -517,7 +517,7 @@
       }
       // Обычный режим: выезд больше ~30 px убирает самую старую плашку
       while (chat.scrollHeight > chat.clientHeight + 30 && chat.children.length > 1) {
-        chat.removeChild(chat.lastChild);
+        removeMessageNode(chat.lastChild);
       }
     }
 
