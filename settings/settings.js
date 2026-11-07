@@ -1155,6 +1155,9 @@
       $('ignoredBots').addEventListener('input', () => { schedulePreview(); scheduleWidgetPreview(); });
 
       $('widgetPort').addEventListener('input', updateLink);
+      $('widgetEnabled').addEventListener('change', () => {
+        $('widgetSettings').classList.toggle('hidden', !$('widgetEnabled').checked);
+      });
 
       async function changeLanguage(lang) {
         if (lang !== 'en' && lang !== 'ru') return;
@@ -1212,6 +1215,7 @@
         presets.updateRotationDots();
       });
       $('widgetEnabled').checked = cfg.widgetEnabled;
+      $('widgetSettings').classList.toggle('hidden', !cfg.widgetEnabled);
       $('widgetPort').value = cfg.widgetPort;
       updateLink();
 
