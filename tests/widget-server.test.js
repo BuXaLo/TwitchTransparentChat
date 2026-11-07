@@ -93,7 +93,7 @@ test('HTTP API возвращает состояние и переписывае
   try {
     const response = await request(port, '/api/state');
     assert.equal(response.status, 200);
-    assert.match(response.headers['content-type'], /application\\/json/);
+    assert.match(response.headers['content-type'], /application\/json/);
     assert.equal(response.headers['cache-control'], 'no-store');
     assert.deepEqual(JSON.parse(response.body), {
       channel: 'test',
@@ -110,7 +110,7 @@ test('статический маршрут отдаёт страницу OBS Wi
   try {
     const response = await request(port, '/');
     assert.equal(response.status, 200);
-    assert.match(response.headers['content-type'], /text\\/html/);
+    assert.match(response.headers['content-type'], /text\/html/);
     assert.match(response.body, /<html/i);
   } finally {
     await server.stop();
@@ -189,7 +189,7 @@ test('SSE подключение получает broadcast и закрывае�
     res.setEncoding('utf8');
     res.on('data', (chunk) => {
       received += chunk;
-      if (received.includes('event: chat\\ndata:')) resolveEvent();
+      if (received.includes('event: chat\ndata:')) resolveEvent();
     });
   });
 
@@ -199,7 +199,7 @@ test('SSE подключение получает broadcast и закрывае�
       req.once('response', resolve);
     });
     assert.equal(response.statusCode, 200);
-    assert.match(response.headers['content-type'], /text\\/event-stream/);
+    assert.match(response.headers['content-type'], /text\/event-stream/);
     assert.equal(server.getStatus().clients, 1);
 
     server.broadcast('chat', { image: 'emote://cdn.7tv.app/emote/test.webp' });
@@ -208,7 +208,7 @@ test('SSE подключение получает broadcast и закрывае�
       new Promise((_, reject) => setTimeout(() => reject(new Error('SSE event timeout')), 1000))
     ]);
     assert.match(received, /event: chat/);
-    assert.match(received, /"image":"\\/img\\/cdn.7tv.app\\/emote\\/test.webp"/);
+    assert.match(received, /"image":"\/img\/cdn.7tv.app\/emote\/test.webp"/);
   } finally {
     req.destroy();
     await server.stop();
