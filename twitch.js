@@ -254,7 +254,7 @@ function connectTwitch({ channel, useProxy, proxy, onMessage, onRemove, onError,
       socket.write(`CAP REQ :twitch.tv/tags twitch.tv/commands\r\n`);
       socket.write(`JOIN #${targetChannel}\r\n`);
 
-      resetWatchdog(socket, onStatus);
+      resetWatchdog(socket, onStatus, generation);
 
       clearInterval(keepAliveTimer);
       keepAliveTimer = setInterval(() => {
@@ -286,19 +286,19 @@ function connectTwitch({ channel, useProxy, proxy, onMessage, onRemove, onError,
         const parsed = parseIrcMessage(line);
 
         if (parsed.command === 'PING') {
-          resetWatchdog(socket, onStatus);
+          resetWatchdog(socket, onStatus, generation);
           const payload = parsed.trailing || parsed.params[0] || 'tmi.twitch.tv';
           socket.write(`PONG :${payload}\r\n`);
           continue;
         }
 
         if (parsed.command === 'PONG') {
-          resetWatchdog(socket, onStatus);
+          resetWatchdog(socket, onStatus, generation);
           continue;
         }
 
         if (parsed.command === '001') {
-          resetWatchdog(socket, onStatus);
+          resetWatchdog(socket, onStatus, generation);
           reconnectAttempts = 0;
           const proxyLabel = (useProxy && proxy?.host) ? ' [SOCKS5]' : '';
           onStatus(t('status.online', { channel: targetChannel, proxy: proxyLabel }), 'online');
@@ -339,7 +339,7 @@ function connectTwitch({ channel, useProxy, proxy, onMessage, onRemove, onError,
         }
 
         if (parsed.command === 'PRIVMSG') {
-          resetWatchdog(socket, onStatus);
+          resetWatchdog(socket, onStatus, generation);
           try {
             let messageText = parsed.trailing || '';
             let isAction = false;
@@ -399,7 +399,7 @@ function connectTwitch({ channel, useProxy, proxy, onMessage, onRemove, onError,
       isConnecting = false;
 
       if (!isManuallyStopped) {
-        scheduleReconnect();
+        scheduleReconnect(generation);
       } else {
         onStatus(t('status.disconnected'), 'offline');
       }
@@ -430,7 +430,7 @@ function connectTwitch({ channel, useProxy, proxy, onMessage, onRemove, onError,
         isConnecting = false;
         onError(t('err.proxy', { msg: err.message }));
         onStatus(t('status.proxyError'), 'offline');
-        scheduleReconnect();
+        scheduleReconnect(generation);
         return;
       }
 
@@ -462,7 +462,7 @@ function connectTwitch({ channel, useProxy, proxy, onMessage, onRemove, onError,
         onError(t('err.timeout'));
         onStatus(t('status.timeout'), 'offline');
         directSocket.destroy();
-        scheduleReconnect();
+        scheduleReconnect(generation);
       }
     });
 
@@ -471,7 +471,7 @@ function connectTwitch({ channel, useProxy, proxy, onMessage, onRemove, onError,
       onError(t('err.connection', { msg: e.message }));
       onStatus(t('status.networkError'), 'offline');
       directSocket.destroy();
-      scheduleReconnect();
+      scheduleReconnect(generation);
     });
   }
 }
