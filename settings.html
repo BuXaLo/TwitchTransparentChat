@@ -18,18 +18,17 @@
   </nav>
 
   <div class="content">
-    <!-- Общие -->
-    <section class="tab" id="tab-general">
+    <!-- Подключение -->
+    <section class="general-group">
+      <h3 class="section-title" data-i18n="ui.generalConnection"></h3>
       <label>
         <span data-i18n="ui.channel"></span>
         <input type="text" id="channel" data-i18n-placeholder="ui.channelPlaceholder">
       </label>
-
       <label class="checkbox-label">
         <input type="checkbox" id="useProxy">
         <span data-i18n="ui.useProxy"></span>
       </label>
-
       <div class="proxy-box disabled" id="proxyBox">
         <div class="row">
           <input type="text" id="proxyHost" data-i18n-placeholder="ui.proxyHost">
@@ -39,29 +38,43 @@
           <input type="text" id="proxyUser" data-i18n-placeholder="ui.proxyUser">
           <input type="password" id="proxyPass" data-i18n-placeholder="ui.proxyPass">
         </div>
+        <div class="proxy-test-row">
+          <button class="secondary" type="button" id="btn-test-proxy" data-i18n="ui.proxyTest"></button>
+          <span id="proxy-test-status" class="proxy-test-status" role="status" aria-live="polite"></span>
+        </div>
       </div>
+    </section>
 
+    <!-- Фильтрация -->
+    <section class="general-group">
+      <h3 class="section-title" data-i18n="ui.generalFiltering"></h3>
       <label class="checkbox-label">
         <input type="checkbox" id="hideCommands">
         <span data-i18n="ui.hideCommands"></span>
       </label>
-
       <label>
         <span data-i18n="ui.bots"></span>
         <input type="text" id="ignoredBots">
       </label>
+    </section>
 
+    <!-- Запуск -->
+    <section class="general-group">
+      <h3 class="section-title" data-i18n="ui.generalStartup"></h3>
       <label class="checkbox-label">
         <input type="checkbox" id="autoStart">
         <span data-i18n="ui.autoStart"></span>
       </label>
+    </section>
 
+    <!-- Приложение -->
+    <section class="general-group">
+      <h3 class="section-title" data-i18n="ui.generalApplication"></h3>
       <div class="update-bar">
         <span class="settings-version" id="app-version"></span>
         <span id="update-check-status"></span>
         <button class="accent" id="btn-check-updates" data-i18n="ui.checkUpdates"></button>
       </div>
-
       <div class="proxy-box">
         <span class="section-title" data-i18n="ui.storageTitle" style="margin-top: 0;"></span>
         <label>
@@ -72,12 +85,13 @@
           </div>
         </label>
       </div>
-
       <p class="note" data-i18n="ui.sharedNote"></p>
+    </section>
 
-      <div class="support-wrap">
-        <a class="support-link" id="btn-support" href="#" role="button" data-i18n="ui.supportAuthor" data-i18n-title="ui.supportAuthorTitle"></a>
-      </div>
+    <!-- Поддержка -->
+    <section class="general-group general-support">
+      <h3 class="section-title" data-i18n="ui.generalSupport"></h3>
+      <a class="support-link" id="btn-support" href="#" role="button" data-i18n="ui.supportAuthor" data-i18n-title="ui.supportAuthorTitle"></a>
     </section>
 
     <!-- Оверлей -->
