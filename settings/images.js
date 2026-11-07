@@ -84,67 +84,67 @@
 
       const dismissPending = notify(tr('ui.cardImageProcessing'), 'info', 0);
       try {
-      const buf = await file.arrayBuffer();
-      const blob = new Blob([buf], { type: file.type });
-      const bitmap = await createImageBitmap(blob).catch(() => null);
-      if (!bitmap) {
-        notify(tr('ui.cardImageAnimated'), 'warning');
-        return;
-      }
-      const longSide = Math.max(bitmap.width, bitmap.height);
-      if (longSide > CARD_IMAGE_MAX_SOURCE_SIDE) {
+        const buf = await file.arrayBuffer();
+        const blob = new Blob([buf], { type: file.type });
+        const bitmap = await createImageBitmap(blob).catch(() => null);
+        if (!bitmap) {
+          notify(tr('ui.cardImageAnimated'), 'warning');
+          return;
+        }
+        const longSide = Math.max(bitmap.width, bitmap.height);
+        if (longSide > CARD_IMAGE_MAX_SOURCE_SIDE) {
+          bitmap.close && bitmap.close();
+          notify(tr('ui.cardImageBadSize'), 'warning');
+          return;
+        }
+  
+        const k = longSide > CARD_IMAGE_MAX_SIDE ? CARD_IMAGE_MAX_SIDE / longSide : 1;
+        const w = Math.max(1, Math.round(bitmap.width * k));
+        const h = Math.max(1, Math.round(bitmap.height * k));
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(bitmap, 0, 0, w, h);
         bitmap.close && bitmap.close();
-        notify(tr('ui.cardImageBadSize'), 'warning');
-        return;
-      }
-
-      const k = longSide > CARD_IMAGE_MAX_SIDE ? CARD_IMAGE_MAX_SIDE / longSide : 1;
-      const w = Math.max(1, Math.round(bitmap.width * k));
-      const h = Math.max(1, Math.round(bitmap.height * k));
-      const canvas = document.createElement('canvas');
-      canvas.width = w;
-      canvas.height = h;
-      const ctx = canvas.getContext('2d');
-      ctx.imageSmoothingQuality = 'high';
-      ctx.drawImage(bitmap, 0, 0, w, h);
-      bitmap.close && bitmap.close();
-
-      const toWebp = (quality) => new Promise((resolve) => canvas.toBlob(resolve, 'image/webp', quality));
-      let webpBlob = await toWebp(0.9);
-      if (webpBlob && webpBlob.size > CARD_IMAGE_RESULT_MAX_BYTES) webpBlob = await toWebp(0.75);
-      if (!webpBlob || webpBlob.size > CARD_IMAGE_RESULT_MAX_BYTES) {
-        notify(tr('ui.cardImageResultTooBig'), 'error');
-        return;
-      }
-      const webpBuf = await webpBlob.arrayBuffer();
-      const name = ($('m_cardImageName').value || '').trim() || (file.name || 'Picture').replace(/\.[^.]+$/, '');
-      const res = await window.api.saveCardImage(webpBuf, name);
-      if (!res || !res.ok) {
-        notify(tr(res && res.error === 'size' ? 'ui.cardImageResultTooBig' : 'ui.cardImageSaveFailed'), 'error');
-        return;
-      }
-
-      const st = activeAppearance();
-      st.cardImageCustom = res.id;
-      st.cardImagePreset = 'none';
-      st.cardImageFit = 'width';
-      st.cardImagePosX = 50;
-      st.cardImagePosY = 50;
-      st.cardImageOpacity = 60;
-      st.cardImageScale = 100;
-      await syncImageModalCustomOption();
-      notify(tr('ui.cardImageUploaded'), 'success');
-      $('m_cardImageSource').value = `img:${res.id}`;
-      $('m_cardImageName').value = res.name;
-      $('m_cardImageManageRow').style.display = '';
-      $('m_cardImageFit').value = 'width';
-      $('m_cardImagePosX').value = 50; $('m_cardImagePosXVal').textContent = '50%';
-      $('m_cardImagePosY').value = 50; $('m_cardImagePosYVal').textContent = '50%';
-      $('m_cardImageOpacity').value = 60; $('m_cardImageOpacityVal').textContent = '60%';
-      $('m_cardImageScale').value = 100; $('m_cardImageScaleVal').textContent = '100%';
-      updateMiniPreviews(state.activeModalTarget);
-      triggerTargetPreview(state.activeModalTarget);
-      } finally {
+  
+        const toWebp = (quality) => new Promise((resolve) => canvas.toBlob(resolve, 'image/webp', quality));
+        let webpBlob = await toWebp(0.9);
+        if (webpBlob && webpBlob.size > CARD_IMAGE_RESULT_MAX_BYTES) webpBlob = await toWebp(0.75);
+        if (!webpBlob || webpBlob.size > CARD_IMAGE_RESULT_MAX_BYTES) {
+          notify(tr('ui.cardImageResultTooBig'), 'error');
+          return;
+        }
+        const webpBuf = await webpBlob.arrayBuffer();
+        const name = ($('m_cardImageName').value || '').trim() || (file.name || 'Picture').replace(/\.[^.]+$/, '');
+        const res = await window.api.saveCardImage(webpBuf, name);
+        if (!res || !res.ok) {
+          notify(tr(res && res.error === 'size' ? 'ui.cardImageResultTooBig' : 'ui.cardImageSaveFailed'), 'error');
+          return;
+        }
+  
+        const st = activeAppearance();
+        st.cardImageCustom = res.id;
+        st.cardImagePreset = 'none';
+        st.cardImageFit = 'width';
+        st.cardImagePosX = 50;
+        st.cardImagePosY = 50;
+        st.cardImageOpacity = 60;
+        st.cardImageScale = 100;
+        await syncImageModalCustomOption();
+        notify(tr('ui.cardImageUploaded'), 'success');
+        $('m_cardImageSource').value = `img:${res.id}`;
+        $('m_cardImageName').value = res.name;
+        $('m_cardImageManageRow').style.display = '';
+        $('m_cardImageFit').value = 'width';
+        $('m_cardImagePosX').value = 50; $('m_cardImagePosXVal').textContent = '50%';
+        $('m_cardImagePosY').value = 50; $('m_cardImagePosYVal').textContent = '50%';
+        $('m_cardImageOpacity').value = 60; $('m_cardImageOpacityVal').textContent = '60%';
+        $('m_cardImageScale').value = 100; $('m_cardImageScaleVal').textContent = '100%';
+        updateMiniPreviews(state.activeModalTarget);
+        triggerTargetPreview(state.activeModalTarget);
+        } finally {
         dismissPending();
       }
     }
