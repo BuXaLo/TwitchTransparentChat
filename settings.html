@@ -592,14 +592,19 @@
     <div class="modal-window">
       <div class="modal-header" id="rot-title"></div>
       <div class="modal-body">
-        <p class="note" data-i18n="ui.rotationIntro"></p>
-        <p class="note" id="rot-mention-note"></p>
         <p class="note hidden" id="rot-need-two" data-i18n="ui.rotationNeedTwo"></p>
-        <label class="checkbox-label" id="rot-enable-label"><input type="checkbox" id="rot-enable"><span data-i18n="ui.rotationEnable"></span></label>
+        <div class="rot-enable-row">
+          <label class="proxy-switch" id="rot-enable-label">
+            <span data-i18n="ui.rotationEnable"></span>
+            <input type="checkbox" id="rot-enable" role="switch">
+            <span class="proxy-switch-track" aria-hidden="true"></span>
+          </label>
+          <span class="rot-help" id="rot-help" tabindex="0" role="img" aria-label="" title="">?</span>
+        </div>
         <div id="rot-controls">
           <span class="section-title" data-i18n="ui.rotationSource"></span>
-          <label class="checkbox-label"><input type="radio" name="rot-source" value="all" id="rot-src-all"><span id="rot-src-all-text"></span></label>
-          <label class="checkbox-label" id="rot-src-manual-label"><input type="radio" name="rot-source" value="manual" id="rot-src-manual"><span data-i18n="ui.rotationSourceManual"></span></label>
+          <label class="rot-source-option"><input type="radio" name="rot-source" value="all" id="rot-src-all"><span id="rot-src-all-text"></span></label>
+          <label class="rot-source-option" id="rot-src-manual-label"><input type="radio" name="rot-source" value="manual" id="rot-src-manual"><span data-i18n="ui.rotationSourceManual"></span></label>
           <span class="section-title" data-i18n="ui.rotationOrder"></span>
           <div class="rot-seg">
             <button type="button" id="rot-ord-seq" data-i18n="ui.rotationOrderSeq"></button>
