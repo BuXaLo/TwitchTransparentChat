@@ -171,14 +171,18 @@
       padding: 2px;
       cursor: pointer;
     }
-    input:focus, select:focus { border-color: var(--ui-accent); }
-    select:focus:not(:focus-visible) {
+    input:focus { border-color: var(--ui-accent); }
+    select:focus {
       border-color: var(--ui-border-strong);
       outline: none;
       box-shadow: none;
     }
     :where(button, input, select, textarea, a, [tabindex]):focus-visible {
       outline: none;
+      box-shadow: var(--ui-focus-ring);
+    }
+    select:focus-visible {
+      border-color: var(--ui-accent);
       box-shadow: var(--ui-focus-ring);
     }
     button { font-family: inherit; transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, opacity 0.15s ease; }
