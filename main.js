@@ -12,6 +12,7 @@ const updater = require('./updater');
 
 const HOTKEY = 'CommandOrControl+Alt+F9';
 const SETTINGS_HOTKEY = 'CommandOrControl+Alt+F10'; // открыть окно настроек
+const OVERLAY_VISIBILITY_HOTKEY = 'CommandOrControl+Alt+F11'; // скрыть / показать оверлей
 
 // Только один экземпляр: повторный запуск возвращает окно уже работающего оверлея (см. 'second-instance')
 const gotSingleInstanceLock = app.requestSingleInstanceLock();
@@ -113,6 +114,7 @@ function openSettingsWindow() {
   if (settingsWin && !settingsWin.isDestroyed()) {
     if (settingsWin.isMinimized()) settingsWin.restore();
     settingsWin.show();
+    settingsWin.setAlwaysOnTop(true, 'screen-saver');
     settingsWin.focus();
     if (pendingUpdateInfo) {
       sendToSettings('update-available', pendingUpdateInfo);
@@ -138,6 +140,7 @@ function openSettingsWindow() {
   });
 
   settingsWin.setMenu(null);
+  settingsWin.setAlwaysOnTop(true, 'screen-saver');
   settingsWin.loadFile('settings.html');
 
   settingsWin.webContents.once('did-finish-load', () => {
@@ -334,6 +337,7 @@ function createWindow() {
   win.webContents.once('did-finish-load', () => {
     const ok = globalShortcut.register(HOTKEY, toggleClickThrough);
     globalShortcut.register(SETTINGS_HOTKEY, openSettingsWindow); // занят другой программой — просто остаётся недоступным
+    globalShortcut.register(OVERLAY_VISIBILITY_HOTKEY, toggleVisibility);
     win.webContents.send('hotkey-status', { ok });
     startInitialChat();
     runStartupUpdateCheck();
