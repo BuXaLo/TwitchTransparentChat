@@ -18,6 +18,7 @@
   </nav>
 
   <div class="content">
+    <section class="tab" id="tab-general">
     <!-- Подключение -->
     <section class="general-group">
       <h3 class="section-title" data-i18n="ui.generalConnection"></h3>
@@ -25,11 +26,12 @@
         <span data-i18n="ui.channel"></span>
         <input type="text" id="channel" data-i18n-placeholder="ui.channelPlaceholder">
       </label>
-      <label class="checkbox-label">
-        <input type="checkbox" id="useProxy">
+      <label class="proxy-switch">
         <span data-i18n="ui.useProxy"></span>
+        <input type="checkbox" id="useProxy" role="switch">
+        <span class="proxy-switch-track" aria-hidden="true"></span>
       </label>
-      <div class="proxy-box disabled" id="proxyBox">
+      <div class="proxy-box hidden" id="proxyBox">
         <div class="row">
           <input type="text" id="proxyHost" data-i18n-placeholder="ui.proxyHost">
           <input type="number" id="proxyPort" data-i18n-placeholder="ui.proxyPort" style="max-width: 90px;">
@@ -91,7 +93,11 @@
     <!-- Поддержка -->
     <section class="general-group general-support">
       <h3 class="section-title" data-i18n="ui.generalSupport"></h3>
-      <a class="support-link" id="btn-support" href="#" role="button" data-i18n="ui.supportAuthor" data-i18n-title="ui.supportAuthorTitle"></a>
+      <div class="support-wrap">
+        <a class="support-link" id="btn-support" href="#" role="button" data-i18n="ui.supportAuthor" data-i18n-title="ui.supportAuthorTitle"></a>
+      </div>
+    </section>
+
     </section>
 
     <!-- Оверлей -->
