@@ -421,7 +421,7 @@
         </div>
         </section>
 
-        <div class="style-card">
+        <div class="style-card style-card-presets">
             <div class="style-card-info">
               <span class="style-card-title" data-i18n="ui.cardStyles"></span>
               <span class="style-card-desc" data-i18n="ui.cardStylesDesc"></span>
