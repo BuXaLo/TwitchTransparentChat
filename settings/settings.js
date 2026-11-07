@@ -344,19 +344,18 @@
               <select id="${p}animation">${animOptions()}</select>
             </label>
             <button type="button" class="secondary anim-preview-btn" data-anim-preview="${p}" data-i18n-title="ui.animPreviewTitle" data-i18n="ui.animPreview"></button>
-            <div class="setting-choice-row">
-              <span id="${p}direction-label" data-i18n="ui.direction"></span>
-              <div class="setting-choice rot-seg" role="group" aria-labelledby="${p}direction-label">
-                <button type="button" data-setting-choice="${p}chatDirection" data-value="top" data-i18n="ui.dirTop"></button>
-                <button type="button" data-setting-choice="${p}chatDirection" data-value="bottom" data-i18n="ui.dirBottom"></button>
-              </div>
-              <select id="${p}chatDirection" class="hidden" tabindex="-1" aria-hidden="true">
-                <option value="top" data-i18n="ui.dirTop"></option>
-                <option value="bottom" data-i18n="ui.dirBottom"></option>
-              </select>
+          </div>
+          <div class="setting-choice-row">
+            <span id="${p}direction-label" data-i18n="ui.direction"></span>
+            <div class="setting-choice rot-seg" role="group" aria-labelledby="${p}direction-label">
+              <button type="button" data-setting-choice="${p}chatDirection" data-value="top" data-i18n="ui.dirTop"></button>
+              <button type="button" data-setting-choice="${p}chatDirection" data-value="bottom" data-i18n="ui.dirBottom"></button>
             </div>
-            </div>
-        </div>
+            <select id="${p}chatDirection" class="hidden" tabindex="-1" aria-hidden="true">
+              <option value="top" data-i18n="ui.dirTop"></option>
+              <option value="bottom" data-i18n="ui.dirBottom"></option>
+            </select>
+          </div>
 
         <label class="checkbox-label" data-i18n-tip="ui.smoothShiftHint">
           <input type="checkbox" id="${p}smoothShift">
