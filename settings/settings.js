@@ -839,6 +839,16 @@
       await save({ forceReconnect: false });
     }
 
+    function showResetConfirmation(prefix, visible) {
+      const id = prefix === 'o_' ? 'overlay-reset-confirm' : 'widget-reset-confirm';
+      $(id).classList.toggle('hidden', !visible);
+    }
+
+    async function confirmResetSection(prefix) {
+      showResetConfirmation(prefix, false);
+      await resetSectionToDefaults(prefix);
+    }
+
     /* ---------------- Модальное окно Обновления ---------------- */
 
     function renderUpdateModalContent(data) {
@@ -1206,8 +1216,12 @@
 
       $('btn-test').onclick = () => window.api.sendTestMessage($('channel').value.trim());
       $('btn-widget-test').onclick = () => window.api.sendWidgetTest($('channel').value.trim());
-      $('btn-reset-overlay').onclick = () => resetSectionToDefaults('o_');
-      $('btn-reset-widget').onclick = () => resetSectionToDefaults('w_');
+      $('btn-reset-overlay').onclick = () => showResetConfirmation('o_', true);
+      $('btn-reset-widget').onclick = () => showResetConfirmation('w_', true);
+      $('overlay-reset-cancel').onclick = () => showResetConfirmation('o_', false);
+      $('widget-reset-cancel').onclick = () => showResetConfirmation('w_', false);
+      $('overlay-reset-ok').onclick = () => confirmResetSection('o_');
+      $('widget-reset-ok').onclick = () => confirmResetSection('w_');
       $('btn-save').onclick = () => save({ forceReconnect: true });
 
       const cfg = await window.api.loadConfig();
