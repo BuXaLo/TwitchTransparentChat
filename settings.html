@@ -299,7 +299,10 @@
   <!-- МОДАЛЬНОЕ ОКНО 2: Типографика и текст -->
   <div class="modal-backdrop hidden" id="modal-text">
     <div class="modal-window">
-      <div class="modal-header" data-i18n="ui.textModalTitle"></div>
+      <div class="modal-header modal-header-actions">
+        <span data-i18n="ui.textModalTitle"></span>
+        <button class="secondary" data-modal-reset="text" data-i18n="ui.modalReset"></button>
+      </div>
       <div class="modal-preview-pinned">
         <div class="modal-preview-wrap">
           <span class="modal-preview-label" data-i18n="ui.previewLabel"></span>
@@ -329,8 +332,7 @@
           <input type="color" id="m_textOutlineColor" value="#000000">
         </label>
       </div>
-      <div class="modal-footer">
-        <button class="secondary" data-modal-reset="text" data-i18n="ui.modalReset"></button>
+      <div class="modal-footer" style="justify-content: flex-end;">
         <div class="modal-footer-right">
           <button class="secondary" data-modal-cancel="text" data-i18n="ui.modalCancel"></button>
           <button class="primary" data-modal-apply="text" data-i18n="ui.modalSave"></button>
@@ -342,7 +344,10 @@
   <!-- МОДАЛЬНОЕ ОКНО 3: Кастомизация никнеймов -->
   <div class="modal-backdrop hidden" id="modal-nick">
     <div class="modal-window">
-      <div class="modal-header" data-i18n="ui.nickModalTitle"></div>
+      <div class="modal-header modal-header-actions">
+        <span data-i18n="ui.nickModalTitle"></span>
+        <button class="secondary" data-modal-reset="nick" data-i18n="ui.modalReset"></button>
+      </div>
       <div class="modal-preview-pinned">
         <div class="modal-preview-wrap">
           <span class="modal-preview-label" data-i18n="ui.previewLabel"></span>
@@ -379,8 +384,7 @@
           </label>
         </div>
       </div>
-      <div class="modal-footer">
-        <button class="secondary" data-modal-reset="nick" data-i18n="ui.modalReset"></button>
+      <div class="modal-footer" style="justify-content: flex-end;">
         <div class="modal-footer-right">
           <button class="secondary" data-modal-cancel="nick" data-i18n="ui.modalCancel"></button>
           <button class="primary" data-modal-apply="nick" data-i18n="ui.modalSave"></button>
@@ -392,7 +396,10 @@
   <!-- МОДАЛЬНОЕ ОКНО 3b: Картинка плашки -->
   <div class="modal-backdrop hidden" id="modal-image">
     <div class="modal-window">
-      <div class="modal-header" data-i18n="ui.imageModalTitle"></div>
+      <div class="modal-header modal-header-actions">
+        <span data-i18n="ui.imageModalTitle"></span>
+        <button class="secondary" data-modal-reset="image" data-i18n="ui.modalReset"></button>
+      </div>
       <div class="modal-preview-pinned">
         <div class="modal-preview-wrap">
           <span class="modal-preview-label" data-i18n="ui.previewLabel"></span>
@@ -486,8 +493,7 @@
         <p class="note" id="m_cardImageScopeNote" data-i18n="ui.cardImageScopeNote"></p>
         <p class="note" id="m_cardImageScopeNoteW" data-i18n="ui.cardImageScopeNoteWidget" style="display:none"></p>
       </div>
-      <div class="modal-footer">
-        <button class="secondary" data-modal-reset="image" data-i18n="ui.modalReset"></button>
+      <div class="modal-footer" style="justify-content: flex-end;">
         <div class="modal-footer-right">
           <button class="secondary" data-modal-cancel="image" data-i18n="ui.modalCancel"></button>
           <button class="primary" data-modal-apply="image" data-i18n="ui.modalSave"></button>
