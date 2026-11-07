@@ -353,17 +353,15 @@
           </label>
         </div>
 
-        <label class="checkbox-label">
+        <label class="checkbox-label" data-i18n-tip="ui.smoothShiftHint">
           <input type="checkbox" id="${p}smoothShift">
           <span data-i18n="ui.smoothShift"></span>
         </label>
-        <p class="note" data-i18n="ui.smoothShiftHint"></p>
 
-        <label class="checkbox-label">
+        <label class="checkbox-label" data-i18n-tip="ui.solidRibbonHint">
           <input type="checkbox" id="${p}solidRibbon">
           <span data-i18n="ui.solidRibbon"></span>
         </label>
-        <p class="note" data-i18n="ui.solidRibbonHint"></p>
 
         <span class="modal-preview-label" data-i18n="ui.appearPreviewLabel"></span>
         <div class="anim-preview-stage" data-anim-stage>
