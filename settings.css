@@ -210,7 +210,6 @@
       font-size: 11px;
       font-weight: 600;
     }
-    .general-support { align-items: stretch; }
     .proxy-switch {
       display: inline-flex;
       flex-direction: row;
@@ -734,7 +733,7 @@
     .checkbox-label[data-tip]:hover::after { left: 0; right: auto; }
     .style-card-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
     .reset-col { display: flex; flex-direction: column; align-items: stretch; gap: 6px; }
-    .support-wrap { display: flex; justify-content: center; margin: 4px 0; }
+    .support-wrap { display: flex; justify-content: center; margin: 6px 0 0; }
     .support-link {
       color: #8c8c99;
       font-size: 12px;
