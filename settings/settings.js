@@ -1017,6 +1017,34 @@
       $('btn-widget-test').disabled = !widgetStatus.running;
     }
 
+    function showNotification(message, type = 'info', duration = 5000) {
+      const stack = $('notification-stack');
+      const item = document.createElement('div');
+      item.className = 'app-notification' + (type ? ' ' + type : '');
+      item.setAttribute('role', type === 'error' ? 'alert' : 'status');
+
+      const text = document.createElement('span');
+      text.className = 'app-notification-message';
+      text.textContent = message;
+
+      const close = document.createElement('button');
+      close.type = 'button';
+      close.className = 'app-notification-close';
+      close.textContent = '×';
+      close.setAttribute('aria-label', tr('ui.notificationDismiss'));
+
+      let timer = null;
+      const dismiss = () => {
+        if (timer) clearTimeout(timer);
+        item.remove();
+      };
+      close.addEventListener('click', dismiss);
+      item.append(text, close);
+      stack.appendChild(item);
+      if (duration > 0) timer = setTimeout(dismiss, duration);
+      return dismiss;
+    }
+
     function showSaveStatus(textValue, warn) {
       const el = $('save-status');
       el.textContent = textValue;
@@ -1257,7 +1285,7 @@
     });
 
     const images = window.SettingsImages.create({
-      $, tr, trf, state: presetState, updateMiniPreviews, triggerTargetPreview
+      $, tr, trf, notify: showNotification, state: presetState, updateMiniPreviews, triggerTargetPreview
     });
 
     init();
