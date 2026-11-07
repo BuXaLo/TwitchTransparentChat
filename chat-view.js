@@ -491,14 +491,27 @@
         : top >= chat.clientHeight;
     }
 
+    const removalTimers = new Map();
+
+    function clearRemovalTimer(element) {
+      const timer = removalTimers.get(element);
+      if (timer) clearTimeout(timer);
+      removalTimers.delete(element);
+    }
+
+    function removeMessageNode(element) {
+      clearRemovalTimer(element);
+      if (element.parentNode) element.parentNode.removeChild(element);
+    }
+
     function enforceMessageLimit() {
       while (chat.children.length > MAX_DOM_MESSAGES) {
-        chat.removeChild(chat.lastChild);
+        removeMessageNode(chat.lastChild);
       }
       if (config.solidRibbon) {
         // Сплошная лента: убираем только то, что целиком ушло за границу; частично видимое остаётся и растворяется маской
         while (chat.children.length > 1 && isFullyOutside(chat.lastChild)) {
-          chat.removeChild(chat.lastChild);
+          removeMessageNode(chat.lastChild);
         }
         return;
       }
@@ -512,12 +525,15 @@
       const lifetime = config.messageLifetime;
       if (!lifetime || lifetime <= 0) return;
 
-      setTimeout(() => {
+      const timer = setTimeout(() => {
+        if (!element.parentNode) {
+          clearRemovalTimer(element);
+          return;
+        }
         element.classList.add('fade-out');
-        setTimeout(() => {
-          if (element.parentNode) element.parentNode.removeChild(element);
-        }, 800);
+        removalTimers.set(element, setTimeout(() => removeMessageNode(element), 800));
       }, lifetime * factor * 1000);
+      removalTimers.set(element, timer);
     }
 
     function insertMessage(el) {
@@ -606,9 +622,8 @@
       el.dataset.removing = '1';
       el.style.transitionDuration = '0.2s';
       el.classList.add('fade-out');
-      setTimeout(() => {
-        if (el.parentNode) el.parentNode.removeChild(el);
-      }, 220);
+      clearRemovalTimer(el);
+      removalTimers.set(el, setTimeout(() => removeMessageNode(el), 220));
     }
 
     function removeMessages(info) {
@@ -737,7 +752,7 @@
     }
 
     function clear() {
-      while (chat.firstChild) chat.removeChild(chat.firstChild);
+      while (chat.firstChild) removeMessageNode(chat.firstChild);
     }
 
     return {
