@@ -97,7 +97,7 @@
 
     <!-- Оверлей -->
     <section class="tab hidden" id="tab-overlay">
-      <div id="overlay-form" style="display: flex; flex-direction: column; gap: 10px;"></div>
+      <div id="overlay-form" class="appearance-form" style="display: flex; flex-direction: column; gap: 10px;"></div>
       <div class="tab-actions">
         <button class="accent" id="btn-test" data-i18n="ui.test"></button>
         <div class="reset-col">
@@ -109,6 +109,8 @@
 
     <!-- Виджет для OBS -->
     <section class="tab hidden" id="tab-widget">
+      <section class="form-group widget-server-group">
+        <h3 class="section-title" data-i18n="ui.widgetServer"></h3>
       <label class="checkbox-label">
         <input type="checkbox" id="widgetEnabled">
         <span data-i18n="ui.widgetEnable"></span>
@@ -132,9 +134,9 @@
         <span id="widget-status-text"></span>
       </div>
       <p class="note" data-i18n="ui.widgetHint"></p>
+      </section>
 
-      <hr>
-      <div id="widget-form" style="display: flex; flex-direction: column; gap: 10px;"></div>
+      <div id="widget-form" class="appearance-form" style="display: flex; flex-direction: column; gap: 10px;"></div>
       <div class="tab-actions">
         <button class="accent" id="btn-widget-test" data-i18n="ui.widgetTest"></button>
         <button class="secondary" id="btn-reset-widget" data-i18n="ui.resetTabDefaults"></button>
