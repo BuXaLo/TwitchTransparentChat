@@ -1056,6 +1056,7 @@
     }
 
     let savedSnapshot = null;
+    let saveChangeRevision = 0;
 
     function getSaveSnapshot() {
       return JSON.stringify(Object.assign(readGeneral(), readAppearance('o_'), presets.readExtras('o_'), {
@@ -1138,6 +1139,7 @@
       });
       const submittedConfig = JSON.parse(JSON.stringify(cfg));
       delete submittedConfig._forceReconnect;
+      const submittedRevision = saveChangeRevision;
 
       try {
         const result = await window.api.saveConfig(cfg);
@@ -1157,7 +1159,9 @@
         }
         if (result.widget) renderWidgetStatus(result.widget);
 
-        savedSnapshot = JSON.stringify(submittedConfig);
+        savedSnapshot = submittedRevision === saveChangeRevision
+          ? getSaveSnapshot()
+          : JSON.stringify(submittedConfig);
         const widgetFailed = widgetEnabled && result.widget && result.widget.error;
         if (getSaveSnapshot() !== savedSnapshot) {
           setSaveIndicator('dirty');
@@ -1279,6 +1283,7 @@
       $('btn-save').onclick = () => save({ forceReconnect: true });
       const handleSaveRelevantChange = (event) => {
         if (event.target.closest('.modal-backdrop')) return;
+        saveChangeRevision++;
         updateSaveIndicator();
       };
       document.addEventListener('input', handleSaveRelevantChange);
