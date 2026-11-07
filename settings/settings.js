@@ -304,7 +304,9 @@
       };
 
       return `
-        <div class="row">
+        <section class="form-group">
+          <h3 class="section-title" data-i18n="ui.messageSettings"></h3>
+          <div class="row">
           <label>
             <span data-i18n="ui.font"></span>
             <select id="${p}fontFamily">${fontOptions}</select>
@@ -332,15 +334,21 @@
             <input type="number" id="${p}messageLifetime" min="0" max="300" value="15">
           </label>
         </div>
+        </section>
 
-        <div class="row">
-          <label>
-            <span data-i18n="ui.animation"></span>
-            <select id="${p}animation">${animOptions()}</select>
-          </label>
-          <label>
-            <span data-i18n="ui.direction"></span>
-            <select id="${p}chatDirection">
+        <section class="form-group">
+          <h3 class="section-title" data-i18n="ui.appearanceBehavior"></h3>
+          <div class="row animation-settings-row">
+            <label>
+              <span data-i18n="ui.animation"></span>
+              <div class="animation-control-row">
+                <select id="${p}animation">${animOptions()}</select>
+                <button type="button" class="secondary anim-preview-btn" data-anim-preview="${p}" data-i18n-title="ui.animPreviewTitle" data-i18n="ui.animPreview"></button>
+              </div>
+            </label>
+            <label>
+              <span data-i18n="ui.direction"></span>
+              <select id="${p}chatDirection">
               <option value="top" data-i18n="ui.dirTop"></option>
               <option value="bottom" data-i18n="ui.dirBottom"></option>
             </select>
@@ -360,13 +368,15 @@
         <p class="note" data-i18n="ui.solidRibbonHint"></p>
 
         <span class="modal-preview-label" data-i18n="ui.appearPreviewLabel"></span>
-        <button type="button" class="secondary anim-preview-btn" data-anim-preview="${p}" data-i18n-title="ui.animPreviewTitle" data-i18n="ui.animPreview" style="align-self: flex-start;"></button>
         <div class="anim-preview-stage" data-anim-stage>
           <div class="anim-preview-plate mini-preview-plate" data-anim-plate>
             <span class="mini-author-wrap"><span class="mini-badge">★</span><span class="mini-nick" data-anim-nick>TestViewer</span><span class="mini-colon">: </span></span><span class="mini-text" data-i18n="ui.previewSampleText"></span>
           </div>
         </div>
+        </section>
 
+        <section class="form-group">
+          <h3 class="section-title" data-i18n="ui.appearanceSettings"></h3>
         <label>
           <span data-i18n="ui.layout"></span>
           <select id="${p}layoutMode">
@@ -383,7 +393,6 @@
           </div>
         </label>
 
-        <div class="section-title" data-i18n="ui.customizeSection"></div>
         <div class="style-cards">
           <div class="style-card">
             <div class="style-card-info">
@@ -408,27 +417,32 @@
           </div>
           <div class="style-card">
             <div class="style-card-info">
-              <span class="style-card-title" data-i18n="ui.cardStyles"></span>
-              <span class="style-card-desc" data-i18n="ui.cardStylesDesc"></span>
-            </div>
-            <div class="style-card-actions">
-              <button type="button" class="accent" data-open-extra="userstyles" data-prefix="${p}" data-i18n="ui.btnUserStyles"></button>
-              <button type="button" class="accent with-dot" data-open-extra="rotation" data-prefix="${p}"><span class="dot" data-rot-dot="${p}"></span><span data-i18n="ui.btnRotation"></span></button>
-              <button type="button" class="accent" data-open-modal="styles" data-prefix="${p}" data-i18n="ui.btnOpenStyles"></button>
-            </div>
-          </div>
-          <div class="style-card">
-            <div class="style-card-info">
               <span class="style-card-title" data-i18n="ui.cardImage"></span>
               <span class="style-card-desc" data-i18n="ui.cardImageDesc"></span>
             </div>
             <button type="button" class="accent" data-open-modal="image" data-prefix="${p}" data-i18n="ui.btnConfigure"></button>
           </div>
         </div>
+        </section>
 
-        <hr>
+        <section class="form-group">
+          <h3 class="section-title" data-i18n="ui.stylesAutomation"></h3>
+          <div class="style-card">
+            <div class="style-card-info">
+              <span class="style-card-title" data-i18n="ui.cardStyles"></span>
+              <span class="style-card-desc" data-i18n="ui.cardStylesDesc"></span>
+            </div>
+            <div class="style-card-actions">
+              <button type="button" class="secondary" data-open-extra="userstyles" data-prefix="${p}" data-i18n="ui.btnUserStyles"></button>
+              <button type="button" class="secondary with-dot" data-open-extra="rotation" data-prefix="${p}"><span class="dot" data-rot-dot="${p}"></span><span data-i18n="ui.btnRotation"></span></button>
+              <button type="button" class="accent" data-open-modal="styles" data-prefix="${p}" data-i18n="ui.btnOpenStyles"></button>
+            </div>
+          </div>
+        </section>
 
-        <label class="checkbox-label"${p === 'w_' ? ' style="display:none"' : ''}>
+        <section class="form-group">
+          <h3 class="section-title" data-i18n="ui.twitchEvents"></h3>
+          <label class="checkbox-label"${p === 'w_' ? ' style="display:none"' : ''}>
           <input type="checkbox" id="${p}highlightMentions">
           <span data-i18n="ui.highlightMentions"></span>
         </label>
@@ -441,6 +455,7 @@
         <label class="checkbox-label"><input type="checkbox" id="${p}showResub"><span data-i18n="ui.noticeResub"></span></label>
         <label class="checkbox-label"><input type="checkbox" id="${p}showGift"><span data-i18n="ui.noticeGift"></span></label>
         <label class="checkbox-label"><input type="checkbox" id="${p}showRaid"><span data-i18n="ui.noticeRaid"></span></label>
+        </section>
       `;
     }
 
