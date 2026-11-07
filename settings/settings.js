@@ -1054,12 +1054,45 @@
       return dismiss;
     }
 
-    function showSaveStatus(textValue, warn) {
+    let savedSnapshot = null;
+
+    function getSaveSnapshot() {
+      return JSON.stringify(Object.assign(readGeneral(), readAppearance('o_'), presets.readExtras('o_'), {
+        widgetEnabled: $('widgetEnabled').checked,
+        widgetPort: $('widgetPort').value.trim(),
+        widget: Object.assign(readAppearance('w_'), presets.readExtras('w_'))
+      }));
+    }
+
+    function setSaveIndicator(type) {
       const el = $('save-status');
-      el.textContent = textValue;
-      el.classList.toggle('warn', !!warn);
-      clearTimeout(showSaveStatus.timer);
-      showSaveStatus.timer = setTimeout(() => { el.textContent = ''; }, 4000);
+      clearTimeout(setSaveIndicator.timer);
+      el.className = type === 'dirty' || type === 'widgetFailed' ? 'warn' : type === 'error' ? 'error' : '';
+      const keys = {
+        dirty: 'ui.unsavedChanges',
+        saved: 'ui.allChangesSaved',
+        error: 'ui.saveFailed',
+        widgetFailed: 'ui.savedWidgetFailed'
+      };
+      el.textContent = tr(keys[type] || '');
+      if (type === 'saved') {
+        setSaveIndicator.timer = setTimeout(() => {
+          if (el.textContent === tr('ui.allChangesSaved')) el.textContent = '';
+        }, 3000);
+      }
+    }
+
+    function updateSaveIndicator() {
+      if (savedSnapshot === null) return;
+      const dirty = getSaveSnapshot() !== savedSnapshot;
+      const el = $('save-status');
+      if (dirty) {
+        setSaveIndicator('dirty');
+      } else if (el.classList.contains('warn') || el.classList.contains('error')) {
+        el.textContent = '';
+        el.className = '';
+        clearTimeout(setSaveIndicator.timer);
+      }
     }
 
     /* ---------------- Вкладки ---------------- */
@@ -1101,20 +1134,36 @@
         widget: Object.assign(readAppearance('w_'), presets.readExtras('w_')),
         _forceReconnect: forceReconnect
       });
+      const submittedSnapshot = JSON.stringify(cfg, (key, value) => key === '_forceReconnect' ? undefined : value);
 
-      const result = await window.api.saveConfig(cfg);
-      if (result && result.widgetPort) {
-        $('widgetPort').value = result.widgetPort;
-        updateLink();
-      }
-      if (result && Array.isArray(result.customPresets)) {
-        customPresets = result.customPresets;
-        presets.renderPresetsLists();
-      }
-      if (result && result.widget) renderWidgetStatus(result.widget);
+      try {
+        const result = await window.api.saveConfig(cfg);
+        if (!result || result.ok !== true) {
+          setSaveIndicator('error');
+          return;
+        }
+        if (result.widgetPort) {
+          $('widgetPort').value = result.widgetPort;
+          updateLink();
+        }
+        if (Array.isArray(result.customPresets)) {
+          customPresets = result.customPresets;
+          presets.renderPresetsLists();
+        }
+        if (result.widget) renderWidgetStatus(result.widget);
 
-      const widgetFailed = widgetEnabled && result && result.widget && result.widget.error;
-      showSaveStatus(tr(widgetFailed ? 'ui.savedWidgetFailed' : 'ui.saved'), widgetFailed);
+        savedSnapshot = submittedSnapshot;
+        const widgetFailed = widgetEnabled && result.widget && result.widget.error;
+        if (widgetFailed) {
+          setSaveIndicator('widgetFailed');
+        } else {
+          setSaveIndicator('saved');
+        }
+        updateSaveIndicator();
+      } catch (error) {
+        console.error('[Settings] Save failed:', error);
+        setSaveIndicator('error');
+      }
     }
 
     /* ---------------- Папка настроек ---------------- */
@@ -1222,6 +1271,8 @@
       $('overlay-reset-ok').onclick = () => confirmResetSection('o_');
       $('widget-reset-ok').onclick = () => confirmResetSection('w_');
       $('btn-save').onclick = () => save({ forceReconnect: true });
+      document.addEventListener('input', updateSaveIndicator);
+      document.addEventListener('change', updateSaveIndicator);
 
       const cfg = await window.api.loadConfig();
       if (cfg.defaults && typeof cfg.defaults === 'object') {
@@ -1272,6 +1323,9 @@
       window.api.onStringsUpdated((data) => {
         applyStrings(data.strings, data.language);
       });
+
+      savedSnapshot = getSaveSnapshot();
+      updateSaveIndicator();
     }
 
     const preview = window.SettingsPreview.create({
