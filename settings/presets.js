@@ -11,7 +11,7 @@
     create(deps) {
       const {
         $, tr, trf, escapeHtml, state, STYLE_KEYS, readAppearance,
-        save, triggerTargetPreview, schedulePreview, scheduleWidgetPreview, preview
+        save, triggerTargetPreview, schedulePreview, scheduleWidgetPreview, preview, modalFocus
       } = deps;
       const { applyThumbStyle, paintMiniPlate, wirePresetHover } = preview;
 
@@ -647,7 +647,7 @@
       return /^[a-z0-9_]{1,25}$/.test(name) ? name : '';
     }
 
-    function openExtraModal(kind, p) {
+    function openExtraModal(kind, p, trigger) {
       state.extraTarget = p;
       const tabName = tr(p === 'o_' ? 'ui.tabOverlay' : 'ui.tabWidget');
       if (kind === 'userstyles') {
@@ -671,12 +671,14 @@
         renderRotation();
       }
       $(`modal-${kind}`).classList.remove('hidden');
+      modalFocus.open(`modal-${kind}`, trigger);
     }
 
     function closeExtraModal(kind) {
       if (kind === 'userstyles') { state.usEditing = null; state.usPendingDup = null; state.usPendingDelete = null; }
       if (kind === 'rotation') state.rotDraft = null;
       $(`modal-${kind}`).classList.add('hidden');
+      modalFocus.close(`modal-${kind}`);
     }
 
     function renderUserStyles() {
@@ -977,7 +979,7 @@
 
     function wireExtraModals() {
       document.querySelectorAll('[data-open-extra]').forEach((btn) => {
-        btn.addEventListener('click', () => openExtraModal(btn.dataset.openExtra, btn.dataset.prefix));
+        btn.addEventListener('click', () => openExtraModal(btn.dataset.openExtra, btn.dataset.prefix, btn));
       });
       document.querySelectorAll('[data-extra-close]').forEach((btn) => {
         btn.addEventListener('click', () => closeExtraModal(btn.dataset.extraClose));

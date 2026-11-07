@@ -614,13 +614,61 @@
       updateMiniPreviews(activeModalTarget);
     }
 
-    function openStyleModal(kind, prefix) {
+    const modalFocus = (() => {
+      let activeId = null, opener = null, inertState = [];
+      function focusable(root) {
+        return Array.from(root.querySelectorAll('button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])'))
+          .filter((el) => !el.closest('.hidden') && el.getClientRects().length);
+      }
+      function open(id, trigger) {
+        const root = $(id);
+        if (!root) return;
+        if (activeId) close(activeId);
+        activeId = id;
+        opener = trigger || (document.activeElement !== document.body ? document.activeElement : null);
+        inertState = Array.from(document.body.children).filter((el) => el !== root).map((el) => ({ el, inert: el.inert }));
+        inertState.forEach(({ el }) => { el.inert = true; });
+        const panel = root.querySelector('.modal-window');
+        if (panel && !panel.hasAttribute('tabindex')) panel.setAttribute('tabindex', '-1');
+        const items = focusable(root);
+        (items[0] || panel || root).focus();
+      }
+      function close(id) {
+        if (activeId !== id) return;
+        inertState.forEach(({ el, inert }) => { el.inert = inert; });
+        inertState = [];
+        const target = opener;
+        activeId = null; opener = null;
+        if (target && target.isConnected && !target.disabled) target.focus();
+      }
+      document.addEventListener('keydown', (event) => {
+        if (!activeId || event.key !== 'Tab') return;
+        const root = $(activeId);
+        if (!root || root.classList.contains('hidden')) return;
+        const items = focusable(root);
+        if (!items.length) { event.preventDefault(); root.querySelector('.modal-window')?.focus(); return; }
+        const first = items[0], last = items[items.length - 1];
+        if (event.shiftKey && (document.activeElement === first || !root.contains(document.activeElement))) { event.preventDefault(); last.focus(); }
+        else if (!event.shiftKey && (document.activeElement === last || !root.contains(document.activeElement))) { event.preventDefault(); first.focus(); }
+      }, true);
+      document.addEventListener('focusin', (event) => {
+        if (!activeId) return;
+        const root = $(activeId);
+        if (root && !root.classList.contains('hidden') && !root.contains(event.target)) {
+          const items = focusable(root); (items[0] || root.querySelector('.modal-window'))?.focus();
+        }
+      }, true);
+      return { open, close };
+    })();
+
+    function openStyleModal(kind, prefix, trigger) {
       activeModalTarget = prefix;
       $('m_cardImageScopeNote').style.display = prefix === 'w_' ? 'none' : '';
       $('m_cardImageScopeNoteW').style.display = prefix === 'w_' ? '' : 'none';
       modalSnapshot = Object.assign({}, readAppearance(prefix));
       populateModalInputsFromState(kind, appearanceState[prefix]);
       $(`modal-${kind}`).classList.remove('hidden');
+      modalFocus.open(`modal-${kind}`, trigger);
     }
 
     function resetModalToDefaults(kind) {
@@ -708,6 +756,7 @@
       modalSnapshot = null;
       if (kind === 'styles') presets.cancelPresetConfirms();
       $(`modal-${kind}`).classList.add('hidden');
+      modalFocus.close(`modal-${kind}`);
       if (applyAndSave) {
         await save({ forceReconnect: false });
       }
@@ -715,7 +764,7 @@
 
     function wireStyleModals() {
       document.querySelectorAll('[data-open-modal]').forEach((btn) => {
-        btn.addEventListener('click', () => openStyleModal(btn.dataset.openModal, btn.dataset.prefix));
+        btn.addEventListener('click', () => openStyleModal(btn.dataset.openModal, btn.dataset.prefix, btn));
       });
 
       document.querySelectorAll('[data-modal-cancel]').forEach((btn) => {
@@ -865,6 +914,7 @@
         : `<p class="note">${escapeHtml(tr('ui.updateNotesUnavailable'))}</p>`;
       $('btn-update-now').textContent = data.isPortable ? tr('ui.btnUpdateDownload') : tr('ui.btnUpdateNow');
       $('modal-update').classList.remove('hidden');
+      modalFocus.open('modal-update');
     }
 
     function showUpdateModal(data) {
@@ -900,15 +950,17 @@
         }
       };
 
-      $('btn-remind-later').onclick = () => {
+      const closeUpdateModal = () => {
         $('modal-update').classList.add('hidden');
+        modalFocus.close('modal-update');
       };
+      $('btn-remind-later').onclick = closeUpdateModal;
 
       $('btn-skip-version').onclick = async () => {
         if (currentUpdateData && currentUpdateData.latestVersion) {
           await window.api.skipUpdateVersion(currentUpdateData.latestVersion);
         }
-        $('modal-update').classList.add('hidden');
+        closeUpdateModal();
       };
 
       $('btn-update-now').onclick = async () => {
@@ -925,7 +977,7 @@
           res = { mode: 'error', error: e && e.message ? e.message : String(e) };
         }
         if (res && res.mode === 'browser') {
-          $('modal-update').classList.add('hidden');
+          closeUpdateModal();
         } else if (res && res.mode === 'browser-fallback') {
           const msg = res.reason === 'not-available' ? tr('ui.updateNoInstallable') : res.error;
           progEl.textContent = trf('ui.updateFallbackOpened', { msg });
@@ -1363,7 +1415,7 @@
     const presets = window.SettingsPresets.create({
       $, tr, trf, escapeHtml, state: presetState, STYLE_KEYS,
       readAppearance, save, triggerTargetPreview, schedulePreview,
-      scheduleWidgetPreview, preview
+      scheduleWidgetPreview, preview, modalFocus
     });
 
     const images = window.SettingsImages.create({
