@@ -10,7 +10,7 @@
   const CARD_IMAGE_MAX_SOURCE_SIDE = 8000;
   const CARD_IMAGE_RESULT_MAX_BYTES = 5 * 1024 * 1024;
 
-  function create({ $, tr, trf, state, updateMiniPreviews, triggerTargetPreview }) {
+  function create({ $, tr, trf, notify, state, updateMiniPreviews, triggerTargetPreview }) {
     let cardImages = [];
 
     function activeAppearance() {
@@ -78,7 +78,7 @@
       if (!file) return;
       if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) return;
       if (file.size > CARD_IMAGE_MAX_BYTES) {
-        alert(tr('ui.cardImageTooBig'));
+        notify(tr('ui.cardImageTooBig'), 'warning');
         return;
       }
 
@@ -86,13 +86,13 @@
       const blob = new Blob([buf], { type: file.type });
       const bitmap = await createImageBitmap(blob).catch(() => null);
       if (!bitmap) {
-        alert(tr('ui.cardImageAnimated'));
+        notify(tr('ui.cardImageAnimated'), 'warning');
         return;
       }
       const longSide = Math.max(bitmap.width, bitmap.height);
       if (longSide > CARD_IMAGE_MAX_SOURCE_SIDE) {
         bitmap.close && bitmap.close();
-        alert(tr('ui.cardImageBadSize'));
+        notify(tr('ui.cardImageBadSize'), 'warning');
         return;
       }
 
@@ -111,14 +111,14 @@
       let webpBlob = await toWebp(0.9);
       if (webpBlob && webpBlob.size > CARD_IMAGE_RESULT_MAX_BYTES) webpBlob = await toWebp(0.75);
       if (!webpBlob || webpBlob.size > CARD_IMAGE_RESULT_MAX_BYTES) {
-        alert(tr('ui.cardImageResultTooBig'));
+        notify(tr('ui.cardImageResultTooBig'), 'error');
         return;
       }
       const webpBuf = await webpBlob.arrayBuffer();
       const name = ($('m_cardImageName').value || '').trim() || (file.name || 'Picture').replace(/\.[^.]+$/, '');
       const res = await window.api.saveCardImage(webpBuf, name);
       if (!res || !res.ok) {
-        alert(tr(res && res.error === 'size' ? 'ui.cardImageResultTooBig' : 'ui.cardImageSaveFailed'));
+        notify(tr(res && res.error === 'size' ? 'ui.cardImageResultTooBig' : 'ui.cardImageSaveFailed'), 'error');
         return;
       }
 
@@ -131,6 +131,7 @@
       st.cardImageOpacity = 60;
       st.cardImageScale = 100;
       await syncImageModalCustomOption();
+      notify(tr('ui.cardImageUploaded'), 'success');
       $('m_cardImageSource').value = `img:${res.id}`;
       $('m_cardImageName').value = res.name;
       $('m_cardImageManageRow').style.display = '';
@@ -237,10 +238,11 @@
         if (!name) return;
         const res = await window.api.renameCardImage(st.cardImageCustom, name);
         if (!res || !res.ok) {
-          alert(tr('ui.cardImageSaveFailed'));
+          notify(tr('ui.cardImageSaveFailed'), 'error');
           return;
         }
         remapCardRefsInState(res.oldId, res.id);
+        notify(tr('ui.cardImageRenamed'), 'success');
         await syncImageModalCustomOption();
         $('m_cardImageSource').value = `img:${res.id}`;
         $('m_cardImageName').value = res.name;
@@ -273,10 +275,11 @@
         if (!deletedId) return;
         const res = await window.api.deleteCardImage(deletedId);
         if (!res || !res.ok) {
-          alert(tr('ui.cardImageSaveFailed'));
+          notify(tr('ui.cardImageSaveFailed'), 'error');
           return;
         }
         remapCardRefsInState(deletedId, '');
+        notify(tr('ui.cardImageDeleted'), 'success');
         st.cardImageCustom = '';
         st.cardImagePreset = 'none';
         await syncImageModalCustomOption();
