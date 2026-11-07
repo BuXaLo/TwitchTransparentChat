@@ -390,7 +390,11 @@
 
       Array.from(chat.children).forEach((el) => {
         if (el.classList.contains('is-notice')) return;
-        if (el._ownCfg) return; // сообщение со своим стилем (по нику / ротация) не перекрашивается общими настройками
+        if (el._ownCfg) {
+          // Размер шрифта общий для всех сообщений, даже если оформление плашки индивидуальное.
+          el.style.setProperty('--font-size', `${config.fontSize || 14}px`);
+          return; // остальные параметры индивидуального стиля не перекрашиваем общими настройками
+        }
         // Снимаем служебные классы по префиксу: эффекты рамки и формы больше не перечисляются вручную
         Array.from(el.classList).filter((c) => c.startsWith('effect-') || c.startsWith('shape-')).forEach((c) => el.classList.remove(c));
         plateClasses.forEach((c) => el.classList.add(c));
