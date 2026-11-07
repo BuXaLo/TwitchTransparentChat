@@ -109,13 +109,13 @@
 
     <!-- Виджет для OBS -->
     <section class="tab hidden" id="tab-widget">
-      <section class="form-group widget-server-group">
-        <h3 class="section-title" data-i18n="ui.widgetServer"></h3>
-      <label class="proxy-switch">
-        <span data-i18n="ui.widgetEnable"></span>
-        <input type="checkbox" id="widgetEnabled" role="switch">
-        <span class="proxy-switch-track" aria-hidden="true"></span>
-      </label>
+      <div class="widget-server-group">
+        <label class="proxy-switch">
+          <span data-i18n="ui.widgetEnable"></span>
+          <input type="checkbox" id="widgetEnabled" role="switch">
+          <span class="proxy-switch-track" aria-hidden="true"></span>
+        </label>
+      </div>
       <div id="widgetSettings" class="widget-settings hidden">
       <label>
         <span data-i18n="ui.widgetPort"></span>
@@ -135,13 +135,12 @@
         <span id="widget-status-text"></span>
       </div>
       <p class="note" data-i18n="ui.widgetHint"></p>
-      </div>
-      </section>
 
       <div id="widget-form" class="appearance-form" style="display: flex; flex-direction: column; gap: 10px;"></div>
       <div class="tab-actions">
         <button class="accent" id="btn-widget-test" data-i18n="ui.widgetTest"></button>
         <button class="secondary" id="btn-reset-widget" data-i18n="ui.resetTabDefaults"></button>
+      </div>
       </div>
     </section>
   </div>
