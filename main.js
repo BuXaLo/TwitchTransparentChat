@@ -650,6 +650,15 @@ ipcMain.handle('install-update', async (event, updateInfo) => {
 /* IPC обработчики настроек и предпросмотра */
 /* ------------------------------------------------------------------ */
 
+ipcMain.handle('test-proxy', async (event, proxy) => {
+  try {
+    await emotes.testProxy(proxy || {});
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err && err.message ? err.message : 'Connection failed' };
+  }
+});
+
 ipcMain.handle('load-config', () => Object.assign({}, getConfig(), {
   language: currentLanguage(),
   currentVersion: app.getVersion(),
