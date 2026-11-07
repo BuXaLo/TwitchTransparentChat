@@ -1125,6 +1125,7 @@
         label.className = 'error';
         label.textContent = tr('ui.widgetPortInvalid');
         $('widgetPort').focus();
+        setSaveIndicator('error');
         return;
       }
 
@@ -1134,7 +1135,7 @@
         widget: Object.assign(readAppearance('w_'), presets.readExtras('w_')),
         _forceReconnect: forceReconnect
       });
-      const submittedSnapshot = JSON.stringify(cfg, (key, value) => key === '_forceReconnect' ? undefined : value);
+      const submittedConfig = JSON.parse(JSON.stringify(cfg));
 
       try {
         const result = await window.api.saveConfig(cfg);
@@ -1144,22 +1145,25 @@
         }
         if (result.widgetPort) {
           $('widgetPort').value = result.widgetPort;
+          submittedConfig.widgetPort = result.widgetPort;
           updateLink();
         }
         if (Array.isArray(result.customPresets)) {
           customPresets = result.customPresets;
+          submittedConfig.customPresets = result.customPresets;
           presets.renderPresetsLists();
         }
         if (result.widget) renderWidgetStatus(result.widget);
 
-        savedSnapshot = submittedSnapshot;
+        savedSnapshot = JSON.stringify(submittedConfig);
         const widgetFailed = widgetEnabled && result.widget && result.widget.error;
-        if (widgetFailed) {
+        if (getSaveSnapshot() !== savedSnapshot) {
+          setSaveIndicator('dirty');
+        } else if (widgetFailed) {
           setSaveIndicator('widgetFailed');
         } else {
           setSaveIndicator('saved');
         }
-        updateSaveIndicator();
       } catch (error) {
         console.error('[Settings] Save failed:', error);
         setSaveIndicator('error');
