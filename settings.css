@@ -883,6 +883,9 @@
     .rot-seg button { border: none; border-radius: 0; background: #1d1d26; color: #bbb; padding: 6px 12px; font-size: 12px; cursor: pointer; }
     .rot-seg button.active { background: #9146FF; color: #fff; }
     .rot-seg button:disabled { opacity: 0.4; cursor: not-allowed; }
+    .setting-choice-row { display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 10px; }
+    .setting-choice { flex-shrink: 0; }
+    .setting-choice button { padding: 5px 10px; }
     .style-card-actions button.with-dot { display: inline-flex; align-items: center; gap: 6px; }
     .preset-delete-btn {
       background: rgba(255, 82, 82, 0.12);

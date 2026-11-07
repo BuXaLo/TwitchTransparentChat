@@ -344,13 +344,17 @@
               <select id="${p}animation">${animOptions()}</select>
             </label>
             <button type="button" class="secondary anim-preview-btn" data-anim-preview="${p}" data-i18n-title="ui.animPreviewTitle" data-i18n="ui.animPreview"></button>
-            <label>
-              <span data-i18n="ui.direction"></span>
-              <select id="${p}chatDirection">
-              <option value="top" data-i18n="ui.dirTop"></option>
-              <option value="bottom" data-i18n="ui.dirBottom"></option>
-            </select>
-          </label>
+            <label class="setting-choice-row">
+              <div class="setting-choice rot-seg" role="group" aria-labelledby="${p}direction-label">
+                <button type="button" data-setting-choice="${p}chatDirection" data-value="top" data-i18n="ui.dirTop"></button>
+                <button type="button" data-setting-choice="${p}chatDirection" data-value="bottom" data-i18n="ui.dirBottom"></button>
+              </div>
+              <select id="${p}chatDirection" class="hidden" tabindex="-1" aria-hidden="true">
+                <option value="top" data-i18n="ui.dirTop"></option>
+                <option value="bottom" data-i18n="ui.dirBottom"></option>
+              </select>
+              <span id="${p}direction-label" data-i18n="ui.direction"></span>
+            </label>
         </div>
 
         <label class="checkbox-label" data-i18n-tip="ui.smoothShiftHint">
@@ -373,12 +377,16 @@
 
         <section class="form-group">
           <h3 class="section-title" data-i18n="ui.appearanceSettings"></h3>
-        <label>
-          <span data-i18n="ui.layout"></span>
-          <select id="${p}layoutMode">
+        <label class="setting-choice-row">
+          <div class="setting-choice rot-seg" role="group" aria-labelledby="${p}layout-label">
+            <button type="button" data-setting-choice="${p}layoutMode" data-value="inline" data-i18n="ui.layoutInline"></button>
+            <button type="button" data-setting-choice="${p}layoutMode" data-value="block" data-i18n="ui.layoutBlock"></button>
+          </div>
+          <select id="${p}layoutMode" class="hidden" tabindex="-1" aria-hidden="true">
             <option value="inline" data-i18n="ui.layoutInline"></option>
             <option value="block" data-i18n="ui.layoutBlock"></option>
           </select>
+          <span id="${p}layout-label" data-i18n="ui.layout"></span>
         </label>
 
         <label>
@@ -489,6 +497,7 @@
       if (a.animation !== undefined) $(p + 'animation').value = a.animation;
       if (a.chatDirection !== undefined) $(p + 'chatDirection').value = a.chatDirection;
       if (a.layoutMode !== undefined) $(p + 'layoutMode').value = a.layoutMode;
+      syncSettingChoices(p);
       if (a.highlightMentions !== undefined) $(p + 'highlightMentions').checked = p === 'w_' ? false : !!a.highlightMentions;
       if (a.mentionLonger !== undefined) $(p + 'mentionLonger').checked = p === 'w_' ? false : !!a.mentionLonger;
       if (a.smoothShift !== undefined) $(p + 'smoothShift').checked = !!a.smoothShift;
@@ -499,6 +508,17 @@
       syncMentionDependency(p);
     }
 
+    function syncSettingChoices(p) {
+      ['chatDirection', 'layoutMode'].forEach((key) => {
+        const select = $(p + key);
+        document.querySelectorAll(`[data-setting-choice="${p + key}"]`).forEach((button) => {
+          const active = button.dataset.value === select.value;
+          button.classList.toggle('active', active);
+          button.setAttribute('aria-pressed', String(active));
+        });
+      });
+    }
+
     function syncMentionDependency(p) {
       const on = $(p + 'highlightMentions').checked;
       $(p + 'mentionLonger').disabled = !on;
@@ -506,6 +526,19 @@
     }
 
     function wireAppearance(p, onChange) {
+      ['chatDirection', 'layoutMode'].forEach((key) => {
+        document.querySelectorAll(`[data-setting-choice="${p + key}"]`).forEach((button) => {
+          button.addEventListener('click', () => {
+            const select = $(p + key);
+            if (select.value === button.dataset.value) return;
+            select.value = button.dataset.value;
+            syncSettingChoices(p);
+            select.dispatchEvent(new Event('input', { bubbles: true }));
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+          });
+        });
+      });
+      syncSettingChoices(p);
       $(p + 'plateGap').addEventListener('input', () => { $(p + 'plateGapVal').textContent = `${$(p + 'plateGap').value}px`; });
       $(p + 'fontSize').addEventListener('input', () => { $(p + 'fontSizeVal').textContent = `${$(p + 'fontSize').value}px`; });
       $(p + 'highlightMentions').addEventListener('change', () => syncMentionDependency(p));
