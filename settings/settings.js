@@ -1136,6 +1136,7 @@
         _forceReconnect: forceReconnect
       });
       const submittedConfig = JSON.parse(JSON.stringify(cfg));
+      delete submittedConfig._forceReconnect;
 
       try {
         const result = await window.api.saveConfig(cfg);
