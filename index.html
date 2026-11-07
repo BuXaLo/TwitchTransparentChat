@@ -19,17 +19,28 @@
 
     .hidden { display: none !important; }
 
+    /* Ненавязчиво обозначаем границы окна, не перехватывая ввод. */
+    body.overlay-window::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      border: 1px solid rgba(145, 70, 255, 0.3);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.025);
+      pointer-events: none;
+      z-index: 1000;
+    }
+
     .titlebar {
       height: 28px;
-      background: rgba(18, 18, 22, 0.85);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(20, 20, 26, 0.9);
+      border-bottom: 1px solid rgba(145, 70, 255, 0.2);
       -webkit-app-region: drag;
       display: flex;
       align-items: center;
       justify-content: space-between;
       padding: 0 10px;
       font-size: 11px;
-      color: #aaa;
+      color: #c4c1cc;
       position: relative;
       z-index: 50;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -52,25 +63,44 @@
       border-radius: 50%;
       background: #777;
       flex-shrink: 0;
-      transition: background 0.3s;
+      transition: background 0.3s, box-shadow 0.3s;
     }
-    .status-dot.online { background: #00d26a; box-shadow: 0 0 6px #00d26a; }
-    .status-dot.connecting { background: #ffaa00; box-shadow: 0 0 6px #ffaa00; }
+    .status-dot.online { background: #00d26a; box-shadow: 0 0 4px rgba(0, 210, 106, 0.55); }
+    .status-dot.connecting { background: #ffaa00; box-shadow: 0 0 4px rgba(255, 170, 0, 0.5); }
     .status-dot.offline { background: #ff4757; }
 
     .btn-settings {
       -webkit-app-region: no-drag;
       cursor: pointer;
-      background: #9146FF;
-      border: none;
+      background: rgba(145, 70, 255, 0.88);
+      border: 1px solid rgba(177, 130, 255, 0.28);
       color: #fff;
       padding: 2px 8px;
       border-radius: 4px;
       font-size: 11px;
       font-weight: 600;
       flex-shrink: 0;
+      transition: background 0.15s, border-color 0.15s;
     }
-    .btn-settings:hover { background: #7c2cf5; }
+    .btn-settings:hover {
+      background: #7c2cf5;
+      border-color: rgba(196, 164, 255, 0.55);
+    }
+
+    #btn-clickthrough {
+      background: rgba(255, 255, 255, 0.07);
+      border-color: rgba(255, 255, 255, 0.12);
+      color: #dedbe5;
+    }
+    #btn-clickthrough:hover {
+      background: rgba(145, 70, 255, 0.2);
+      border-color: rgba(145, 70, 255, 0.42);
+    }
+
+    #status-text {
+      color: #c4c1cc;
+      font-weight: 500;
+    }
 
     .titlebar-buttons {
       display: flex;
@@ -109,7 +139,7 @@
     #chat { --chat-height: calc(100vh - 28px); }
   </style>
 </head>
-<body>
+<body class="overlay-window">
   <div class="titlebar" id="titlebar">
     <div class="status-wrap">
       <div class="status-dot" id="status-dot" data-i18n-title="ui.networkStatus"></div>
@@ -193,6 +223,7 @@
     window.api.onModeChanged((isClickThrough) => {
       titlebar.style.display = isClickThrough ? 'none' : 'flex';
       resizer.style.display = isClickThrough ? 'none' : 'block';
+      document.body.classList.toggle('overlay-window', !isClickThrough);
     });
 
     // Результат регистрации глобального хоткея
