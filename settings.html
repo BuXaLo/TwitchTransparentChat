@@ -7,24 +7,14 @@
   <link rel="stylesheet" href="settings.css">
 </head>
 <body>
-  <header class="settings-header">
-    <div class="settings-brand">
-      <span class="settings-brand-name">TwitchTransparentChat</span>
-      <span class="settings-version" id="app-version"></span>
-    </div>
-    <label class="settings-language">
-      <span data-i18n="ui.language"></span>
-      <select id="language">
-        <option value="en">English</option>
-        <option value="ru">Русский</option>
-      </select>
-    </label>
-  </header>
-
   <nav class="tabs" role="tablist" aria-label="Settings sections">
     <button class="tab-btn active" type="button" role="tab" aria-selected="true" data-tab="general" data-i18n="ui.tabGeneral"></button>
     <button class="tab-btn" type="button" role="tab" aria-selected="false" data-tab="overlay" data-i18n="ui.tabOverlay"></button>
     <button class="tab-btn" type="button" role="tab" aria-selected="false" data-tab="widget" data-i18n="ui.tabWidget"></button>
+    <div class="language-switch" role="group" aria-label="Language">
+      <button type="button" id="language-en" class="language-option" aria-pressed="true">EN</button>
+      <button type="button" id="language-ru" class="language-option" aria-pressed="false">RU</button>
+    </div>
   </nav>
 
   <div class="content">
@@ -67,6 +57,7 @@
       </label>
 
       <div class="update-bar">
+        <span class="settings-version" id="app-version"></span>
         <span id="update-check-status"></span>
         <button class="accent" id="btn-check-updates" data-i18n="ui.checkUpdates"></button>
       </div>
