@@ -773,7 +773,7 @@
 
     /* Мгновенная подсказка при наведении и при фокусе с клавиатуры (атрибут title появляется с задержкой) */
     [data-tip] { position: relative; }
-    [data-tip]:hover::after, [data-tip]:focus-visible::after {
+    [data-tip]:hover::after, [data-tip]:focus-visible::after, [data-tip]:focus-within::after {
       content: attr(data-tip);
       position: absolute;
       right: 0;
