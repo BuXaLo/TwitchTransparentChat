@@ -254,6 +254,49 @@
     .proxy-test-status.success { color: var(--ui-success); }
     .proxy-test-status.error { color: var(--ui-danger); }
 
+    .notification-stack {
+      position: fixed;
+      top: 12px;
+      right: 12px;
+      z-index: 2000;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      width: min(360px, calc(100vw - 24px));
+      pointer-events: none;
+    }
+    .app-notification {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 12px;
+      border: 1px solid var(--ui-border-strong);
+      border-left: 3px solid var(--ui-accent);
+      border-radius: var(--ui-radius-md);
+      background: var(--ui-surface-raised);
+      color: var(--ui-text);
+      box-shadow: 0 8px 24px rgba(0,0,0,.3);
+      pointer-events: auto;
+      overflow-wrap: anywhere;
+    }
+    .app-notification.success { border-left-color: var(--ui-success); }
+    .app-notification.error { border-left-color: var(--ui-danger); }
+    .app-notification.warning { border-left-color: var(--ui-warning); }
+    .app-notification-message { flex: 1; min-width: 0; }
+    .app-notification-close {
+      flex: 0 0 auto;
+      border: 0;
+      background: transparent;
+      color: var(--ui-text-muted);
+      cursor: pointer;
+      font: inherit;
+      font-size: 18px;
+      line-height: 1;
+      padding: 0 2px;
+    }
+    .app-notification-close:hover { color: var(--ui-text); }
+
+
 
     .note { font-size: 12px; color: var(--ui-text-subtle); line-height: 1.5; overflow-wrap: anywhere; }
     hr { border: none; border-top: 1px solid var(--ui-border); margin: 6px 0; }
