@@ -582,6 +582,24 @@
     .preset-lock-btn.on { background: #9146FF; border-color: #9146FF; color: #fff; }
     .preset-badge { color: #ffc247; }
     .rot-row.locked { opacity: 0.6; }
+    /* Базовая оболочка внутренних уведомлений; подключение поведения — отдельный этап. */
+    .ui-notice {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 9px 12px;
+      border: 1px solid var(--ui-border);
+      border-radius: var(--ui-radius-md);
+      background: var(--ui-surface-raised);
+      color: var(--ui-text);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .ui-notice.success { border-color: rgba(87, 214, 141, 0.45); color: #a7efc5; }
+    .ui-notice.warning { border-color: rgba(255, 189, 89, 0.45); color: #ffdaa0; }
+    .ui-notice.error { border-color: rgba(255, 98, 109, 0.5); color: #ffb0b6; }
+    .ui-notice.info { border-color: rgba(145, 70, 255, 0.45); color: #d8c1ff; }
+
     /* Мгновенная подсказка при наведении и при фокусе с клавиатуры (атрибут title появляется с задержкой) */
     [data-tip] { position: relative; }
     [data-tip]:hover::after, [data-tip]:focus-visible::after {
@@ -596,10 +614,10 @@
       font-size: 12px;
       line-height: 1.4;
       font-weight: 400;
-      color: #e8e8ee;
-      background: #2b2340;
-      border: 1px solid #9146FF;
-      border-radius: 6px;
+      color: var(--ui-text);
+      background: #292238;
+      border: 1px solid rgba(145, 70, 255, 0.72);
+      border-radius: var(--ui-radius-md);
       padding: 6px 9px;
       z-index: 50;
       pointer-events: none;
