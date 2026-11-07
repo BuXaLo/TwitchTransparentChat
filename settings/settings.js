@@ -357,12 +357,12 @@
             </select>
           </div>
 
-        <label class="checkbox-label" data-i18n-tip="ui.smoothShiftHint">
+        <label class="checkbox-label setting-hint-checkbox" data-i18n-tip="ui.smoothShiftHint">
           <input type="checkbox" id="${p}smoothShift">
           <span data-i18n="ui.smoothShift"></span>
         </label>
 
-        <label class="checkbox-label" data-i18n-tip="ui.solidRibbonHint">
+        <label class="checkbox-label setting-hint-checkbox" data-i18n-tip="ui.solidRibbonHint">
           <input type="checkbox" id="${p}solidRibbon">
           <span data-i18n="ui.solidRibbon"></span>
         </label>
