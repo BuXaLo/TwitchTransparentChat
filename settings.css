@@ -822,6 +822,17 @@
       line-height: 1; cursor: help;
     }
     .rot-help:hover, .rot-help:focus-visible { color: #fff; border-color: var(--ui-accent); }
+    .rot-help[data-tip]:hover::after,
+    .rot-help[data-tip]:focus-visible::after {
+      left: auto;
+      right: calc(100% + 8px);
+      top: 50%;
+      bottom: auto;
+      transform: translateY(-50%);
+      width: 220px;
+      max-width: min(220px, calc(100vw - 72px));
+      white-space: pre-line;
+    }
     #rot-controls { display: flex; flex-direction: column; gap: 6px; }
     .rot-source-option {
       display: flex; flex-direction: row; align-items: center; gap: 8px;
@@ -843,7 +854,8 @@
     .rot-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 10px; border-radius: 6px; background: #1d1d26; border: 1px solid #2b2b36; font-size: 12.5px; }
     .rot-row:hover { border-color: #9146FF; }
     .rot-row button { font-size: 11px; padding: 3px 10px; flex-shrink: 0; }
-    .rot-seg { display: inline-flex; border: 1px solid #3a3a46; border-radius: 6px; overflow: hidden; }
+    .rot-seg { display: inline-flex; align-self: flex-start; width: fit-content; max-width: 100%; border: 1px solid #3a3a46; border-radius: 6px; overflow: hidden; }
+    .rot-seg button { white-space: nowrap; }
     .rot-seg button { border: none; border-radius: 0; background: #1d1d26; color: #bbb; padding: 6px 12px; font-size: 12px; cursor: pointer; }
     .rot-seg button.active { background: #9146FF; color: #fff; }
     .rot-seg button:disabled { opacity: 0.4; cursor: not-allowed; }
