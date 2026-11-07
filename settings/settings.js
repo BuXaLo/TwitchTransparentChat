@@ -840,8 +840,9 @@
     }
 
     function showResetConfirmation(prefix, visible) {
-      const id = prefix === 'o_' ? 'overlay-reset-confirm' : 'widget-reset-confirm';
-      $(id).classList.toggle('hidden', !visible);
+      const confirmation = $(prefix === 'o_' ? 'overlay-reset-confirm' : 'widget-reset-confirm');
+      confirmation.classList.toggle('hidden', !visible);
+      if (visible) confirmation.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
     async function confirmResetSection(prefix) {
