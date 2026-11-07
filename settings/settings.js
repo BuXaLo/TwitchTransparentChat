@@ -951,6 +951,7 @@
     /* ---------------- Живой предпросмотр оверлея и виджета (до сохранения) ---------------- */
 
     let previewTimer = null;
+    let proxyStatusTimer = null;
     function schedulePreview() {
       clearTimeout(previewTimer);
       previewTimer = setTimeout(() => {
@@ -1087,21 +1088,38 @@
       presets.wireExtraModals();
       wireUpdateControls();
 
-      $('useProxy').onchange = () => $('proxyBox').classList.toggle('disabled', !$('useProxy').checked);
+      const proxyStatus = $('proxy-test-status');
+      const clearProxyStatus = () => {
+        clearTimeout(proxyStatusTimer);
+        proxyStatusTimer = null;
+        proxyStatus.textContent = '';
+        proxyStatus.className = 'proxy-test-status';
+      };
+      const showProxyStatus = (message, state, autoHide = false) => {
+        clearProxyStatus();
+        proxyStatus.textContent = message;
+        if (state) proxyStatus.classList.add(state);
+        if (autoHide) {
+          proxyStatusTimer = setTimeout(clearProxyStatus, 12000);
+        }
+      };
+
+      $('useProxy').onchange = () => {
+        const enabled = $('useProxy').checked;
+        $('proxyBox').classList.toggle('hidden', !enabled);
+        if (!enabled) clearProxyStatus();
+      };
       $('btn-test-proxy').onclick = async () => {
         const host = $('proxyHost').value.trim();
         const port = Number($('proxyPort').value);
-        const status = $('proxy-test-status');
-        status.className = 'proxy-test-status';
         if (!host || !Number.isInteger(port) || port < 1 || port > 65535) {
-          status.textContent = tr('ui.proxyTestIncomplete');
-          status.classList.add('error');
+          showProxyStatus(tr('ui.proxyTestIncomplete'), 'error', true);
           return;
         }
 
         const button = $('btn-test-proxy');
         button.disabled = true;
-        status.textContent = tr('ui.proxyTestPending');
+        showProxyStatus(tr('ui.proxyTestPending'));
         try {
           const result = await window.api.testProxy({
             host,
@@ -1109,11 +1127,13 @@
             username: $('proxyUser').value,
             password: $('proxyPass').value
           });
-          status.textContent = tr(result && result.ok ? 'ui.proxyTestSuccess' : 'ui.proxyTestError');
-          status.classList.add(result && result.ok ? 'success' : 'error');
+          showProxyStatus(
+            tr(result && result.ok ? 'ui.proxyTestSuccess' : 'ui.proxyTestError'),
+            result && result.ok ? 'success' : 'error',
+            true
+          );
         } catch (_) {
-          status.textContent = tr('ui.proxyTestError');
-          status.classList.add('error');
+          showProxyStatus(tr('ui.proxyTestError'), 'error', true);
         } finally {
           button.disabled = false;
         }
@@ -1161,7 +1181,7 @@
 
       $('channel').value = cfg.channel;
       $('useProxy').checked = cfg.useProxy;
-      $('proxyBox').classList.toggle('disabled', !cfg.useProxy);
+      $('proxyBox').classList.toggle('hidden', !cfg.useProxy);
       $('proxyHost').value = cfg.proxyHost;
       $('proxyPort').value = cfg.proxyPort;
       $('proxyUser').value = cfg.proxyUser;
