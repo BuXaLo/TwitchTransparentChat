@@ -319,7 +319,7 @@ const REFRESH_MS = 30 * 60 * 1000; // обновлять справочник р
 const RETRY_MS = 30 * 1000; // повтор после неудачной загрузки не чаще, чем раз в 30 сек
 
 function newState() {
-  return { map: new Map(), complete: false, loadedAt: 0, lastAttempt: 0, promise: null };
+  return { map: new Map(), sourceMaps: [new Map(), new Map(), new Map()], complete: false, loadedAt: 0, lastAttempt: 0, promise: null };
 }
 
 const globalState = newState();
@@ -353,13 +353,17 @@ async function buildChannelMap(roomId) {
 
 // Порядок в массиве = приоритет по возрастанию (позже — перекрывает раньше): FFZ < BTTV < 7TV
 function collect(results) {
+  const sourceMaps = results.map((r) => {
+    if (r.status !== 'fulfilled') return null;
+    const map = new Map();
+    mergeInto(map, r.value);
+    return map;
+  });
   const map = new Map();
-  let complete = true;
-  for (const r of results) {
-    if (r.status === 'fulfilled') mergeInto(map, r.value);
-    else complete = false;
+  for (const sourceMap of sourceMaps) {
+    if (sourceMap) mergeInto(map, sourceMap.values());
   }
-  return { map, complete };
+  return { map, sourceMaps, complete: results.every((r) => r.status === 'fulfilled') };
 }
 
 function ensure(state, builder) {
@@ -373,7 +377,14 @@ function ensure(state, builder) {
 
   state.lastAttempt = now;
   state.promise = builder()
-    .then(({ map, complete }) => {
+    .then(({ sourceMaps, complete }) => {
+      const nextSourceMaps = sourceMaps.map((map, index) =>
+        complete || map !== null ? map : state.sourceMaps[index]
+      );
+      // При частичном сбое сохраняем только кэш недоступных источников.
+      state.sourceMaps = nextSourceMaps;
+      const map = new Map();
+      for (const sourceMap of nextSourceMaps) mergeInto(map, sourceMap.values());
       if (map.size > 0 || complete) state.map = map;
       state.complete = complete;
       if (complete) state.loadedAt = Date.now();
