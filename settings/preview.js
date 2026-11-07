@@ -154,8 +154,8 @@ function paintMiniPlate(el, cfg, baseClasses) {
 
 function refreshAnimPreviews() {
       ['o_', 'w_'].forEach((p) => {
-        const btn = document.querySelector(`[data-anim-preview="${p}"]`);
-        const plate = btn && btn.parentElement ? btn.parentElement.querySelector('[data-anim-plate]') : null;
+        const form = $(p === 'o_' ? 'overlay-form' : 'widget-form');
+        const plate = form ? form.querySelector('[data-anim-plate]') : null;
         if (plate && $(p + 'fontSize')) paintMiniPlate(plate, readAppearance(p), ['anim-preview-plate', 'mini-preview-plate']);
       });
     }
