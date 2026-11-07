@@ -183,6 +183,14 @@
     .row > * { flex: 1; min-width: 0; }
     .row > button { flex: 0 0 auto; }
 
+    .border-color2-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
     .slider-row { display: flex; align-items: center; gap: 8px; }
     .slider-row input[type="range"] { flex: 1; cursor: pointer; }
     .slider-row span { font-size: 12px; min-width: 38px; color: #fff; }
