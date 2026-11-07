@@ -454,6 +454,18 @@
       color: #fff;
       flex-shrink: 0;
     }
+    .modal-header-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .modal-header-actions button {
+      flex: 0 0 auto;
+      padding: 5px 10px;
+      min-height: 28px;
+      font-size: 11px;
+    }
     /* Закрепленный блок мини-превью над зоной прокрутки */
     .modal-preview-pinned {
       padding: 10px 16px 12px;
