@@ -7,23 +7,29 @@
   <link rel="stylesheet" href="settings.css">
 </head>
 <body>
-  <div class="tabs">
-    <button class="tab-btn active" data-tab="general" data-i18n="ui.tabGeneral"></button>
-    <button class="tab-btn" data-tab="overlay" data-i18n="ui.tabOverlay"></button>
-    <button class="tab-btn" data-tab="widget" data-i18n="ui.tabWidget"></button>
-  </div>
+  <header class="settings-header">
+    <div class="settings-brand">
+      <span class="settings-brand-name">TwitchTransparentChat</span>
+      <span class="settings-version" id="app-version"></span>
+    </div>
+    <label class="settings-language">
+      <span data-i18n="ui.language"></span>
+      <select id="language">
+        <option value="en">English</option>
+        <option value="ru">Русский</option>
+      </select>
+    </label>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Settings sections">
+    <button class="tab-btn active" type="button" role="tab" aria-selected="true" data-tab="general" data-i18n="ui.tabGeneral"></button>
+    <button class="tab-btn" type="button" role="tab" aria-selected="false" data-tab="overlay" data-i18n="ui.tabOverlay"></button>
+    <button class="tab-btn" type="button" role="tab" aria-selected="false" data-tab="widget" data-i18n="ui.tabWidget"></button>
+  </nav>
 
   <div class="content">
     <!-- Общие -->
     <section class="tab" id="tab-general">
-      <label>
-        <span data-i18n="ui.language"></span>
-        <select id="language">
-          <option value="en">English</option>
-          <option value="ru">Русский</option>
-        </select>
-      </label>
-
       <label>
         <span data-i18n="ui.channel"></span>
         <input type="text" id="channel" data-i18n-placeholder="ui.channelPlaceholder">
