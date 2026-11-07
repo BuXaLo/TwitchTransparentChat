@@ -354,6 +354,7 @@
       display: flex;
       flex-direction: column;
       gap: 7px;
+      margin-bottom: -3px;
     }
     .appearance-form { gap: 10px !important; }
     .form-group {
@@ -797,6 +798,9 @@
     }
     .checkbox-label[data-tip]:hover::after { left: 0; right: auto; }
     .style-card-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+    .style-card-presets { flex-direction: column; align-items: stretch; gap: 8px; }
+    .style-card-presets .style-card-actions { width: 100%; }
+    .style-card-presets [data-open-modal="styles"] { min-width: 92px; }
     .reset-col { display: flex; flex-direction: column; align-items: stretch; gap: 6px; }
     .support-wrap { display: flex; justify-content: center; margin: 6px 0 0; }
     .support-link {
