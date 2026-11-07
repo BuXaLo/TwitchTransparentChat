@@ -172,6 +172,7 @@
       cursor: pointer;
     }
     input:focus, select:focus { border-color: var(--ui-accent); }
+    select:focus:not(:focus-visible) { border-color: var(--ui-border-strong); }
     :where(button, input, select, textarea, a, [tabindex]):focus-visible {
       outline: none;
       box-shadow: var(--ui-focus-ring);
