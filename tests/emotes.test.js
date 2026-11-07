@@ -127,3 +127,17 @@ test('частичное обновление сохраняет только к
     Date.now = originalNow;
   }
 });
+
+
+test('fetchImage отклоняет неразрешённые хосты и протоколы до сетевого запроса', async () => {
+  const { fetchImage } = require('../emotes');
+
+  await assert.rejects(
+    fetchImage('https://example.com/image.webp'),
+    /Host is not allowed/
+  );
+  await assert.rejects(
+    fetchImage('http://cdn.7tv.app/emote/test.webp'),
+    /Host is not allowed/
+  );
+});
