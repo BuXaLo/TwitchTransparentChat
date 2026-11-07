@@ -526,7 +526,7 @@ ipcMain.handle('rename-card-image', (event, oldId, name) => {
         fs.renameSync(cardImagePath(oldId), cardImagePath(id));
       }
     } catch (e) {
-      return { ok: false };
+      return { ok: false, error: e.code || 'error' };
     }
     remapCardRefs({ [oldId]: id });
   }
@@ -535,7 +535,11 @@ ipcMain.handle('rename-card-image', (event, oldId, name) => {
 
 ipcMain.handle('delete-card-image', (event, id) => {
   if (!CARD_IMAGE_ID_RE.test(String(id || ''))) return { ok: false };
-  try { fs.unlinkSync(cardImagePath(id)); } catch (e) { /* уже удалён */ }
+  try {
+    fs.unlinkSync(cardImagePath(id));
+  } catch (e) {
+    if (e.code !== 'ENOENT') return { ok: false, error: e.code || 'error' };
+  }
   remapCardRefs({ [id]: '' });
   return { ok: true, images: listCardImages() };
 });
