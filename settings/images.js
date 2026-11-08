@@ -295,6 +295,7 @@
         $('m_cardImageManageRow').style.display = 'none';
         updateMiniPreviews(state.activeModalTarget);
         triggerTargetPreview(state.activeModalTarget);
+        updateSaveIndicator();
       });
       $('modal-image').addEventListener('input', () => {
         readModalIntoState(activeAppearance());
