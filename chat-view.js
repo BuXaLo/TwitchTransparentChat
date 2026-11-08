@@ -388,9 +388,20 @@
       const sharedSyncDelay = syncEnabled ? computeSyncDelaySeconds() : '0s';
       const needSyncUpdate = prevSync !== syncEnabled || prevEffect !== config.borderEffect || prevSpeed !== config.borderEffectSpeed;
 
-      Array.from(chat.children).forEach((el) => {
-        if (el.classList.contains('is-notice')) return;
-        if (el._ownCfg) return; // сообщение со своим стилем (по нику / ротация) не перекрашивается общими настройками
+      Array.from(chat.children).forEach((el, idx) => {
+        // Выравнивание — глобальный параметр для всех уже отображаемых сообщений.
+        el.style.setProperty('--text-align', config.textAlign || 'left');
+
+        if (el.classList.contains('is-notice') || el.classList.contains('is-reward')) {
+          // Для системных сообщений общими параметрами остаются размер шрифта и выравнивание.
+          el.style.setProperty('--font-size', `${config.fontSize || 14}px`);
+          return;
+        }
+        if (el._ownCfg) {
+          // Размер шрифта общий для всех сообщений, даже если оформление плашки индивидуальное.
+          el.style.setProperty('--font-size', `${config.fontSize || 14}px`);
+          return; // остальные параметры индивидуального стиля не перекрашиваем общими настройками
+        }
         // Снимаем служебные классы по префиксу: эффекты рамки и формы больше не перечисляются вручную
         Array.from(el.classList).filter((c) => c.startsWith('effect-') || c.startsWith('shape-')).forEach((c) => el.classList.remove(c));
         plateClasses.forEach((c) => el.classList.add(c));
@@ -491,20 +502,33 @@
         : top >= chat.clientHeight;
     }
 
+    const removalTimers = new Map();
+
+    function clearRemovalTimer(element) {
+      const timer = removalTimers.get(element);
+      if (timer) clearTimeout(timer);
+      removalTimers.delete(element);
+    }
+
+    function removeMessageNode(element) {
+      clearRemovalTimer(element);
+      if (element.parentNode) element.parentNode.removeChild(element);
+    }
+
     function enforceMessageLimit() {
       while (chat.children.length > MAX_DOM_MESSAGES) {
-        chat.removeChild(chat.lastChild);
+        removeMessageNode(chat.lastChild);
       }
       if (config.solidRibbon) {
         // Сплошная лента: убираем только то, что целиком ушло за границу; частично видимое остаётся и растворяется маской
         while (chat.children.length > 1 && isFullyOutside(chat.lastChild)) {
-          chat.removeChild(chat.lastChild);
+          removeMessageNode(chat.lastChild);
         }
         return;
       }
       // Обычный режим: выезд больше ~30 px убирает самую старую плашку
       while (chat.scrollHeight > chat.clientHeight + 30 && chat.children.length > 1) {
-        chat.removeChild(chat.lastChild);
+        removeMessageNode(chat.lastChild);
       }
     }
 
@@ -512,12 +536,15 @@
       const lifetime = config.messageLifetime;
       if (!lifetime || lifetime <= 0) return;
 
-      setTimeout(() => {
+      const timer = setTimeout(() => {
+        if (!element.parentNode) {
+          clearRemovalTimer(element);
+          return;
+        }
         element.classList.add('fade-out');
-        setTimeout(() => {
-          if (element.parentNode) element.parentNode.removeChild(element);
-        }, 800);
+        removalTimers.set(element, setTimeout(() => removeMessageNode(element), 800));
       }, lifetime * factor * 1000);
+      removalTimers.set(element, timer);
     }
 
     function insertMessage(el) {
@@ -606,9 +633,8 @@
       el.dataset.removing = '1';
       el.style.transitionDuration = '0.2s';
       el.classList.add('fade-out');
-      setTimeout(() => {
-        if (el.parentNode) el.parentNode.removeChild(el);
-      }, 220);
+      clearRemovalTimer(el);
+      removalTimers.set(el, setTimeout(() => removeMessageNode(el), 220));
     }
 
     function removeMessages(info) {
@@ -636,7 +662,7 @@
       'textColor', 'textOutlineWidth', 'textOutlineColor',
       'customNickEnabled', 'customNickColor', 'customNickOutlineWidth', 'customNickOutlineColor',
       'cardImagePreset', 'cardImageCustom', 'cardImageFit', 'cardImagePosX', 'cardImagePosY', 'cardImageOpacity', 'cardImageScale',
-      'fontFamily', 'textAlign', 'animation'
+      'fontFamily', 'animation'
     ];
     let rotationLast = -1;
 
@@ -682,14 +708,15 @@
       if (isIgnoredUser(msg)) return;
       if (config.hideCommands && msg.rawText && msg.rawText.trim().startsWith('!')) return;
 
-      const highlight = !!msg.isMention && config.highlightMentions !== false;
+      const isReward = !!msg.isReward;
+      const highlight = !isReward && !!msg.isMention && config.highlightMentions !== false;
       const own = pickOwnStyle(msg, highlight);
       const st = own || config;
 
       const el = document.createElement('div');
-      const rewardClass = msg.isReward ? 'is-reward' : '';
+      const rewardClass = isReward ? 'is-reward' : '';
       const mentionClass = highlight ? 'is-mention' : '';
-      const plateClasses = getPlateClasses(st).join(' ');
+      const plateClasses = isReward ? '' : getPlateClasses(st).join(' ');
       el.className = `message ${plateClasses} ${rewardClass} ${mentionClass}`.trim();
       if (own) {
         el._ownCfg = own;
@@ -712,7 +739,7 @@
 
       const safeUser = escapeHtml(msg.user);
       const twitchReadableColor = ensureReadableColor(msg.color);
-      const nickColor = st.customNickEnabled
+      const nickColor = !isReward && st.customNickEnabled
         ? (st.customNickColor || '#9146FF')
         : twitchReadableColor;
 
@@ -737,7 +764,7 @@
     }
 
     function clear() {
-      while (chat.firstChild) chat.removeChild(chat.firstChild);
+      while (chat.firstChild) removeMessageNode(chat.firstChild);
     }
 
     return {

@@ -12,6 +12,7 @@ const updater = require('./updater');
 
 const HOTKEY = 'CommandOrControl+Alt+F9';
 const SETTINGS_HOTKEY = 'CommandOrControl+Alt+F10'; // открыть окно настроек
+const OVERLAY_VISIBILITY_HOTKEY = 'CommandOrControl+Alt+F11'; // скрыть / показать оверлей
 
 // Только один экземпляр: повторный запуск возвращает окно уже работающего оверлея (см. 'second-instance')
 const gotSingleInstanceLock = app.requestSingleInstanceLock();
@@ -113,6 +114,7 @@ function openSettingsWindow() {
   if (settingsWin && !settingsWin.isDestroyed()) {
     if (settingsWin.isMinimized()) settingsWin.restore();
     settingsWin.show();
+    settingsWin.setAlwaysOnTop(true, 'screen-saver');
     settingsWin.focus();
     if (pendingUpdateInfo) {
       sendToSettings('update-available', pendingUpdateInfo);
@@ -123,7 +125,8 @@ function openSettingsWindow() {
   settingsWin = new BrowserWindow({
     width: 620,
     height: 780,
-    minWidth: 520,
+    minWidth: 620,
+    maxWidth: 620,
     minHeight: 540,
     title: t('settings.title'),
     icon: path.join(__dirname, 'icon.ico'),
@@ -137,6 +140,7 @@ function openSettingsWindow() {
   });
 
   settingsWin.setMenu(null);
+  settingsWin.setAlwaysOnTop(true, 'screen-saver');
   settingsWin.loadFile('settings.html');
 
   settingsWin.webContents.once('did-finish-load', () => {
@@ -333,6 +337,7 @@ function createWindow() {
   win.webContents.once('did-finish-load', () => {
     const ok = globalShortcut.register(HOTKEY, toggleClickThrough);
     globalShortcut.register(SETTINGS_HOTKEY, openSettingsWindow); // занят другой программой — просто остаётся недоступным
+    globalShortcut.register(OVERLAY_VISIBILITY_HOTKEY, toggleVisibility);
     win.webContents.send('hotkey-status', { ok });
     startInitialChat();
     runStartupUpdateCheck();
@@ -476,15 +481,20 @@ function migrateCardImages() {
     JSON.parse(fs.readFileSync(path.join(dir, 'index.json'), 'utf8')).forEach((e) => { if (e && e.sha) names[e.sha] = e.name; });
   } catch (e) { /* реестра нет */ }
   const map = {};
+  let migrationFailed = false;
   legacy.forEach((f) => {
     const sha = f.slice(0, -5);
     const id = uniqueCardId(cardImageSlug(names[sha] || 'Picture'));
     try {
       fs.renameSync(path.join(dir, f), cardImagePath(id));
       map[sha] = id;
-    } catch (e) { /* пропускаем */ }
+    } catch (e) {
+      migrationFailed = true;
+    }
   });
-  try { fs.unlinkSync(path.join(dir, 'index.json')); } catch (e) { /* уже нет */ }
+  if (!migrationFailed) {
+    try { fs.unlinkSync(path.join(dir, 'index.json')); } catch (e) { /* уже нет */ }
+  }
   if (Object.keys(map).length) remapCardRefs(map);
 }
 
@@ -521,7 +531,7 @@ ipcMain.handle('rename-card-image', (event, oldId, name) => {
         fs.renameSync(cardImagePath(oldId), cardImagePath(id));
       }
     } catch (e) {
-      return { ok: false };
+      return { ok: false, error: e.code || 'error' };
     }
     remapCardRefs({ [oldId]: id });
   }
@@ -530,7 +540,11 @@ ipcMain.handle('rename-card-image', (event, oldId, name) => {
 
 ipcMain.handle('delete-card-image', (event, id) => {
   if (!CARD_IMAGE_ID_RE.test(String(id || ''))) return { ok: false };
-  try { fs.unlinkSync(cardImagePath(id)); } catch (e) { /* уже удалён */ }
+  try {
+    fs.unlinkSync(cardImagePath(id));
+  } catch (e) {
+    if (e.code !== 'ENOENT') return { ok: false, error: e.code || 'error' };
+  }
   remapCardRefs({ [id]: '' });
   return { ok: true, images: listCardImages() };
 });
@@ -640,6 +654,15 @@ ipcMain.handle('install-update', async (event, updateInfo) => {
 /* ------------------------------------------------------------------ */
 /* IPC обработчики настроек и предпросмотра */
 /* ------------------------------------------------------------------ */
+
+ipcMain.handle('test-proxy', async (event, proxy) => {
+  try {
+    await emotes.testProxy(proxy || {});
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err && err.message ? err.message : 'Connection failed' };
+  }
+});
 
 ipcMain.handle('load-config', () => Object.assign({}, getConfig(), {
   language: currentLanguage(),

@@ -12,6 +12,7 @@ let watchdogTimer = null;
 let currentConfig = null;
 let isManuallyStopped = false;
 let isConnecting = false;
+let connectionGeneration = 0;
 let mentionRegex = null;
 
 // Экспоненциальный backoff и таймауты
@@ -181,9 +182,11 @@ function parseIrcMessage(line) {
   return { tags, prefix, command, params, trailing };
 }
 
-function resetWatchdog(socket, onStatus) {
+function resetWatchdog(socket, onStatus, generation) {
+  if (generation !== connectionGeneration || isManuallyStopped) return;
   clearTimeout(watchdogTimer);
   watchdogTimer = setTimeout(() => {
+    if (generation !== connectionGeneration || isManuallyStopped) return;
     if (socket && !socket.destroyed) {
       console.warn('[Watchdog] Нет ответов от IRC > 60 сек. Принудительный сброс сокета...');
       if (onStatus) onStatus(t('status.watchdog'), 'connecting');
@@ -193,6 +196,7 @@ function resetWatchdog(socket, onStatus) {
 }
 
 function connectTwitch({ channel, useProxy, proxy, onMessage, onRemove, onError, onStatus }) {
+  const generation = ++connectionGeneration;
   cleanup();
 
   isManuallyStopped = false;
@@ -214,7 +218,7 @@ function connectTwitch({ channel, useProxy, proxy, onMessage, onRemove, onError,
   mentionRegex = buildMentionRegex(targetChannel);
 
   const setupTlsSocket = (rawSocket) => {
-    if (isManuallyStopped) {
+    if (generation !== connectionGeneration || isManuallyStopped) {
       if (rawSocket && !rawSocket.destroyed) rawSocket.destroy();
       return;
     }
@@ -227,7 +231,7 @@ function connectTwitch({ channel, useProxy, proxy, onMessage, onRemove, onError,
 
     let socket;
     const tlsHandshakeTimer = setTimeout(() => {
-      if (isConnecting && socket && !socket.destroyed) {
+      if (generation === connectionGeneration && !isManuallyStopped && isConnecting && socket && !socket.destroyed) {
         isConnecting = false;
         onError(t('err.tlsTimeout'));
         onStatus(t('status.tlsTimeout'), 'offline');
@@ -242,6 +246,10 @@ function connectTwitch({ channel, useProxy, proxy, onMessage, onRemove, onError,
       servername: 'irc.chat.twitch.tv'
     }, () => {
       clearTimeout(tlsHandshakeTimer);
+      if (generation !== connectionGeneration || isManuallyStopped) {
+        socket.destroy();
+        return;
+      }
       isConnecting = false;
       onStatus(t('status.joining'), 'connecting');
 
@@ -254,11 +262,11 @@ function connectTwitch({ channel, useProxy, proxy, onMessage, onRemove, onError,
       socket.write(`CAP REQ :twitch.tv/tags twitch.tv/commands\r\n`);
       socket.write(`JOIN #${targetChannel}\r\n`);
 
-      resetWatchdog(socket, onStatus);
+      resetWatchdog(socket, onStatus, generation);
 
       clearInterval(keepAliveTimer);
       keepAliveTimer = setInterval(() => {
-        if (socket && !socket.destroyed) {
+        if (generation === connectionGeneration && !isManuallyStopped && socket && !socket.destroyed) {
           socket.write(`PING :tmi.twitch.tv\r\n`);
         }
       }, 25000);
@@ -268,6 +276,7 @@ function connectTwitch({ channel, useProxy, proxy, onMessage, onRemove, onError,
     let buffer = '';
 
     socket.on('data', (data) => {
+      if (generation !== connectionGeneration || isManuallyStopped) return;
       buffer += data.toString('utf-8');
       const lines = buffer.split('\r\n');
       buffer = lines.pop();
@@ -286,19 +295,19 @@ function connectTwitch({ channel, useProxy, proxy, onMessage, onRemove, onError,
         const parsed = parseIrcMessage(line);
 
         if (parsed.command === 'PING') {
-          resetWatchdog(socket, onStatus);
+          resetWatchdog(socket, onStatus, generation);
           const payload = parsed.trailing || parsed.params[0] || 'tmi.twitch.tv';
           socket.write(`PONG :${payload}\r\n`);
           continue;
         }
 
         if (parsed.command === 'PONG') {
-          resetWatchdog(socket, onStatus);
+          resetWatchdog(socket, onStatus, generation);
           continue;
         }
 
         if (parsed.command === '001') {
-          resetWatchdog(socket, onStatus);
+          resetWatchdog(socket, onStatus, generation);
           reconnectAttempts = 0;
           const proxyLabel = (useProxy && proxy?.host) ? ' [SOCKS5]' : '';
           onStatus(t('status.online', { channel: targetChannel, proxy: proxyLabel }), 'online');
@@ -339,7 +348,7 @@ function connectTwitch({ channel, useProxy, proxy, onMessage, onRemove, onError,
         }
 
         if (parsed.command === 'PRIVMSG') {
-          resetWatchdog(socket, onStatus);
+          resetWatchdog(socket, onStatus, generation);
           try {
             let messageText = parsed.trailing || '';
             let isAction = false;
@@ -387,6 +396,7 @@ function connectTwitch({ channel, useProxy, proxy, onMessage, onRemove, onError,
     });
 
     socket.on('error', (e) => {
+      if (generation !== connectionGeneration || isManuallyStopped) return;
       clearTimeout(tlsHandshakeTimer);
       isConnecting = false;
       onError(t('err.network', { msg: e.message }));
@@ -394,12 +404,13 @@ function connectTwitch({ channel, useProxy, proxy, onMessage, onRemove, onError,
     });
 
     socket.on('close', () => {
+      if (generation !== connectionGeneration || isManuallyStopped) return;
       clearTimeout(tlsHandshakeTimer);
       clearTimeout(watchdogTimer);
       isConnecting = false;
 
       if (!isManuallyStopped) {
-        scheduleReconnect();
+        scheduleReconnect(generation);
       } else {
         onStatus(t('status.disconnected'), 'offline');
       }
@@ -425,17 +436,15 @@ function connectTwitch({ channel, useProxy, proxy, onMessage, onRemove, onError,
     };
 
     SocksClient.createConnection(socksOptions, (err, info) => {
+      if (generation !== connectionGeneration || isManuallyStopped) {
+        if (info?.socket && !info.socket.destroyed) info.socket.destroy();
+        return;
+      }
       if (err) {
-        if (isManuallyStopped) return;
         isConnecting = false;
         onError(t('err.proxy', { msg: err.message }));
         onStatus(t('status.proxyError'), 'offline');
-        scheduleReconnect();
-        return;
-      }
-
-      if (isManuallyStopped) {
-        if (info?.socket && !info.socket.destroyed) info.socket.destroy();
+        scheduleReconnect(generation);
         return;
       }
 
@@ -447,7 +456,7 @@ function connectTwitch({ channel, useProxy, proxy, onMessage, onRemove, onError,
       host: 'irc.chat.twitch.tv',
       port: 6697
     }, () => {
-      if (isManuallyStopped) {
+      if (generation !== connectionGeneration || isManuallyStopped) {
         directSocket.destroy();
         return;
       }
@@ -457,27 +466,28 @@ function connectTwitch({ channel, useProxy, proxy, onMessage, onRemove, onError,
     activeSocket = directSocket;
 
     directSocket.setTimeout(10000, () => {
-      if (isConnecting && !directSocket.destroyed) {
+      if (generation === connectionGeneration && !isManuallyStopped && isConnecting && !directSocket.destroyed) {
         isConnecting = false;
         onError(t('err.timeout'));
         onStatus(t('status.timeout'), 'offline');
         directSocket.destroy();
-        scheduleReconnect();
+        scheduleReconnect(generation);
       }
     });
 
     directSocket.on('error', (e) => {
+      if (generation !== connectionGeneration || isManuallyStopped) return;
       isConnecting = false;
       onError(t('err.connection', { msg: e.message }));
       onStatus(t('status.networkError'), 'offline');
       directSocket.destroy();
-      scheduleReconnect();
+      scheduleReconnect(generation);
     });
   }
 }
 
-function scheduleReconnect() {
-  if (isManuallyStopped || !currentConfig || reconnectTimer) return;
+function scheduleReconnect(generation) {
+  if (generation !== connectionGeneration || isManuallyStopped || !currentConfig || reconnectTimer) return;
 
   reconnectAttempts++;
   const delay = Math.min(MIN_RECONNECT_DELAY * Math.pow(2, reconnectAttempts - 1), MAX_RECONNECT_DELAY);
@@ -487,6 +497,7 @@ function scheduleReconnect() {
   }
 
   reconnectTimer = setTimeout(() => {
+    if (generation !== connectionGeneration || isManuallyStopped) return;
     reconnectTimer = null;
     connectTwitch(currentConfig);
   }, delay);
@@ -508,6 +519,7 @@ function cleanup() {
 }
 
 function disconnectTwitch() {
+  connectionGeneration++;
   isManuallyStopped = true;
   reconnectAttempts = 0;
   isConnecting = false;

@@ -38,6 +38,14 @@ function createWidgetServer(options) {
   let lastError = null;
   let heartbeat = null;
   const clients = new Set();
+  let lifecycleGeneration = 0;
+  let lifecycleQueue = Promise.resolve();
+
+  function enqueueLifecycle(operation) {
+    const result = lifecycleQueue.then(operation);
+    lifecycleQueue = result.catch(() => {});
+    return result;
+  }
 
   function notify() {
     try {
@@ -149,47 +157,7 @@ function createWidgetServer(options) {
       .replace(/emote:\/\//g, '/img/');
   }
 
-  function start(newPort) {
-    if (listening && port === newPort) return Promise.resolve();
-
-    return stop().then(() => new Promise((resolve, reject) => {
-      lastError = null;
-      const srv = http.createServer((req, res) => {
-        handle(req, res).catch((e) => {
-          console.error('[Widget] request error', e);
-          if (!res.headersSent) reply(res, 500, { 'Content-Type': 'text/plain' }, 'Internal Server Error');
-          else res.end();
-        });
-      });
-      srv.on('clientError', (err, socket) => socket.destroy());
-
-      const onStartError = (err) => {
-        lastError = { code: err.code || 'ERROR', message: err.message, port: newPort };
-        server = null;
-        listening = false;
-        port = null;
-        notify();
-        reject(err);
-      };
-      srv.once('error', onStartError);
-
-      srv.listen(newPort, BIND_ADDRESS, () => {
-        srv.removeListener('error', onStartError);
-        srv.on('error', (e) => console.error('[Widget] server error', e));
-        server = srv;
-        port = newPort;
-        listening = true;
-        heartbeat = setInterval(() => {
-          for (const res of clients) res.write(': ping\n\n');
-        }, HEARTBEAT_MS);
-        if (heartbeat.unref) heartbeat.unref();
-        notify();
-        resolve();
-      });
-    }));
-  }
-
-  function stop() {
+  function stopServer() {
     clearInterval(heartbeat);
     heartbeat = null;
     lastError = null;
@@ -212,6 +180,67 @@ function createWidgetServer(options) {
       srv.close(() => resolve());
       if (typeof srv.closeAllConnections === 'function') srv.closeAllConnections();
     }).then(notify);
+  }
+
+  function start(newPort) {
+    const generation = ++lifecycleGeneration;
+
+    return enqueueLifecycle(async () => {
+      if (generation !== lifecycleGeneration) return;
+      if (listening && port === newPort) return;
+
+      await stopServer();
+      if (generation !== lifecycleGeneration) return;
+
+      await new Promise((resolve, reject) => {
+        const srv = http.createServer((req, res) => {
+          handle(req, res).catch((e) => {
+            console.error('[Widget] request error', e);
+            if (!res.headersSent) reply(res, 500, { 'Content-Type': 'text/plain' }, 'Internal Server Error');
+            else res.end();
+          });
+        });
+        srv.on('clientError', (err, socket) => socket.destroy());
+
+        const onStartError = (err) => {
+          if (generation !== lifecycleGeneration) {
+            resolve();
+            return;
+          }
+          lastError = { code: err.code || 'ERROR', message: err.message, port: newPort };
+          notify();
+          reject(err);
+        };
+        srv.once('error', onStartError);
+
+        srv.listen(newPort, BIND_ADDRESS, () => {
+          if (generation !== lifecycleGeneration) {
+            srv.close(() => resolve());
+            return;
+          }
+
+          srv.removeListener('error', onStartError);
+          srv.on('error', (e) => console.error('[Widget] server error', e));
+          server = srv;
+          port = newPort;
+          listening = true;
+          heartbeat = setInterval(() => {
+            for (const res of clients) res.write(': ping\n\n');
+          }, HEARTBEAT_MS);
+          if (heartbeat.unref) heartbeat.unref();
+          notify();
+          resolve();
+        });
+      });
+    });
+  }
+
+  function stop() {
+    const generation = ++lifecycleGeneration;
+    return enqueueLifecycle(() => {
+      if (generation !== lifecycleGeneration) return;
+      return stopServer();
+    });
   }
 
   // event: chat | remove | state

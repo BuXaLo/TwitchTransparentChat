@@ -39,6 +39,34 @@ function isProxyActive() {
   return !!network.proxy;
 }
 
+/**
+ * Проверяет SOCKS5-подключение без изменения активной сетевой конфигурации.
+ * Успех означает, что прокси установил TCP-туннель до Twitch IRC endpoint.
+ */
+async function testProxy(proxy) {
+  const host = String(proxy && proxy.host || '').trim();
+  const port = Number(proxy && proxy.port);
+  if (!host || !Number.isInteger(port) || port < 1 || port > 65535) {
+    throw new Error('Invalid proxy host or port');
+  }
+
+  const { socket } = await SocksClient.createConnection({
+    proxy: {
+      host,
+      port,
+      type: 5,
+      userId: proxy.username || undefined,
+      password: proxy.password || undefined
+    },
+    command: 'connect',
+    destination: { host: 'irc-ws.chat.twitch.tv', port: 443 },
+    timeout: 10000
+  });
+  socket.destroy();
+  return true;
+}
+
+
 /* ============================================================
  * HTTPS-клиент с поддержкой SOCKS5 (использует уже установленный пакет socks)
  * ============================================================ */
@@ -135,6 +163,10 @@ function httpGet(urlStr, opts) {
             done(reject, e);
             return;
           }
+          if (o.allowedHosts && !o.allowedHosts.has(new URL(next).hostname)) {
+            done(reject, new Error('Redirect host is not allowed'));
+            return;
+          }
           httpGet(next, Object.assign({}, o, { redirects: o.redirects - 1 })).then(
             (r) => done(resolve, r),
             (e) => done(reject, e)
@@ -205,7 +237,7 @@ async function fetchImage(url) {
   if (imageInflight.has(url)) return imageInflight.get(url);
 
   const p = (async () => {
-    const res = await httpGet(url, { maxBytes: 8 * 1024 * 1024 });
+    const res = await httpGet(url, { maxBytes: 8 * 1024 * 1024, allowedHosts: ALLOWED_IMAGE_HOSTS });
     if (res.status !== 200) throw new Error(`HTTP ${res.status}`);
     const contentType = String(res.headers['content-type'] || '');
     if (!/^image\//i.test(contentType)) throw new Error('Not an image');
@@ -315,7 +347,7 @@ const REFRESH_MS = 30 * 60 * 1000; // обновлять справочник р
 const RETRY_MS = 30 * 1000; // повтор после неудачной загрузки не чаще, чем раз в 30 сек
 
 function newState() {
-  return { map: new Map(), complete: false, loadedAt: 0, lastAttempt: 0, promise: null };
+  return { map: new Map(), sourceMaps: [new Map(), new Map(), new Map()], complete: false, loadedAt: 0, lastAttempt: 0, promise: null };
 }
 
 const globalState = newState();
@@ -349,13 +381,17 @@ async function buildChannelMap(roomId) {
 
 // Порядок в массиве = приоритет по возрастанию (позже — перекрывает раньше): FFZ < BTTV < 7TV
 function collect(results) {
+  const sourceMaps = results.map((r) => {
+    if (r.status !== 'fulfilled') return null;
+    const map = new Map();
+    mergeInto(map, r.value);
+    return map;
+  });
   const map = new Map();
-  let complete = true;
-  for (const r of results) {
-    if (r.status === 'fulfilled') mergeInto(map, r.value);
-    else complete = false;
+  for (const sourceMap of sourceMaps) {
+    if (sourceMap) mergeInto(map, sourceMap.values());
   }
-  return { map, complete };
+  return { map, sourceMaps, complete: results.every((r) => r.status === 'fulfilled') };
 }
 
 function ensure(state, builder) {
@@ -369,7 +405,14 @@ function ensure(state, builder) {
 
   state.lastAttempt = now;
   state.promise = builder()
-    .then(({ map, complete }) => {
+    .then(({ sourceMaps, complete }) => {
+      const nextSourceMaps = sourceMaps.map((map, index) =>
+        complete || map !== null ? map : state.sourceMaps[index]
+      );
+      // При частичном сбое сохраняем только кэш недоступных источников.
+      state.sourceMaps = nextSourceMaps;
+      const map = new Map();
+      for (const sourceMap of nextSourceMaps) mergeInto(map, sourceMap.values());
       if (map.size > 0 || complete) state.map = map;
       state.complete = complete;
       if (complete) state.loadedAt = Date.now();
@@ -521,6 +564,7 @@ module.exports = {
   ALLOWED_IMAGE_HOSTS,
   setNetwork,
   isProxyActive,
+  testProxy,
   httpGet,
   fetchJson,
   fetchImage,

@@ -4,6 +4,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('api', {
   // --- Настройки ---
   loadConfig: () => ipcRenderer.invoke('load-config'),
+  testProxy: (proxy) => ipcRenderer.invoke('test-proxy', proxy),
   saveConfig: (cfg) => ipcRenderer.invoke('save-config', cfg),
   getOverlayState: () => ipcRenderer.invoke('get-overlay-state'),
   previewOverlay: (view) => ipcRenderer.send('preview-overlay', view),
