@@ -10,7 +10,7 @@
   const CARD_IMAGE_MAX_SOURCE_SIDE = 8000;
   const CARD_IMAGE_RESULT_MAX_BYTES = 5 * 1024 * 1024;
 
-  function create({ $, tr, trf, notify, state, updateMiniPreviews, triggerTargetPreview }) {
+  function create({ $, tr, trf, notify, state, updateMiniPreviews, triggerTargetPreview, updateSaveIndicator }) {
     let cardImages = [];
 
     function activeAppearance() {
@@ -144,6 +144,7 @@
         $('m_cardImageScale').value = 100; $('m_cardImageScaleVal').textContent = '100%';
         updateMiniPreviews(state.activeModalTarget);
         triggerTargetPreview(state.activeModalTarget);
+        updateSaveIndicator();
         } finally {
         dismissPending();
       }
@@ -253,6 +254,7 @@
         $('m_cardImageName').value = res.name;
         updateMiniPreviews(state.activeModalTarget);
         triggerTargetPreview(state.activeModalTarget);
+        updateSaveIndicator();
       });
       $('m_cardImageSource').addEventListener('change', hideImageDeleteConfirm);
       $('m_cardImageDelete').addEventListener('click', () => {
