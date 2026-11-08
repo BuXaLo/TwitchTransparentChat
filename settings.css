@@ -1052,3 +1052,27 @@
   .preset-confirm-bar { align-items: stretch; flex-direction: column; }
   .preset-confirm-actions { justify-content: flex-end; flex-wrap: wrap; }
 }
+
+
+/* Изображение целиком вписывается в свободную область настроек. */
+.content { position: relative; }
+
+.settings-mascot {
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+  background-image: url("assets/mascot.png");
+  background-repeat: no-repeat;
+  background-size: contain;
+  background-position: center center;
+}
+
+/* В Overlay нижний край изображения совмещён с верхней границей нижних кнопок. */
+.settings-mascot[data-mascot-root="tab-overlay"] {
+  background-position: center bottom;
+}
+
+.content > :not(.settings-mascot) {
+  position: relative;
+  z-index: 1;
+}
