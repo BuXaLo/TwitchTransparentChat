@@ -1242,9 +1242,9 @@
         const active = b.dataset.tab === name;
         b.classList.toggle('active', active);
         b.setAttribute('aria-selected', String(active));
-        requestAnimationFrame(updateSettingsMascot);
-    });
+      });
       document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('hidden', t.id !== `tab-${name}`));
+      requestAnimationFrame(updateSettingsMascot);
     }
 
     document.querySelectorAll('.tab-btn').forEach((b) => { b.onclick = () => showTab(b.dataset.tab); });
