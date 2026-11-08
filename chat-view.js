@@ -389,7 +389,11 @@
       const needSyncUpdate = prevSync !== syncEnabled || prevEffect !== config.borderEffect || prevSpeed !== config.borderEffectSpeed;
 
       Array.from(chat.children).forEach((el) => {
-        if (el.classList.contains('is-notice')) return;
+        if (el.classList.contains('is-notice') || el.classList.contains('is-reward')) {
+          // Для системных сообщений общим параметром остаётся только размер шрифта.
+          el.style.setProperty('--font-size', `${config.fontSize || 14}px`);
+          return;
+        }
         if (el._ownCfg) {
           // Размер шрифта общий для всех сообщений, даже если оформление плашки индивидуальное.
           el.style.setProperty('--font-size', `${config.fontSize || 14}px`);
@@ -701,14 +705,15 @@
       if (isIgnoredUser(msg)) return;
       if (config.hideCommands && msg.rawText && msg.rawText.trim().startsWith('!')) return;
 
-      const highlight = !!msg.isMention && config.highlightMentions !== false;
+      const isReward = !!msg.isReward;
+      const highlight = !isReward && !!msg.isMention && config.highlightMentions !== false;
       const own = pickOwnStyle(msg, highlight);
       const st = own || config;
 
       const el = document.createElement('div');
-      const rewardClass = msg.isReward ? 'is-reward' : '';
+      const rewardClass = isReward ? 'is-reward' : '';
       const mentionClass = highlight ? 'is-mention' : '';
-      const plateClasses = getPlateClasses(st).join(' ');
+      const plateClasses = isReward ? '' : getPlateClasses(st).join(' ');
       el.className = `message ${plateClasses} ${rewardClass} ${mentionClass}`.trim();
       if (own) {
         el._ownCfg = own;
@@ -731,7 +736,7 @@
 
       const safeUser = escapeHtml(msg.user);
       const twitchReadableColor = ensureReadableColor(msg.color);
-      const nickColor = st.customNickEnabled
+      const nickColor = !isReward && st.customNickEnabled
         ? (st.customNickColor || '#9146FF')
         : twitchReadableColor;
 
