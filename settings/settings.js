@@ -1184,12 +1184,66 @@
 
     /* ---------------- Вкладки ---------------- */
 
+    function updateSettingsMascot() {
+      document.querySelectorAll('.settings-mascot').forEach((layer) => {
+        const root = layer.parentElement;
+        const presetCard = root.querySelector('.style-card-presets');
+        const imageCard = root.querySelector('.style-cards .style-card:last-child');
+        const actions = root.querySelector('.tab-actions');
+        const content = document.querySelector('.content');
+        if (!presetCard || !imageCard || !actions || !content || root.classList.contains('hidden')) {
+          layer.hidden = true;
+          return;
+        }
+
+        const rootRect = root.getBoundingClientRect();
+        const presetRect = presetCard.getBoundingClientRect();
+        const imageRect = imageCard.getBoundingClientRect();
+        const actionsRect = actions.getBoundingClientRect();
+        const contentRect = content.getBoundingClientRect();
+        const left = presetRect.right - rootRect.left;
+        const top = imageRect.bottom - rootRect.top;
+        const width = contentRect.right - presetRect.right;
+        const height = actionsRect.top - imageRect.bottom;
+
+        layer.hidden = width <= 0 || height <= 0;
+        if (layer.hidden) return;
+        layer.style.left = `${left}px`;
+        layer.style.top = `${top}px`;
+        layer.style.width = `${width}px`;
+        layer.style.height = `${height}px`;
+      });
+    }
+
+    function setupSettingsMascot() {
+      const overlayTab = $('tab-overlay');
+      const widgetSettings = $('widgetSettings');
+      [overlayTab, widgetSettings].forEach((root) => {
+        const layer = document.createElement('div');
+        layer.className = 'settings-mascot';
+        layer.setAttribute('aria-hidden', 'true');
+        root.appendChild(layer);
+      });
+
+      if (typeof ResizeObserver !== 'undefined') {
+        const observer = new ResizeObserver(updateSettingsMascot);
+        [overlayTab, widgetSettings, document.querySelector('.content')].forEach((el) => {
+          if (el) observer.observe(el);
+        });
+        document.querySelectorAll('.style-card-presets, .style-cards .style-card:last-child, .tab-actions')
+          .forEach((el) => observer.observe(el));
+      }
+      window.addEventListener('resize', updateSettingsMascot);
+      requestAnimationFrame(updateSettingsMascot);
+    }
+
     function showTab(name) {
       document.querySelectorAll('.tab-btn').forEach((b) => {
         const active = b.dataset.tab === name;
         b.classList.toggle('active', active);
         b.setAttribute('aria-selected', String(active));
-      });
+        requestAnimationFrame(updateSettingsMascot);
+    });
       document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('hidden', t.id !== `tab-${name}`));
     }
 
@@ -1273,6 +1327,7 @@
     async function init() {
       $('overlay-form').innerHTML = appearanceHtml('o_');
       $('widget-form').innerHTML = appearanceHtml('w_');
+      setupSettingsMascot();
       wireAppearance('o_', schedulePreview);
       wireAppearance('w_', scheduleWidgetPreview);
       wireStyleModals();
@@ -1336,6 +1391,7 @@
       $('widgetPort').addEventListener('input', updateLink);
       $('widgetEnabled').addEventListener('change', () => {
         $('widgetSettings').classList.toggle('hidden', !$('widgetEnabled').checked);
+        requestAnimationFrame(updateSettingsMascot);
       });
 
       async function changeLanguage(lang) {
