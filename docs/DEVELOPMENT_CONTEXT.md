@@ -1,6 +1,7 @@
 # Контекст разработки TwitchTransparentChat
 
 Документ фиксирует технические особенности, которые важно учитывать при изменении приложения. Архитектурное описание и диаграммы потоков находятся в [ARCHITECTURE.md](ARCHITECTURE.md).
+Контракт конфигурации описан в [CONFIGURATION.md](CONFIGURATION.md), а IPC и протокол OBS Widget — в [IPC_AND_WIDGET_PROTOCOL.md](IPC_AND_WIDGET_PROTOCOL.md). Логика оформления, синхронизации анимаций и live preview описана в [STYLE_BEHAVIOR.md](STYLE_BEHAVIOR.md).
 
 ## 1. Технологический стек
 
