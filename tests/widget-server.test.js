@@ -217,7 +217,7 @@ test('SSE подключение получает broadcast и закрывае�
 
 
 
-test('SSE рассылает remove и state всем подключённым клиентам и учитывает отключение'() => {
+test('SSE рассылает remove и state всем подключённым клиентам и учитывает отключение', async () => {
   const { server, port } = await startServer();
   const clients = [];
   const received = ['', ''];
