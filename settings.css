@@ -1066,3 +1066,8 @@
   background-size: contain;
   background-position: center center;
 }
+
+.content > :not(.settings-mascot) {
+  position: relative;
+  z-index: 1;
+}
