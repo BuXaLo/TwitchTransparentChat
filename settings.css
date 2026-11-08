@@ -1067,6 +1067,11 @@
   background-position: center center;
 }
 
+/* В Overlay нижний край изображения совмещён с верхней границей нижних кнопок. */
+.settings-mascot[data-mascot-root="tab-overlay"] {
+  background-position: center bottom;
+}
+
 .content > :not(.settings-mascot) {
   position: relative;
   z-index: 1;
