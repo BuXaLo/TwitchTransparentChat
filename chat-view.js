@@ -393,7 +393,7 @@
         el.style.setProperty('--text-align', config.textAlign || 'left');
 
         if (el.classList.contains('is-notice') || el.classList.contains('is-reward')) {
-          // Для системных сообщений общим параметром остаётся только размер шрифта.
+          // Для системных сообщений общими параметрами остаются размер шрифта и выравнивание.
           el.style.setProperty('--font-size', `${config.fontSize || 14}px`);
           return;
         }
