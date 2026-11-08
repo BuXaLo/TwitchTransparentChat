@@ -443,19 +443,19 @@
 
         <section class="form-group">
           <h3 class="section-title" data-i18n="ui.twitchEvents"></h3>
-          <label class="checkbox-label"${p === 'w_' ? ' style="display:none"' : ''}>
+          <label class="checkbox-label setting-hint-checkbox"${p === 'w_' ? ' style="display:none"' : ''}>
           <input type="checkbox" id="${p}highlightMentions">
           <span data-i18n="ui.highlightMentions"></span>
         </label>
-        <label class="checkbox-label sub" id="${p}mentionLongerLabel"${p === 'w_' ? ' style="display:none"' : ''}>
+        <label class="checkbox-label sub setting-hint-checkbox" id="${p}mentionLongerLabel"${p === 'w_' ? ' style="display:none"' : ''}>
           <input type="checkbox" id="${p}mentionLonger">
           <span data-i18n="ui.mentionLonger"></span>
         </label>
 
-        <label class="checkbox-label"><input type="checkbox" id="${p}showSub"><span data-i18n="ui.noticeSub"></span></label>
-        <label class="checkbox-label"><input type="checkbox" id="${p}showResub"><span data-i18n="ui.noticeResub"></span></label>
-        <label class="checkbox-label"><input type="checkbox" id="${p}showGift"><span data-i18n="ui.noticeGift"></span></label>
-        <label class="checkbox-label"><input type="checkbox" id="${p}showRaid"><span data-i18n="ui.noticeRaid"></span></label>
+        <label class="checkbox-label setting-hint-checkbox"><input type="checkbox" id="${p}showSub"><span data-i18n="ui.noticeSub"></span></label>
+        <label class="checkbox-label setting-hint-checkbox"><input type="checkbox" id="${p}showResub"><span data-i18n="ui.noticeResub"></span></label>
+        <label class="checkbox-label setting-hint-checkbox"><input type="checkbox" id="${p}showGift"><span data-i18n="ui.noticeGift"></span></label>
+        <label class="checkbox-label setting-hint-checkbox"><input type="checkbox" id="${p}showRaid"><span data-i18n="ui.noticeRaid"></span></label>
         </section>
       `;
     }
