@@ -123,3 +123,45 @@ test('sanitizePreview применяет отдельный лимит разм�
   assert.equal(preview.highlightMentions, true);
   assert.equal(preview.mentionLonger, true);
 });
+
+
+test('normalizeConfig сохраняет независимое оформление widget и применяет его собственные ограничения', () => {
+  const normalized = config.normalizeConfig({
+    fontSize: 32,
+    bgOpacity: 75,
+    widget: {
+      fontSize: config.MAX_FONT_SIZE_WIDGET + 100,
+      bgOpacity: 25,
+      highlightMentions: true,
+      mentionLonger: true
+    }
+  });
+
+  assert.equal(normalized.fontSize, 32);
+  assert.equal(normalized.widget.fontSize, config.MAX_FONT_SIZE_WIDGET);
+  assert.equal(normalized.widget.bgOpacity, 25);
+  assert.equal(normalized.widget.highlightMentions, false);
+  assert.equal(normalized.widget.mentionLonger, false);
+
+  const inherited = config.normalizeConfig({ fontSize: 32, bgOpacity: 75 });
+  assert.equal(inherited.widget.fontSize, 32);
+  assert.equal(inherited.widget.bgOpacity, 75);
+});
+
+test('normalizeConfig восстанавливает некорректные общие и widget-поля независимо', () => {
+  const normalized = config.normalizeConfig({
+    hideCommands: 'false',
+    ignoredBots: '  BotA, BotB  ',
+    fontSize: 'not-a-number',
+    widget: {
+      fontSize: -100,
+      bgColor1: 'not-a-color'
+    }
+  });
+
+  assert.equal(normalized.hideCommands, config.GENERAL_DEFAULTS.hideCommands);
+  assert.equal(normalized.ignoredBots, 'BotA, BotB');
+  assert.equal(normalized.fontSize, config.OVERLAY_APPEARANCE_DEFAULTS.fontSize);
+  assert.equal(normalized.widget.fontSize, config.OVERLAY_APPEARANCE_DEFAULTS.fontSize);
+  assert.equal(normalized.widget.bgColor1, config.OVERLAY_APPEARANCE_DEFAULTS.bgColor1);
+});
