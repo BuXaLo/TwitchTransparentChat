@@ -216,70 +216,49 @@ test('SSE подключение получает broadcast и закрывае�
 });
 
 
-test('SSE рассылает remove и state всем подключённым клиентам и учитывает отключение', async () => {
+
+test('SSE рассылает remove и state всем подключённым клиентам и учитывает отключение'() => {
   const { server, port } = await startServer();
   const clients = [];
-  const received = [ '', '' ];
-  const waiters = [];
+  const received = ['', ''];
+
+  const waitUntil = (predicate, message) => new Promise((resolve, reject) => {
+    const started = Date.now();
+    const timer = setInterval(() => {
+      if (predicate()) {
+        clearInterval(timer);
+        resolve();
+      } else if (Date.now() - started > 1000) {
+        clearInterval(timer);
+        reject(new Error(message));
+      }
+    }, 5);
+  });
 
   for (let i = 0; i < 2; i++) {
     const req = http.get({ host: '127.0.0.1', port, path: '/events' }, (res) => {
       res.setEncoding('utf8');
-      res.on('data', (chunk) => {
-        received[i] += chunk;
-        for (const waiter of waiters) {
-          if (received.every((value) => value.includes(waiter))) waiter.resolve();
-        }
-      });
+      res.on('data', (chunk) => { received[i] += chunk; });
     });
     clients.push(req);
   }
 
   try {
-    await new Promise((resolve, reject) => {
-      const check = () => {
-        if (server.getStatus().clients === 2) resolve();
-      };
-      const interval = setInterval(() => {
-        check();
-        if (server.getStatus().clients === 2) clearInterval(interval);
-      }, 5);
-      setTimeout(() => {
-        clearInterval(interval);
-        reject(new Error('SSE clients connection timeout'));
-      }, 1000);
-    });
-
-    assert.equal(server.getStatus().clients, 2);
+    await waitUntil(() => server.getStatus().clients === 2, 'SSE clients connection timeout');
     server.broadcast('remove', { id: 'message-1' });
     server.broadcast('state', { channel: 'updated' });
 
-    for (const event of ['event: remove\\ndata: {"id":"message-1"}', 'event: state\\ndata: {"channel":"updated"}']) {
-      await Promise.race([
-        new Promise((resolve) => {
-          if (received.every((value) => value.includes(event))) resolve();
-          else waiters.push({ resolve, event });
-        }),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('SSE broadcast timeout')), 1000))
-      ]);
-    }
+    await waitUntil(
+      () => received.every((value) => value.includes('event: remove\\ndata: {"id":"message-1"}') &&
+        value.includes('event: state\\ndata: {"channel":"updated"}')),
+      'SSE broadcast timeout'
+    );
 
     assert.equal(received.filter((value) => value.includes('event: remove')).length, 2);
     assert.equal(received.filter((value) => value.includes('event: state')).length, 2);
 
     clients[0].destroy();
-    await new Promise((resolve, reject) => {
-      const interval = setInterval(() => {
-        if (server.getStatus().clients === 1) {
-          clearInterval(interval);
-          resolve();
-        }
-      }, 5);
-      setTimeout(() => {
-        clearInterval(interval);
-        reject(new Error('SSE client close timeout'));
-      }, 1000);
-    });
+    await waitUntil(() => server.getStatus().clients === 1, 'SSE client close timeout');
     assert.equal(server.getStatus().clients, 1);
   } finally {
     clients.forEach((req) => req.destroy());
