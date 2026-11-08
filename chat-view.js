@@ -388,7 +388,7 @@
       const sharedSyncDelay = syncEnabled ? computeSyncDelaySeconds() : '0s';
       const needSyncUpdate = prevSync !== syncEnabled || prevEffect !== config.borderEffect || prevSpeed !== config.borderEffectSpeed;
 
-      Array.from(chat.children).forEach((el) => {
+      Array.from(chat.children).forEach((el, idx) => {
         // Выравнивание — глобальный параметр для всех уже отображаемых сообщений.
         el.style.setProperty('--text-align', config.textAlign || 'left');
 
@@ -662,7 +662,7 @@
       'textColor', 'textOutlineWidth', 'textOutlineColor',
       'customNickEnabled', 'customNickColor', 'customNickOutlineWidth', 'customNickOutlineColor',
       'cardImagePreset', 'cardImageCustom', 'cardImageFit', 'cardImagePosX', 'cardImagePosY', 'cardImageOpacity', 'cardImageScale',
-      'fontFamily', 'textAlign', 'animation'
+      'fontFamily', 'animation'
     ];
     let rotationLast = -1;
 
