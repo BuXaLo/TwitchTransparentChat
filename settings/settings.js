@@ -1185,29 +1185,36 @@
     /* ---------------- Вкладки ---------------- */
 
     function updateSettingsMascot() {
-      document.querySelectorAll('.settings-mascot').forEach((layer) => {
-        const root = layer.parentElement;
-        const presetCard = root.querySelector('.style-card-presets');
-        const imageCard = root.querySelector('.style-cards .style-card:last-child');
-        const actions = root.querySelector('.tab-actions');
-        const content = document.querySelector('.content');
-        if (!presetCard || !imageCard || !actions || !content || root.classList.contains('hidden')) {
+      const content = document.querySelector('.content');
+      if (!content) return;
+
+      const contentRect = content.getBoundingClientRect();
+      const rightEdge = content.clientWidth - parseFloat(getComputedStyle(content).paddingRight || 0);
+
+      content.querySelectorAll('.settings-mascot').forEach((layer) => {
+        const root = $(layer.dataset.mascotRoot);
+        const tab = root && root.closest('.tab');
+        const presetCard = root && root.querySelector('.style-card-presets');
+        const imageCard = root && root.querySelector('.style-cards .style-card:last-child');
+        const actions = root && root.querySelector('.tab-actions');
+
+        if (!root || !tab || !presetCard || !imageCard || !actions ||
+            tab.classList.contains('hidden') || root.classList.contains('hidden')) {
           layer.hidden = true;
           return;
         }
 
-        const rootRect = root.getBoundingClientRect();
         const presetRect = presetCard.getBoundingClientRect();
         const imageRect = imageCard.getBoundingClientRect();
         const actionsRect = actions.getBoundingClientRect();
-        const contentRect = content.getBoundingClientRect();
-        const left = presetRect.right - rootRect.left;
-        const top = imageRect.bottom - rootRect.top;
-        const width = contentRect.right - presetRect.right;
+        const left = presetRect.right - contentRect.left + content.scrollLeft;
+        const top = imageRect.bottom - contentRect.top + content.scrollTop;
+        const width = rightEdge - left;
         const height = actionsRect.top - imageRect.bottom;
 
         layer.hidden = width <= 0 || height <= 0;
         if (layer.hidden) return;
+
         layer.style.left = `${left}px`;
         layer.style.top = `${top}px`;
         layer.style.width = `${width}px`;
@@ -1216,18 +1223,23 @@
     }
 
     function setupSettingsMascot() {
-      const overlayTab = $('tab-overlay');
-      const widgetSettings = $('widgetSettings');
-      [overlayTab, widgetSettings].forEach((root) => {
+      const content = document.querySelector('.content');
+      if (!content) return;
+
+      [
+        { root: $('tab-overlay'), id: 'tab-overlay' },
+        { root: $('widgetSettings'), id: 'widgetSettings' }
+      ].forEach(({ root, id }) => {
         const layer = document.createElement('div');
         layer.className = 'settings-mascot';
+        layer.dataset.mascotRoot = id;
         layer.setAttribute('aria-hidden', 'true');
-        root.appendChild(layer);
+        content.appendChild(layer);
       });
 
       if (typeof ResizeObserver !== 'undefined') {
         const observer = new ResizeObserver(updateSettingsMascot);
-        [overlayTab, widgetSettings, document.querySelector('.content')].forEach((el) => {
+        [content, $('tab-overlay'), $('widgetSettings')].forEach((el) => {
           if (el) observer.observe(el);
         });
         document.querySelectorAll('.style-card-presets, .style-cards .style-card:last-child, .tab-actions')
