@@ -1540,7 +1540,7 @@
     });
 
     const images = window.SettingsImages.create({
-      $, tr, trf, notify: showNotification, state: presetState, updateMiniPreviews, triggerTargetPreview
+      $, tr, trf, notify: showNotification, state: presetState, updateMiniPreviews, triggerTargetPreview, updateSaveIndicator
     });
 
     init();
