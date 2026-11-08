@@ -389,6 +389,9 @@
       const needSyncUpdate = prevSync !== syncEnabled || prevEffect !== config.borderEffect || prevSpeed !== config.borderEffectSpeed;
 
       Array.from(chat.children).forEach((el) => {
+        // Выравнивание — глобальный параметр для всех уже отображаемых сообщений.
+        el.style.setProperty('--text-align', config.textAlign || 'left');
+
         if (el.classList.contains('is-notice') || el.classList.contains('is-reward')) {
           // Для системных сообщений общим параметром остаётся только размер шрифта.
           el.style.setProperty('--font-size', `${config.fontSize || 14}px`);
