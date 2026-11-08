@@ -38,18 +38,15 @@ test('makeTestSequence использует streamer для некорректн
 });
 
 
-test('connectTwitch разбирает реальные IRC-строки PRIVMSG, USERNOTICE и события удаления', async () => {
+
+test('connectTwitch разбирает реальные IRC-строки PRIVMSG, USERNOTICE и события удаления'() => {
   const { EventEmitter } = require('node:events');
   const net = require('node:net');
   const tls = require('node:tls');
   const emotes = require('../emotes');
 
   class FakeSocket extends EventEmitter {
-    constructor() {
-      super();
-      this.destroyed = false;
-      this.writes = [];
-    }
+    constructor() { super(); this.destroyed = false; this.writes = []; }
     setTimeout() {}
     setKeepAlive() {}
     setNoDelay() {}
@@ -76,14 +73,8 @@ test('connectTwitch разбирает реальные IRC-строки PRIVMSG
   const removals = [];
   const statuses = [];
 
-  net.connect = (_options, callback) => {
-    setImmediate(callback);
-    return rawSocket;
-  };
-  tls.connect = (_options, callback) => {
-    setImmediate(callback);
-    return ircSocket;
-  };
+  net.connect = (_options, callback) => { setImmediate(callback); return rawSocket; };
+  tls.connect = (_options, callback) => { setImmediate(callback); return ircSocket; };
   emotes.setNetwork = () => {};
   emotes.ensureGlobalEmotes = () => {};
   emotes.ensureChannelEmotes = (id) => { statuses.push(['room', id]); };
@@ -101,7 +92,7 @@ test('connectTwitch разбирает реальные IRC-строки PRIVMSG
     });
 
     await new Promise((resolve) => setTimeout(resolve, 10));
-    assert.ok(ircSocket.writes.some((line) => line === 'JOIN #mychannel\\r\\n'));
+    assert.ok(ircSocket.writes.includes('JOIN #mychannel\\r\\n'));
 
     ircSocket.emit('data', Buffer.from(
       '@id=msg-1;user-id=42;display-name=Viewer;color=#123456;badges=moderator/1;custom-reward-id=reward-1 :viewer!viewer@viewer.tmi.twitch.tv PRIVMSG #mychannel :hello @mychannel'
@@ -114,27 +105,23 @@ test('connectTwitch разбирает реальные IRC-строки PRIVMSG
     ));
 
     assert.equal(messages.length, 2);
-    assert.deepEqual(messages[0], {
-      id: 'msg-1',
-      login: 'viewer',
-      userId: '42',
-      user: 'Viewer',
-      color: '#123456',
-      badgesHtml: assert.match.string,
-      html: 'hello @mychannel',
-      rawText: 'hello @mychannel',
-      isAction: false,
-      isReward: true,
-      isMention: true,
-      mentionNick: 'mychannel',
-      rewardIconUrl: 'https://static-cdn.jtvnw.net/custom-reward-images/default-1.png'
-    });
+    const chat = messages[0];
+    assert.equal(chat.id, 'msg-1');
+    assert.equal(chat.login, 'viewer');
+    assert.equal(chat.userId, '42');
+    assert.equal(chat.user, 'Viewer');
+    assert.equal(chat.color, '#123456');
+    assert.match(chat.badgesHtml, /chat-badge/);
+    assert.equal(chat.html, 'hello @mychannel');
+    assert.equal(chat.rawText, 'hello @mychannel');
+    assert.equal(chat.isAction, false);
+    assert.equal(chat.isReward, true);
+    assert.equal(chat.isMention, true);
+    assert.equal(chat.mentionNick, 'mychannel');
+    assert.equal(chat.rewardIconUrl, 'https://static-cdn.jtvnw.net/custom-reward-images/default-1.png');
     assert.equal(messages[1].noticeType, 'resub');
     assert.equal(messages[1].months, 12);
-    assert.deepEqual(removals, [
-      { id: 'msg-1' },
-      { login: 'viewer', userId: '42' }
-    ]);
+    assert.deepEqual(removals, [{ id: 'msg-1' }, { login: 'viewer', userId: '42' }]);
     assert.deepEqual(statuses.find((entry) => entry[0] === 'room'), ['room', '123']);
 
     disconnectTwitch();
