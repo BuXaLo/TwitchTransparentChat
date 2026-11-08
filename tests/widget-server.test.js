@@ -249,8 +249,8 @@ test('SSE рассылает remove и state всем подключённым �
     server.broadcast('state', { channel: 'updated' });
 
     await waitUntil(
-      () => received.every((value) => value.includes('event: remove\\ndata: {"id":"message-1"}') &&
-        value.includes('event: state\\ndata: {"channel":"updated"}')),
+      () => received.every((value) => value.includes('event: remove\ndata: {"id":"message-1"}') &&
+        value.includes('event: state\ndata: {"channel":"updated"}')),
       'SSE broadcast timeout'
     );
 
