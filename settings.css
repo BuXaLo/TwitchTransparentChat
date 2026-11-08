@@ -1054,22 +1054,15 @@
 }
 
 
-/* Декоративное замощение свободной области в настройках Overlay и Widget. */
-.tab,
-.widget-settings { position: relative; }
+/* Изображение целиком вписывается в свободную область настроек. */
+.content { position: relative; }
 
 .settings-mascot {
   position: absolute;
   z-index: 0;
   pointer-events: none;
   background-image: url("assets/mascot.png");
-  background-repeat: repeat;
-  background-size: auto;
-  background-position: top left;
-}
-
-.tab > :not(.settings-mascot),
-.widget-settings > :not(.settings-mascot) {
-  position: relative;
-  z-index: 1;
+  background-repeat: no-repeat;
+  background-size: contain;
+  background-position: center center;
 }
