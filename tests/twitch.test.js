@@ -92,16 +92,16 @@ test('connectTwitch разбирает реальные IRC-строки PRIVMSG
     });
 
     await new Promise((resolve) => setTimeout(resolve, 10));
-    assert.ok(ircSocket.writes.includes('JOIN #mychannel\\r\\n'));
+    assert.ok(ircSocket.writes.includes('JOIN #mychannel\r\n'));
 
     ircSocket.emit('data', Buffer.from(
       '@id=msg-1;user-id=42;display-name=Viewer;color=#123456;badges=moderator/1;custom-reward-id=reward-1 :viewer!viewer@viewer.tmi.twitch.tv PRIVMSG #mychannel :hello @mychannel'
     ));
-    ircSocket.emit('data', Buffer.from('\\r\\n' +
-      '@msg-id=resub;display-name=Supporter;msg-param-sub-plan=2000;msg-param-cumulative-months=12 :tmi.twitch.tv USERNOTICE #mychannel :thanks\\r\\n' +
-      '@target-msg-id=msg-1 :tmi.twitch.tv CLEARMSG #mychannel :hello\\r\\n' +
-      '@target-user-id=42 :tmi.twitch.tv CLEARCHAT #mychannel :viewer\\r\\n' +
-      '@room-id=123 :tmi.twitch.tv ROOMSTATE #mychannel\\r\\n'
+    ircSocket.emit('data', Buffer.from('\r\n' +
+      '@msg-id=resub;display-name=Supporter;msg-param-sub-plan=2000;msg-param-cumulative-months=12 :tmi.twitch.tv USERNOTICE #mychannel :thanks\r\n' +
+      '@target-msg-id=msg-1 :tmi.twitch.tv CLEARMSG #mychannel :hello\r\n' +
+      '@target-user-id=42 :tmi.twitch.tv CLEARCHAT #mychannel :viewer\r\n' +
+      '@room-id=123 :tmi.twitch.tv ROOMSTATE #mychannel\r\n'
     ));
 
     assert.equal(messages.length, 2);
