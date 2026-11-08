@@ -1474,6 +1474,7 @@
       });
       $('widgetEnabled').checked = cfg.widgetEnabled;
       $('widgetSettings').classList.toggle('hidden', !cfg.widgetEnabled);
+      requestAnimationFrame(updateSettingsMascot);
       $('widgetPort').value = cfg.widgetPort;
       updateLink();
 
