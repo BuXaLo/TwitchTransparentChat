@@ -39,7 +39,7 @@ test('makeTestSequence использует streamer для некорректн
 
 
 
-test('connectTwitch разбирает реальные IRC-строки PRIVMSG, USERNOTICE и события удаления'() => {
+test('connectTwitch разбирает реальные IRC-строки PRIVMSG, USERNOTICE и события удаления', async () => {
   const { EventEmitter } = require('node:events');
   const net = require('node:net');
   const tls = require('node:tls');
