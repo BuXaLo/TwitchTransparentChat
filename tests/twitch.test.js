@@ -72,6 +72,7 @@ test('connectTwitch разбирает реальные IRC-строки PRIVMSG
   const messages = [];
   const removals = [];
   const statuses = [];
+  let disconnect;
 
   net.connect = (_options, callback) => { setImmediate(callback); return rawSocket; };
   tls.connect = (_options, callback) => { setImmediate(callback); return ircSocket; };
@@ -83,6 +84,7 @@ test('connectTwitch разбирает реальные IRC-строки PRIVMSG
 
   try {
     const { connectTwitch, disconnectTwitch } = require('../twitch');
+    disconnect = disconnectTwitch;
     connectTwitch({
       channel: 'MyChannel',
       onMessage: (message) => messages.push(message),
@@ -124,8 +126,8 @@ test('connectTwitch разбирает реальные IRC-строки PRIVMSG
     assert.deepEqual(removals, [{ id: 'msg-1' }, { login: 'viewer', userId: '42' }]);
     assert.deepEqual(statuses.find((entry) => entry[0] === 'room'), ['room', '123']);
 
-    disconnectTwitch();
   } finally {
+    if (disconnect) disconnect();
     net.connect = originalNetConnect;
     tls.connect = originalTlsConnect;
     Object.assign(emotes, originals);
