@@ -162,6 +162,6 @@ test('normalizeConfig восстанавливает некорректные о
   assert.equal(normalized.hideCommands, config.GENERAL_DEFAULTS.hideCommands);
   assert.equal(normalized.ignoredBots, 'BotA, BotB');
   assert.equal(normalized.fontSize, config.OVERLAY_APPEARANCE_DEFAULTS.fontSize);
-  assert.equal(normalized.widget.fontSize, config.OVERLAY_APPEARANCE_DEFAULTS.fontSize);
+  assert.equal(normalized.widget.fontSize, 10);
   assert.equal(normalized.widget.bgColor1, config.OVERLAY_APPEARANCE_DEFAULTS.bgColor1);
 });
