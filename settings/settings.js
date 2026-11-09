@@ -702,7 +702,6 @@
       populateModalInputsFromState(kind, appearanceState[prefix]);
       $(`modal-${kind}`).classList.remove('hidden');
       modalFocus.open(`modal-${kind}`, trigger);
-      updateSaveIndicator();
     }
 
     function resetModalToDefaults(kind) {
@@ -1152,14 +1151,6 @@
       }));
     }
 
-    function updateModalSaveIndicators(dirty) {
-      const text = dirty ? tr('ui.unsavedChanges') : '';
-      document.querySelectorAll('.modal-save-status').forEach((el) => {
-        el.textContent = text;
-        el.className = dirty ? 'modal-save-status warn' : 'modal-save-status';
-      });
-    }
-
     function setSaveIndicator(type) {
       const el = $('save-status');
       clearTimeout(setSaveIndicator.timer);
@@ -1171,7 +1162,6 @@
         widgetFailed: 'ui.savedWidgetFailed'
       };
       el.textContent = tr(keys[type] || '');
-      updateModalSaveIndicators(savedSnapshot !== null && getSaveSnapshot() !== savedSnapshot);
       if (type === 'saved') {
         setSaveIndicator.timer = setTimeout(() => {
           if (el.textContent === tr('ui.allChangesSaved')) el.textContent = '';
@@ -1182,7 +1172,6 @@
     function updateSaveIndicator() {
       if (savedSnapshot === null) return;
       const dirty = getSaveSnapshot() !== savedSnapshot;
-      updateModalSaveIndicators(dirty);
       const el = $('save-status');
       if (dirty) {
         setSaveIndicator('dirty');
@@ -1445,21 +1434,13 @@
       $('overlay-reset-ok').onclick = () => confirmResetSection('o_');
       $('widget-reset-ok').onclick = () => confirmResetSection('w_');
       $('btn-save').onclick = () => save({ forceReconnect: false });
-      const trackedModalSelector = '#modal-plate, #modal-text, #modal-nick, #modal-image, #modal-styles';
       const handleSaveRelevantChange = (event) => {
-        const modal = event.target.closest('.modal-backdrop');
-        if (modal && !modal.matches(trackedModalSelector)) return;
+        if (event.target.closest('.modal-backdrop')) return;
         saveChangeRevision++;
         updateSaveIndicator();
       };
       document.addEventListener('input', handleSaveRelevantChange);
       document.addEventListener('change', handleSaveRelevantChange);
-      document.addEventListener('click', (event) => {
-        if (event.target.closest('#modal-styles .preset-item, #modal-plate [data-modal-reset], #modal-text [data-modal-reset], #modal-nick [data-modal-reset], #modal-image [data-modal-reset]')) {
-          saveChangeRevision++;
-          updateSaveIndicator();
-        }
-      });
 
       const cfg = await window.api.loadConfig();
       if (cfg.defaults && typeof cfg.defaults === 'object') {
