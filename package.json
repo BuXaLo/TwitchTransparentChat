@@ -1,6 +1,6 @@
 {
   "name": "twitch-overlay",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "description": "Twitch Transparent Chat Overlay",
   "main": "main.js",
   "scripts": {
