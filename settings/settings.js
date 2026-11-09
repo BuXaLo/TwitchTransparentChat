@@ -1521,7 +1521,7 @@
     });
 
     const images = window.SettingsImages.create({
-      $, tr, trf, notify: showNotification, state: presetState, updateMiniPreviews, triggerTargetPreview, updateSaveIndicator
+      $, tr, trf, notify: showNotification, state: presetState, updateMiniPreviews, triggerTargetPreview
     });
 
     init();
