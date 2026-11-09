@@ -80,6 +80,7 @@
   position: relative;
   flex-shrink: 0;
   background: var(--plate-bg);
+  background-clip: padding-box;
   padding: 4px 9px;
   border-radius: var(--plate-radius);
   border: var(--plate-border-width) solid var(--plate-border-color);
