@@ -505,14 +505,6 @@
       display: flex;
       gap: 8px;
     }
-    .modal-save-status {
-      min-width: 0;
-      font-size: 12px;
-      color: var(--ui-warning);
-      overflow-wrap: anywhere;
-    }
-    .modal-save-status:empty { display: none; }
-
     /* Мини-превью плашки и текста внутри модальных окон */
     .modal-preview-wrap {
       display: flex;
