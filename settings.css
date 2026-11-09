@@ -505,6 +505,7 @@
       display: flex;
       gap: 8px;
     }
+
     /* Мини-превью плашки и текста внутри модальных окон */
     .modal-preview-wrap {
       display: flex;
