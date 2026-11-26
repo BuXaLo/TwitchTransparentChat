@@ -354,6 +354,8 @@ function normalizeConfig(src) {
   Object.assign(out, sanitizeStyleExtras(s, MAX_FONT_SIZE_OVERLAY));
   out.widget = sanitizeAppearance(s.widget, widgetSeed(pickAppearance(out)), MAX_FONT_SIZE_WIDGET);
   Object.assign(out.widget, sanitizeStyleExtras(s.widget, MAX_FONT_SIZE_WIDGET));
+  out.widget.widgetTiltX = clampInt(s.widget && s.widget.widgetTiltX, -45, 45, 0);
+  out.widget.widgetTiltY = clampInt(s.widget && s.widget.widgetTiltY, -45, 45, 0);
   // В виджете OBS упоминания и ответы — обычный текст: опций подсветки там нет
   out.widget.highlightMentions = false;
   out.widget.mentionLonger = false;
@@ -389,7 +391,9 @@ function sanitizePreview(src, maxFontSize = MAX_FONT_SIZE_OVERLAY) {
   const s = src && typeof src === 'object' ? src : {};
   return Object.assign(sanitizeAppearance(s, OVERLAY_APPEARANCE_DEFAULTS, maxFontSize), styleExtrasView(sanitizeStyleExtras(s, maxFontSize)), {
     hideCommands: bool(s.hideCommands, GENERAL_DEFAULTS.hideCommands),
-    ignoredBots: typeof s.ignoredBots === 'string' ? s.ignoredBots.trim() : GENERAL_DEFAULTS.ignoredBots
+    ignoredBots: typeof s.ignoredBots === 'string' ? s.ignoredBots.trim() : GENERAL_DEFAULTS.ignoredBots,
+    widgetTiltX: clampInt(s.widgetTiltX, -45, 45, 0),
+    widgetTiltY: clampInt(s.widgetTiltY, -45, 45, 0)
   });
 }
 
