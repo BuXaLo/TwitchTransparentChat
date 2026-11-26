@@ -368,6 +368,43 @@
 
     }
 
+    function updatePerspectiveScale() {
+      const width = chat.clientWidth;
+      const height = chat.clientHeight;
+      if (!width || !height) return;
+
+      const angleX = (parseFloat(chat.style.getPropertyValue('--chat-tilt-y')) || 0) * Math.PI / 180;
+      const angleY = (parseFloat(chat.style.getPropertyValue('--chat-tilt-x')) || 0) * Math.PI / 180;
+      if (!angleX && !angleY) {
+        chat.style.setProperty('--chat-perspective-scale', '1');
+        return;
+      }
+
+      const sinX = Math.sin(angleX), cosX = Math.cos(angleX);
+      const sinY = Math.sin(angleY), cosY = Math.cos(angleY);
+      const perspective = 1000;
+      let maxX = 0, maxY = 0;
+
+      [-1, 1].forEach((sx) => {
+        [-1, 1].forEach((sy) => {
+          const x = sx * width / 2;
+          const y = sy * height / 2;
+          const rotatedX = x * cosY;
+          const rotatedY = y * cosX + x * sinY * sinX;
+          const rotatedZ = y * sinX - x * sinY * cosX;
+          const depth = perspective / Math.max(1, perspective - rotatedZ);
+          maxX = Math.max(maxX, Math.abs(rotatedX * depth));
+          maxY = Math.max(maxY, Math.abs(rotatedY * depth));
+        });
+      });
+
+      const scale = Math.min(1, (width / 2) / maxX, (height / 2) / maxY) * 0.98;
+      chat.style.setProperty('--chat-perspective-scale', scale.toFixed(4));
+    }
+
+    let perspectiveResizeObserver = null;
+    let perspectiveResizeFallback = false;
+
     function applyConfig(cfg) {
       const prevPoolSig = rotationSig(config);
       const prevSync = !!config.borderEffectSync;
@@ -385,6 +422,18 @@
       chat.className = `dir-${config.chatDirection || 'top'} layout-${config.layoutMode || 'inline'}${config.solidRibbon ? ' solid-ribbon' : ''}${hasPerspective ? ' has-perspective' : ''}`;
       chat.style.setProperty('--chat-tilt-x', `${tiltX}deg`);
       chat.style.setProperty('--chat-tilt-y', `${tiltY}deg`);
+      if (hasPerspective) {
+        updatePerspectiveScale();
+        if (!perspectiveResizeObserver && typeof ResizeObserver !== 'undefined') {
+          perspectiveResizeObserver = new ResizeObserver(updatePerspectiveScale);
+          perspectiveResizeObserver.observe(chat);
+        } else if (!perspectiveResizeObserver && !perspectiveResizeFallback && typeof global.addEventListener === 'function') {
+          global.addEventListener('resize', updatePerspectiveScale);
+          perspectiveResizeFallback = true;
+        }
+      } else {
+        chat.style.setProperty('--chat-perspective-scale', '1');
+      }
       updateIgnored(config.ignoredBots);
 
       // Обновляем уже существующие в DOM сообщения для мгновенного живого предпросмотра
