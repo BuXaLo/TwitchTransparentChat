@@ -473,7 +473,11 @@
         highlightMentions: p === 'w_' ? false : $(p + 'highlightMentions').checked,
         mentionLonger: p === 'w_' ? false : $(p + 'mentionLonger').checked,
         smoothShift: $(p + 'smoothShift').checked,
-        solidRibbon: $(p + 'solidRibbon').checked
+        solidRibbon: $(p + 'solidRibbon').checked,
+        ...(p === 'w_' ? {
+          widgetTiltX: parseInt($('widgetTiltX').value, 10) || 0,
+          widgetTiltY: parseInt($('widgetTiltY').value, 10) || 0
+        } : {})
       });
       NOTICE_IDS.forEach((id) => { a[id] = $(p + id).checked; });
       return a;
@@ -502,6 +506,14 @@
       if (a.mentionLonger !== undefined) $(p + 'mentionLonger').checked = p === 'w_' ? false : !!a.mentionLonger;
       if (a.smoothShift !== undefined) $(p + 'smoothShift').checked = !!a.smoothShift;
       if (a.solidRibbon !== undefined) $(p + 'solidRibbon').checked = !!a.solidRibbon;
+      if (p === 'w_') {
+        const tiltX = a.widgetTiltX !== undefined ? a.widgetTiltX : 0;
+        const tiltY = a.widgetTiltY !== undefined ? a.widgetTiltY : 0;
+        $('widgetTiltX').value = tiltX;
+        $('widgetTiltY').value = tiltY;
+        $('widgetTiltXVal').textContent = `${tiltX}°`;
+        $('widgetTiltYVal').textContent = `${tiltY}°`;
+      }
       NOTICE_IDS.forEach((id) => {
         if (a[id] !== undefined) $(p + id).checked = !!a[id];
       });
@@ -913,6 +925,8 @@
       if (prefix === 'w_') {
         defaults.highlightMentions = false;
         defaults.mentionLonger = false;
+        defaults.widgetTiltX = 0;
+        defaults.widgetTiltY = 0;
       }
       appearanceState[prefix] = Object.assign({}, defaults);
       writeAppearance(prefix, defaults);
@@ -1401,6 +1415,41 @@
       $('ignoredBots').addEventListener('input', () => { schedulePreview(); scheduleWidgetPreview(); });
 
       $('widgetPort').addEventListener('input', updateLink);
+
+      const perspectiveButton = $('btn-widget-perspective');
+      const perspectivePanel = $('widget-perspective-panel');
+      const perspectiveToolbar = perspectiveButton.closest('.widget-perspective-toolbar');
+      const setPerspectivePanelOpen = (open) => {
+        perspectivePanel.classList.toggle('hidden', !open);
+        perspectiveButton.setAttribute('aria-expanded', String(open));
+      };
+      perspectiveButton.addEventListener('click', (event) => {
+        event.stopPropagation();
+        setPerspectivePanelOpen(perspectivePanel.classList.contains('hidden'));
+      });
+      perspectivePanel.addEventListener('click', (event) => event.stopPropagation());
+      document.addEventListener('click', (event) => {
+        if (!perspectiveToolbar.contains(event.target)) setPerspectivePanelOpen(false);
+      });
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && !perspectivePanel.classList.contains('hidden')) {
+          setPerspectivePanelOpen(false);
+          perspectiveButton.focus();
+        }
+      });
+      ['widgetTiltX', 'widgetTiltY'].forEach((id) => {
+        $(id).addEventListener('input', () => {
+          $(id + 'Val').textContent = `${$(id).value}°`;
+          scheduleWidgetPreview();
+        });
+      });
+      $('btn-widget-perspective-reset').addEventListener('click', () => {
+        ['widgetTiltX', 'widgetTiltY'].forEach((id) => {
+          $(id).value = 0;
+          $(id).dispatchEvent(new Event('input', { bubbles: true }));
+        });
+      });
+
       $('widgetEnabled').addEventListener('change', () => {
         $('widgetSettings').classList.toggle('hidden', !$('widgetEnabled').checked);
         requestAnimationFrame(updateSettingsMascot);
