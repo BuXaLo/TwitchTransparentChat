@@ -90,7 +90,7 @@
 ### Сохранение и preview
 
 - Preview Overlay: `preview-overlay` → `sanitizePreview()` → `config-applied`.
-- Preview Widget: `preview-widget` → `sanitizePreview()` → SSE `state`.
+- Preview Widget: `preview-widget` → `sanitizePreview()` → SSE `state`. В том числе так передаются временные `widgetTiltX` / `widgetTiltY` для живой настройки 3D-перспективы.
 - Save: `save-config` → `normalizeConfig()` → `electron-store` → обновление Overlay → применение Widget settings → SSE `state`.
 - При закрытии окна настроек без сохранения временный preview заменяется последним сохранённым состоянием.
 
@@ -124,7 +124,7 @@
 }
 ```
 
-Фактические значения конфигурации формируются `widgetState()` в `main.js` и `config.js::widgetView()`. В `config` входят оформление Widget, назначения стилей и ротация, общие фильтры; подсветка упоминаний выключена.
+Фактические значения конфигурации формируются `widgetState()` в `main.js` и `config.js::widgetView()`. В `config` входят оформление Widget, назначения стилей и ротация, общие фильтры; подсветка упоминаний выключена. Поля `widgetTiltX` и `widgetTiltY` задают наклон контейнера по двум осям (−45…+45°, по умолчанию 0°) и относятся только к Widget; `overlayView()` их не передаёт.
 
 ## 6. SSE-контракт
 
