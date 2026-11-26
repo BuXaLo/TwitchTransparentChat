@@ -507,12 +507,14 @@
       if (a.smoothShift !== undefined) $(p + 'smoothShift').checked = !!a.smoothShift;
       if (a.solidRibbon !== undefined) $(p + 'solidRibbon').checked = !!a.solidRibbon;
       if (p === 'w_') {
-        const tiltX = a.widgetTiltX !== undefined ? a.widgetTiltX : 0;
-        const tiltY = a.widgetTiltY !== undefined ? a.widgetTiltY : 0;
-        $('widgetTiltX').value = tiltX;
-        $('widgetTiltY').value = tiltY;
-        $('widgetTiltXVal').textContent = `${tiltX}°`;
-        $('widgetTiltYVal').textContent = `${tiltY}°`;
+        if (a.widgetTiltX !== undefined) {
+          $('widgetTiltX').value = a.widgetTiltX;
+          $('widgetTiltXVal').textContent = `${a.widgetTiltX}°`;
+        }
+        if (a.widgetTiltY !== undefined) {
+          $('widgetTiltY').value = a.widgetTiltY;
+          $('widgetTiltYVal').textContent = `${a.widgetTiltY}°`;
+        }
       }
       NOTICE_IDS.forEach((id) => {
         if (a[id] !== undefined) $(p + id).checked = !!a[id];
