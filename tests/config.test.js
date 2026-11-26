@@ -113,6 +113,28 @@ test('overlayView и widgetView возвращают renderer-представл
   assert.equal(Object.hasOwn(widget, 'widget'), false);
 });
 
+test('normalizeConfig ограничивает перспективу только для виджета', () => {
+  const normalized = config.normalizeConfig({
+    widget: { widgetTiltX: 60, widgetTiltY: -60 }
+  });
+  assert.equal(normalized.widget.widgetTiltX, 45);
+  assert.equal(normalized.widget.widgetTiltY, -45);
+
+  const defaults = config.normalizeConfig({});
+  assert.equal(defaults.widget.widgetTiltX, 0);
+  assert.equal(defaults.widget.widgetTiltY, 0);
+  assert.equal(Object.hasOwn(config.overlayView(defaults), 'widgetTiltX'), false);
+});
+
+test('sanitizePreview сохраняет и ограничивает углы перспективы', () => {
+  const preview = config.sanitizePreview({
+    widgetTiltX: -50,
+    widgetTiltY: 23
+  }, config.MAX_FONT_SIZE_WIDGET);
+  assert.equal(preview.widgetTiltX, -45);
+  assert.equal(preview.widgetTiltY, 23);
+});
+
 test('sanitizePreview применяет отдельный лимит размера шрифта виджета', () => {
   const preview = config.sanitizePreview(
     { fontSize: 60, highlightMentions: true, mentionLonger: true },

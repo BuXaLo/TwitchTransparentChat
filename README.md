@@ -82,7 +82,7 @@ The chat can also appear **only on stream** as a Browser source, with its own si
 3. In OBS add a **Browser** source, paste the link as the URL and set the size you need.
 4. Press **Test messages (widget only)** to check it. It never sends anything to the overlay.
 
-The widget shares the channel, proxy, filters and saved styles with the overlay. In the widget, mentions and replies are shown as regular text.
+The widget shares the channel, proxy, filters and saved styles with the overlay. In the widget, mentions and replies are shown as regular text. Its **3D perspective** controls let you tilt the chat horizontally and vertically (−45° to +45°); the live preview applies changes immediately and automatically scales the chat to keep it inside the Browser source bounds.
 
 > **After updating the app, press Refresh Cache** in the OBS Browser source properties (or restart OBS), so the widget picks up the new files.
 

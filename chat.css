@@ -58,6 +58,12 @@
   mask-image: linear-gradient(to bottom, black calc(100% - 35px), transparent 100%);
 }
 
+#chat.has-perspective {
+  transform: perspective(1000px) rotateX(var(--chat-tilt-y, 0deg)) rotateY(var(--chat-tilt-x, 0deg)) scale(var(--chat-perspective-scale, 1));
+  transform-origin: center center;
+  transition: transform 0.18s ease-out;
+}
+
 #chat.dir-top {
   flex-direction: column;
   justify-content: flex-start;

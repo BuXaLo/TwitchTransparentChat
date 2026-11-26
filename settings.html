@@ -126,6 +126,29 @@
         </label>
       </div>
       <div id="widgetSettings" class="widget-settings hidden">
+      <div class="widget-perspective-toolbar">
+        <button type="button" class="secondary widget-perspective-button" id="btn-widget-perspective"
+          aria-controls="widget-perspective-panel" aria-expanded="false" data-i18n-title="ui.widgetPerspectiveTitle">
+          <span aria-hidden="true">◈</span> <span data-i18n="ui.widgetPerspective"></span>
+        </button>
+        <div class="widget-perspective-panel hidden" id="widget-perspective-panel">
+          <label>
+            <span data-i18n="ui.widgetTiltHorizontal"></span>
+            <div class="slider-row">
+              <input type="range" id="widgetTiltX" min="-45" max="45" step="1" value="0">
+              <span id="widgetTiltXVal">0°</span>
+            </div>
+          </label>
+          <label>
+            <span data-i18n="ui.widgetTiltVertical"></span>
+            <div class="slider-row">
+              <input type="range" id="widgetTiltY" min="-45" max="45" step="1" value="0">
+              <span id="widgetTiltYVal">0°</span>
+            </div>
+          </label>
+          <button type="button" class="secondary widget-perspective-reset" id="btn-widget-perspective-reset" data-i18n="ui.widgetPerspectiveReset"></button>
+        </div>
+      </div>
       <label>
         <span data-i18n="ui.widgetPort"></span>
         <input type="number" id="widgetPort" min="1024" max="65535" style="max-width: 120px;">
