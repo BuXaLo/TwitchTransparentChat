@@ -379,7 +379,12 @@
       if (rotationSig(config) !== prevPoolSig) rotationLast = -1;
 
       chat.style.gap = `${Math.max(5, Math.min(40, parseInt(config.plateGap, 10) || 5))}px`; // расстояние между плашками (5px — прежнее базовое)
-      chat.className = `dir-${config.chatDirection || 'top'} layout-${config.layoutMode || 'inline'}${config.solidRibbon ? ' solid-ribbon' : ''}`;
+      const tiltX = Math.max(-45, Math.min(45, parseInt(config.widgetTiltX, 10) || 0));
+      const tiltY = Math.max(-45, Math.min(45, parseInt(config.widgetTiltY, 10) || 0));
+      const hasPerspective = tiltX !== 0 || tiltY !== 0;
+      chat.className = `dir-${config.chatDirection || 'top'} layout-${config.layoutMode || 'inline'}${config.solidRibbon ? ' solid-ribbon' : ''}${hasPerspective ? ' has-perspective' : ''}`;
+      chat.style.setProperty('--chat-tilt-x', `${tiltX}deg`);
+      chat.style.setProperty('--chat-tilt-y', `${tiltY}deg`);
       updateIgnored(config.ignoredBots);
 
       // Обновляем уже существующие в DOM сообщения для мгновенного живого предпросмотра
